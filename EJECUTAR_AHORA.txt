@@ -1,0 +1,37 @@
+╔════════════════════════════════════════════════════════════════════╗
+║           AURA SPORTS - EJECUTAR MIGRACIONES                       ║
+╚════════════════════════════════════════════════════════════════════╝
+
+📋 PASOS PARA CREAR LAS TABLAS (2 MINUTOS):
+
+1. ✅ Ya abrí el archivo setup_database.sql en Notepad para ti
+   
+2. 🌐 El navegador ya está abierto con el SQL Editor:
+   https://supabase.com/dashboard/project/heshwhpxnmpfjnxosdxg/sql
+
+3. 📋 EN EL SQL EDITOR:
+   - Haz click en "New query" (si no tienes una abierta)
+   - Selecciona TODO el texto en Notepad (Ctrl+A)
+   - Cópialo (Ctrl+C)
+   - Pégalo en el SQL Editor (Ctrl+V)
+
+4. ▶️ EJECUTA EL SCRIPT:
+   - Haz click en "Run" o presiona Ctrl+Enter
+   
+5. ✅ VERIFICA QUE FUNCIONÓ:
+   - Ve al Table Editor:
+     https://supabase.com/dashboard/project/heshwhpxnmpfjnxosdxg/editor
+   - Deberías ver 3 tablas: profiles, connections, posts
+
+6. 🚀 EJECUTA LA APP:
+   Abre una nueva terminal y ejecuta:
+   npm run dev
+
+═══════════════════════════════════════════════════════════════════════
+
+💡 TIP: Si el SQL Editor está abierto en el navegador, simplemente pega 
+el contenido del archivo setup_database.sql que está abierto en Notepad.
+
+═══════════════════════════════════════════════════════════════════════
+
+

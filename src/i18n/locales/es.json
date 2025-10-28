@@ -1,0 +1,101 @@
+{
+  "common": {
+    "welcome": "Bienvenido a Aura Sports",
+    "discover": "Descubrir",
+    "profile": "Perfil",
+    "messages": "Mensajes",
+    "connections": "Conexiones",
+    "logout": "Cerrar Sesión",
+    "signin": "Iniciar Sesión",
+    "signup": "Registrarse",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "view": "Ver",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "close": "Cerrar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito"
+  },
+  "nav": {
+    "discover": "Descubrir",
+    "radar": "Talent Radar",
+    "quickConnect": "Quick Connect",
+    "premium": "Premium",
+    "feed": "Feed",
+    "marketplace": "Marketplace",
+    "events": "Eventos",
+    "becomeReferrer": "Hazte Referente",
+    "dashboard": "Dashboard",
+    "myReferrals": "Mis Referencias",
+    "myContracts": "Mis Contratos"
+  },
+  "auth": {
+    "email": "Correo",
+    "password": "Contraseña",
+    "signingIn": "Iniciando sesión...",
+    "signup": "Registrándose...",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes una cuenta?",
+    "haveAccount": "¿Ya tienes una cuenta?"
+  },
+  "profile": {
+    "editProfile": "Editar Perfil",
+    "fullName": "Nombre Completo",
+    "bio": "Biografía",
+    "location": "Ubicación",
+    "sport": "Deporte",
+    "goals": "Objetivos",
+    "level": "Nivel",
+    "verified": "Verificado",
+    "notVerified": "No Verificado"
+  },
+  "discover": {
+    "title": "Descubrir Talentos",
+    "allProfiles": "Todos los Perfiles",
+    "filter": "Filtrar por tipo",
+    "connect": "Conectar",
+    "viewProfile": "Ver Perfil"
+  },
+  "messages": {
+    "title": "Mensajes",
+    "noChats": "Sin chats activos",
+    "typeMessage": "Escribe un mensaje...",
+    "send": "Enviar"
+  },
+  "feed": {
+    "title": "Feed",
+    "createPost": "Crear Publicación",
+    "boost": "Impulsar",
+    "openCalls": "Llamados Abiertos"
+  },
+  "marketplace": {
+    "title": "Marketplace",
+    "contracts": "Contratos",
+    "templates": "Plantillas",
+    "partnerships": "Asociaciones"
+  },
+  "events": {
+    "title": "Eventos de Networking",
+    "upcoming": "Próximos Eventos",
+    "register": "Registrarse"
+  },
+  "premium": {
+    "title": "Premium y Monetización",
+    "currentPlan": "Plan Actual",
+    "auraCredits": "Créditos Aura",
+    "buyMore": "Comprar Más",
+    "upgradeNow": "Actualizar Ahora"
+  },
+  "referrer": {
+    "becomeReferrer": "Hazte Referente",
+    "shareCode": "Comparte tu código de referencia",
+    "dashboard": "Dashboard de Referente",
+    "stats": "Estadísticas"
+  }
+}
+
+
