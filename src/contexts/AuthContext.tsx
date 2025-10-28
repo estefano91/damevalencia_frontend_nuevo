@@ -36,92 +36,67 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<DameProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Usuario de demostración automático para desarrollo
+  const demoUser: DameProfile = {
+    id: "demo-user-123",
+    user_type: "participant",
+    full_name: "Usuario Demo DAME",
+    email: "demo@damevalencia.es",
+    bio: "Usuario de demostración para desarrollo del frontend de DAME Valencia",
+    avatar_url: "",
+    cover_url: "",
+    location: "Valencia, España",
+    projects: ["casino", "bachata", "fit", "arte"],
+    skills: ["baile", "música", "arte", "fotografía"],
+    interests: ["cultura", "arte", "música", "danza", "comunidad"],
+    languages: ["español", "inglés"],
+    experience_level: "intermediate",
+    phone: "+34 644 070 282",
+    instagram: "@dame.valencia",
+    notifications_enabled: true,
+    public_profile: true,
+    verified: true,
+    active: true,
+    member_since: "2023-01-01",
+    created_at: "2023-01-01T00:00:00Z",
+    updated_at: "2025-10-28T22:00:00Z"
+  };
 
-  // Función para obtener el usuario actual
+  const [user, setUser] = useState<DameProfile | null>(demoUser); // Usuario demo por defecto
+  const [loading, setLoading] = useState(false); // Sin loading para desarrollo
+
+  // Función simplificada para desarrollo - no hace llamadas reales
   const refreshUser = async () => {
-    if (!dameApi.isAuthenticated()) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await dameApi.getCurrentUser();
-      if (response.success && response.data) {
-        setUser(response.data);
-      } else {
-        // Token inválido o usuario no encontrado
-        setUser(null);
-        await dameApi.logout();
-      }
-    } catch (error) {
-      console.error('Error fetching user:', error);
-      setUser(null);
-      await dameApi.logout();
-    } finally {
-      setLoading(false);
-    }
+    // En modo desarrollo, siempre mantener usuario demo
+    setUser(demoUser);
   };
 
-  // Función de login
+  // Función de login simulada
   const login = async (email: string, password: string) => {
-    try {
-      const response = await dameApi.login({ email, password });
-      if (response.success && response.data) {
-        setUser(response.data.user);
-        return { success: true };
-      } else {
-        return { success: false, error: response.error || 'Error de inicio de sesión' };
-      }
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Error desconocido' 
-      };
-    }
+    // Simular login exitoso
+    setUser(demoUser);
+    return { success: true };
   };
 
-  // Función de registro
+  // Función de registro simulada
   const register = async (data: RegisterData) => {
-    try {
-      const response = await dameApi.register(data);
-      if (response.success && response.data) {
-        setUser(response.data.user);
-        return { success: true };
-      } else {
-        return { success: false, error: response.error || 'Error en el registro' };
-      }
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Error desconocido' 
-      };
-    }
+    // Crear usuario demo basado en los datos del formulario
+    const newDemoUser = {
+      ...demoUser,
+      full_name: data.full_name,
+      email: data.email,
+      user_type: data.user_type
+    };
+    setUser(newDemoUser);
+    return { success: true };
   };
 
-  // Función de logout
+  // Función de logout simulada
   const logout = async () => {
-    await dameApi.logout();
-    setUser(null);
+    // En modo desarrollo, mantener usuario para facilitar desarrollo
+    // setUser(null); // Comentado para desarrollo
+    console.log('Logout simulado - usuario mantenido para desarrollo');
   };
-
-  // Verificar autenticación al cargar
-  useEffect(() => {
-    refreshUser();
-  }, []);
-
-  // Auto-refresh del token cada 30 minutos si el usuario está logueado
-  useEffect(() => {
-    if (!user) return;
-
-    const interval = setInterval(async () => {
-      await refreshUser();
-    }, 30 * 60 * 1000); // 30 minutos
-
-    return () => clearInterval(interval);
-  }, [user]);
 
   return (
     <AuthContext.Provider value={{ 

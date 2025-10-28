@@ -23,7 +23,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/feed");
+      navigate("/demo");
     }
   }, [user, navigate]);
 
@@ -36,7 +36,7 @@ const Auth = () => {
         const result = await login(email, password);
         if (result.success) {
           toast({ title: "¡Bienvenido/a de vuelta! 🎉" });
-          navigate("/feed");
+          navigate("/demo");
         } else {
           throw new Error(result.error);
         }
@@ -49,7 +49,7 @@ const Auth = () => {
         });
         if (result.success) {
           toast({ title: "¡Cuenta creada! Completa tu perfil. ✨" });
-          navigate("/onboarding");
+          navigate("/demo");
         } else {
           throw new Error(result.error);
         }

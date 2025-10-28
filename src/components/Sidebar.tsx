@@ -1,133 +1,90 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import {
   Home,
-  Search,
-  Zap,
-  MessageSquare,
   Users,
   Calendar,
-  Crown,
-  Rss,
+  MessageSquare,
+  User,
 } from "lucide-react";
 
-const navigation = [
-  {
-    name: "Feed",
-    icon: Rss,
-    path: "/feed",
-    section: "main",
-  },
-  {
-    name: "Discover",
-    icon: Home,
-    path: "/discover",
-    section: "discover",
-  },
-  {
-    name: "Events",
-    icon: Calendar,
-    path: "/events",
-    section: "social",
-  },
-  {
-    name: "Premium",
-    icon: Crown,
-    path: "/premium",
-    section: "other",
-  },
-];
-
 interface SidebarProps {
-  userType: string | null;
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-  isMobile: boolean;
+  userType?: string | null;
 }
 
-const Sidebar = ({ userType, sidebarOpen, setSidebarOpen, isMobile }: SidebarProps) => {
+const Sidebar = ({ userType }: SidebarProps) => {
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const currentPath = location.pathname;
-
-  const sections = [
+  const menuItems = [
     {
-      title: "Main",
-      items: navigation.filter((item) => item.section === "main"),
+      id: "inicio",
+      icon: Home,
+      label: "Inicio",
+      path: "/demo",
+      color: "text-blue-600"
     },
     {
-      title: "Discover",
-      items: navigation.filter((item) => item.section === "discover"),
+      id: "comunidad",
+      icon: Users,
+      label: "Comunidad",
+      path: "/demo",
+      color: "text-purple-600"
     },
     {
-      title: "Social",
-      items: navigation.filter((item) => item.section === "social"),
+      id: "eventos",
+      icon: Calendar,
+      label: "Eventos",
+      path: "/demo",
+      color: "text-green-600"
     },
     {
-      title: "Others",
-      items: navigation.filter((item) => item.section === "other"),
+      id: "mensajes",
+      icon: MessageSquare,
+      label: "Mensajes",
+      path: "/demo",
+      color: "text-pink-600"
     },
+    {
+      id: "perfil",
+      icon: User,
+      label: "Mi Perfil",
+      path: "/demo",
+      color: "text-indigo-600"
+    }
   ];
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
-    // Close sidebar after navigation on mobile
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
-  };
-
   return (
-    <aside 
-      className={cn(
-        "w-64 border-r bg-card h-screen fixed left-0 z-40 overflow-y-auto transition-transform duration-300",
-        // Position after header for all screen sizes
-        "top-16 sm:top-20 md:top-28",
-        // Desktop: always visible
-        "md:translate-x-0",
-        // Mobile: slide from left, controlled by state  
-        isMobile ? (
-          sidebarOpen 
-            ? "translate-x-0" 
-            : "-translate-x-full"
-        ) : "translate-x-0"
-      )}
-    >
-      <nav className="p-3 sm:p-4 space-y-4 sm:space-y-6">
-        {sections.map((section) => (
-          <div key={section.title}>
-            <h3 className="mb-2 sm:mb-3 px-2 sm:px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {section.title}
-            </h3>
-            <div className="space-y-1">
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentPath === item.path;
-                
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => handleNavigation(item.path)}
-                    className={cn(
-                      "w-full flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-2 rounded-lg text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", isActive && "text-primary-foreground")} />
-                    <span className="text-xs sm:text-sm">{item.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </nav>
-    </aside>
+    <div className="h-full bg-gradient-to-b from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900 p-4 flex flex-col">
+      {/* Navegación Principal - Sin header ni usuario demo */}
+      <div className="flex-1">
+        <div className="space-y-2">
+          {menuItems.map((item) => (
+            <Button
+              key={item.id}
+              variant="ghost"
+              className="w-full justify-start h-auto py-3 px-3 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg border border-transparent hover:border-purple-200 dark:hover:border-purple-700 transition-all duration-200"
+              onClick={() => navigate(item.path)}
+            >
+              <item.icon className={`mr-3 h-5 w-5 ${item.color}`} />
+              <div className="text-left">
+                <div className="font-medium text-sm">{item.label}</div>
+              </div>
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer Info - Minimalista */}
+      <div className="mt-auto pt-4 border-t border-purple-200 dark:border-purple-700">
+        <div className="text-center space-y-2">
+          <p className="text-xs text-muted-foreground">📞 (+34) 64 40 70 282</p>
+          <p className="text-xs text-muted-foreground">📧 admin@organizaciondame.org</p>
+          <p className="text-xs text-muted-foreground">📍 Valencia, España</p>
+          <p className="text-xs font-medium dame-text-gradient">Arte • Cultura • Bienestar</p>
+        </div>
+      </div>
+    </div>
   );
 };
 
 export default Sidebar;
-

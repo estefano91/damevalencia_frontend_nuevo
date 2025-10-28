@@ -1,10 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { Home, Users, User, LogOut, Star, LayoutDashboard, Search, Zap, Building2, Award, Eye, MessageSquare, Rss, Calendar, Crown, Menu, X } from "lucide-react";
+import { Home, Users, User, LogOut, Star, Menu, X, Heart, Palette, Music, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   DropdownMenu,
@@ -16,9 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import LanguageSelector from "./LanguageSelector";
 import ThemeToggle from "./ThemeToggle";
-import { useTheme } from "@/providers/ThemeProvider";
-import logoLight from "@/assets/1.png";
-import logoDark from "@/assets/2.png";
 
 interface NavigationProps {
   sidebarOpen: boolean;
@@ -29,224 +24,173 @@ interface NavigationProps {
 const Navigation = ({ sidebarOpen, setSidebarOpen, isMobile }: NavigationProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { t } = useTranslation();
-  const { theme } = useTheme();
-  const [isReferrer, setIsReferrer] = useState(false);
-  const [userType, setUserType] = useState<string | null>(null);
-  const [simulatedType, setSimulatedType] = useState<string | null>(null);
-  
-  // Select logo based on theme
-  const currentLogo = theme === 'dark' ? logoDark : logoLight;
-
-  // Load simulated type from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('simulated_user_type');
-    if (stored) {
-      setSimulatedType(stored);
-    }
-  }, []);
-
-  useEffect(() => {
-    const checkUserProfile = async () => {
-      if (!user) return;
-      
-      const { data } = await supabase
-        .from('profiles')
-        .select('is_referrer, user_type')
-        .eq('id', user.id)
-        .single();
-      
-      if (data) {
-        setIsReferrer(data.is_referrer || false);
-        // Use simulated type if set, otherwise use real type
-        setUserType(simulatedType || data.user_type);
-      }
-    };
-
-    checkUserProfile();
-  }, [user, simulatedType]);
-
-  const handleSimulateType = (type: string) => {
-    if (type === 'real') {
-      setSimulatedType(null);
-      localStorage.removeItem('simulated_user_type');
-      toast({
-        title: "Simulation disabled",
-        description: "Showing your real user type",
-      });
-    } else {
-      setSimulatedType(type);
-      localStorage.setItem('simulated_user_type', type);
-      toast({
-        title: "Simulating user type",
-        description: `Showing navigation as: ${type}`,
-      });
-    }
-  };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({ title: "Logged out successfully" });
+    await logout();
+    toast({ title: "Sesión cerrada exitosamente 👋" });
     navigate("/");
   };
 
-  // Navigation items moved to Sidebar, only keeping essential items in top nav
+  const getUserTypeIcon = () => {
+    if (!user) return <User className="h-5 w-5" />;
+    
+    switch (user.user_type) {
+      case 'instructor': return <Star className="h-5 w-5 text-yellow-500" />;
+      case 'artist': return <Palette className="h-5 w-5 text-purple-500" />;
+      case 'coordinator': return <Users className="h-5 w-5 text-blue-500" />;
+      case 'volunteer': return <Heart className="h-5 w-5 text-red-500" />;
+      case 'sponsor': return <Star className="h-5 w-5 text-green-500" />;
+      default: return <Music className="h-5 w-5 text-pink-500" />;
+    }
+  };
+
+  const getUserTypeLabel = () => {
+    if (!user) return 'Usuario';
+    
+    switch (user.user_type) {
+      case 'participant': return '🎭 Participante';
+      case 'instructor': return '👨‍🏫 Instructor/a';
+      case 'artist': return '🎨 Artista';
+      case 'volunteer': return '🤝 Voluntario/a';
+      case 'coordinator': return '📋 Coordinador/a';
+      case 'sponsor': return '💼 Patrocinador/a';
+      default: return user.user_type;
+    }
+  };
 
   return (
-    <nav className="border-b bg-card fixed top-0 left-0 right-0 z-50">
+    <nav className="border-b bg-card fixed top-0 left-0 right-0 z-50 shadow-sm">
       <div className="container mx-auto px-2 sm:px-4">
-        <div className="flex items-center justify-between h-16 sm:h-20 md:h-28">
+        <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Left side - Menu button (mobile) + Logo */}
           <div className="flex items-center space-x-2 sm:space-x-4">
-            {/* Hamburger Menu (mobile only) */}
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2"
-              >
-                {sidebarOpen ? (
-                  <X className="h-5 w-5" />
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
-              </Button>
-            )}
+            {/* Menu Toggle - Visible en todos los tamaños */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className={`p-2 border-2 transition-all duration-200 ${
+                sidebarOpen 
+                  ? 'border-purple-500 bg-purple-100 dark:bg-purple-900/50' 
+                  : 'border-gray-300 hover:border-purple-400'
+              }`}
+              title={sidebarOpen ? 'Cerrar menú lateral' : 'Abrir menú lateral'}
+            >
+              {sidebarOpen ? (
+                <X className="h-5 w-5 text-purple-600" />
+              ) : (
+                <Menu className="h-5 w-5 text-purple-600" />
+              )}
+            </Button>
             
-            {/* Logo - responsive sizes */}
-            <img 
-              src={currentLogo} 
-              alt="Aura" 
-              className="h-12 sm:h-16 md:h-24 w-auto cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => navigate("/feed")}
-            />
+            {/* Logo DAME */}
+            <div 
+              className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => navigate("/demo")}
+            >
+              <div className="flex space-x-1">
+                <Palette className="h-8 w-8 text-purple-600" />
+                <Music className="h-8 w-8 text-pink-600" />
+                <Heart className="h-8 w-8 text-red-500" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent hidden sm:block">
+                DAME Valencia
+              </span>
+            </div>
           </div>
 
           {/* Right side - Controls */}
           <div className="flex items-center space-x-1 sm:space-x-2">
-            {/* Language Selector - always visible but compact on small screens */}
+            {/* Navigation Links for Desktop */}
+            {!isMobile && (
+              <div className="hidden md:flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/demo")}
+                  className="flex items-center gap-2"
+                >
+                  <Home className="h-4 w-4" />
+                  Inicio
+                </Button>
+              </div>
+            )}
+
+            {/* WhatsApp Contact Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open('https://wa.me/34658236665?text=Hola%2C%20me%20gustar%C3%ADa%20informaci%C3%B3n%20sobre%20DAME%20Valencia', '_blank')}
+              className="flex items-center gap-2 p-2 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+              title="Contactar por WhatsApp"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span className="hidden lg:inline">WhatsApp</span>
+            </Button>
+
+            {/* Language Selector */}
             <LanguageSelector />
             
             {/* Theme Toggle */}
             <ThemeToggle />
 
-            {/* Simulation Dropdown - simplified on mobile */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-xs p-2">
-                  <Eye className="h-4 w-4" />
-                  <span className="hidden lg:inline ml-1">
-                    {simulatedType ? `Sim: ${simulatedType}` : 'View as'}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>View navigation as:</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleSimulateType('real')}>
-                  <User className="mr-2 h-4 w-4" />
-                  Real User Type
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleSimulateType('player')}>
-                  <Award className="mr-2 h-4 w-4" />
-                  Player
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSimulateType('coach')}>
-                  <Users className="mr-2 h-4 w-4" />
-                  Coach
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSimulateType('club')}>
-                  <Building2 className="mr-2 h-4 w-4" />
-                  Club
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSimulateType('agent')}>
-                  <User className="mr-2 h-4 w-4" />
-                  Agent
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSimulateType('sponsor')}>
-                  <Star className="mr-2 h-4 w-4" />
-                  Sponsor
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleSimulateType('investor')}>
-                  <Users className="mr-2 h-4 w-4" />
-                  Investor
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             {/* Profile Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center gap-2 p-2">
-                  <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">Profile</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Profile</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/profile")}>
-                  <User className="mr-2 h-4 w-4" />
-                  View Profile
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem onClick={() => navigate("/messages")}>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Messages
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem onClick={() => navigate("/connections")}>
-                  <Users className="mr-2 h-4 w-4" />
-                  Followers & Following
-                </DropdownMenuItem>
-                
-                <DropdownMenuSeparator />
-                
-                {/* Type-specific items */}
-                {userType === 'club' && (
-                  <DropdownMenuItem onClick={() => navigate("/club/referrals")}>
-                    <Building2 className="mr-2 h-4 w-4" />
-                    My Referrals
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center gap-2 p-2">
+                    {getUserTypeIcon()}
+                    <span className="hidden sm:inline">{user.full_name}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div>
+                      <div className="font-medium">{user.full_name}</div>
+                      <div className="text-sm text-muted-foreground">{getUserTypeLabel()}</div>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem onClick={() => navigate("/demo")}>
+                    <Home className="mr-2 h-4 w-4" />
+                    Dashboard
                   </DropdownMenuItem>
-                )}
-                
-                {userType === 'player' && (
-                  <DropdownMenuItem onClick={() => navigate("/player/referrals")}>
-                    <Award className="mr-2 h-4 w-4" />
-                    My Contracts
+                  
+                  <DropdownMenuItem onClick={() => navigate("/demo")}>
+                    <Users className="mr-2 h-4 w-4" />
+                    Comunidad
                   </DropdownMenuItem>
-                )}
-                
-                <DropdownMenuSeparator />
-                
-                {/* Referrer section */}
-                {isReferrer ? (
-                  <DropdownMenuItem onClick={() => navigate("/referrer/dashboard")}>
-                    <LayoutDashboard className="mr-2 h-4 w-4 text-yellow-500" />
-                    Referrer Dashboard
+                  
+                  <DropdownMenuItem onClick={() => navigate("/demo")}>
+                    <Star className="mr-2 h-4 w-4" />
+                    Proyectos DAME
                   </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={() => navigate("/referrer")}>
-                    <Star className="mr-2 h-4 w-4 text-yellow-500" />
-                    Become a Referrer
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem onClick={() => navigate("/demo")}>
+                    <User className="mr-2 h-4 w-4" />
+                    Mi Perfil
                   </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             
             {/* Logout Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="flex items-center gap-2 p-2"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden lg:inline">Logout</span>
-            </Button>
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-2 p-2 text-red-600 hover:text-red-700"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden lg:inline">Salir</span>
+              </Button>
+            )}
           </div>
         </div>
       </div>

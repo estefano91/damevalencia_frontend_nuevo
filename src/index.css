@@ -38,11 +38,11 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Aura brand colors */
-    --aura-blue: 222 47% 20%;
-    --aura-orange: 25 95% 53%;
-    --aura-gradient-start: 222 47% 20%;
-    --aura-gradient-end: 25 95% 53%;
+    /* DAME Valencia brand colors */
+    --dame-purple: 275 100% 60%;
+    --dame-pink: 320 100% 70%;
+    --dame-gradient-start: 275 100% 60%;
+    --dame-gradient-end: 320 100% 70%;
 
     /* Effects */
     --shadow-sm: 0 1px 2px 0 hsl(220 25% 15% / 0.05);
@@ -83,11 +83,11 @@ All colors MUST be HSL.
     --input: 220 20% 18%;
     --ring: 25 95% 53%;
 
-    /* Dark mode brand colors */
-    --aura-blue: 222 60% 60%;
-    --aura-orange: 25 95% 53%;
-    --aura-gradient-start: 222 60% 40%;
-    --aura-gradient-end: 25 95% 53%;
+    /* Dark mode DAME Valencia colors */
+    --dame-purple: 275 100% 70%;
+    --dame-pink: 320 100% 80%;
+    --dame-gradient-start: 275 100% 50%;
+    --dame-gradient-end: 320 100% 60%;
   }
 }
 
@@ -98,5 +98,40 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Ocultar scrollbar personalizado para el sidebar */
+@layer utilities {
+  .scrollbar-none {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;     /* Firefox */
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;             /* Safari and Chrome */
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thumb-purple-300 {
+    scrollbar-color: hsl(275 100% 80%) transparent;
+  }
+  
+  .scrollbar-track-transparent {
+    scrollbar-color: transparent transparent;
+  }
+}
+
+/* Estilos adicionales para DAME Valencia */
+@layer components {
+  .dame-gradient {
+    @apply bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400;
+  }
+  
+  .dame-text-gradient {
+    @apply bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent;
   }
 }

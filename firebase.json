@@ -14,7 +14,7 @@
     ],
     "headers": [
       {
-        "source": "**/*.@(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)",
+        "source": "**/*.@(js|jsx|ts|tsx|css|scss|woff2)",
         "headers": [
           {
             "key": "Cache-Control",
@@ -25,5 +25,3 @@
     ]
   }
 }
-
-
