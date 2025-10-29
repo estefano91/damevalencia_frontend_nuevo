@@ -15,7 +15,7 @@ import {
   ExternalLink,
   Music,
   Palette,
-  Handshake,
+  PersonStanding,
   HeartPulse,
   Castle,
   Zap,
@@ -114,7 +114,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const getCategoryIcon = (iconName: string, nameEs?: string) => {
     switch (iconName) {
       case 'music_note': return <Music className="h-5 w-5" />;
-      case 'sports_kabaddi': return <Handshake className="h-5 w-5" />;
+      case 'sports_kabaddi': return <PersonStanding className="h-5 w-5" />;
       case 'palette': return <Palette className="h-5 w-5" />;
       case 'castle': return <Castle className="h-5 w-5" />;
       case 'fitness_center': return <HeartPulse className="h-5 w-5" />;
@@ -124,7 +124,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
     // Heurística por nombre si el iconName no es distintivo
     const name = (nameEs || '').toLowerCase();
     if (name.includes('experienc')) return <Castle className="h-5 w-5" />;
-    if (name.includes('baile') || name.includes('dance')) return <Handshake className="h-5 w-5" />;
+    if (name.includes('baile') || name.includes('dance')) return <PersonStanding className="h-5 w-5" />;
     if (name.includes('deporte') || name.includes('fitness')) return <HeartPulse className="h-5 w-5" />;
     if (name.includes('música') || name.includes('musica') || name.includes('music')) return <Music className="h-5 w-5" />;
     if (name.includes('arte') || name.includes('cultura') || name.includes('art')) return <Palette className="h-5 w-5" />;
@@ -241,9 +241,9 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
               📧 admin@organizaciondame.org
             </a>
           </Button>
-          <Button variant="outline" asChild>
-            <a href="tel:+34644070282">
-              📞 (+34) 64 40 70 282
+          <Button variant="outline" asChild className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700">
+            <a href="https://wa.me/34658236665?text=Hola%2C%20me%20gustar%C3%ADa%20informaci%C3%B3n%20sobre%20DAME%20Valencia" target="_blank" rel="noopener noreferrer">
+              💬 WhatsApp
             </a>
           </Button>
         </div>
@@ -352,9 +352,15 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
         
         {/* Badge de precio sobre la imagen */}
         <div className="absolute top-3 right-3 flex flex-col gap-2">
-          <Badge variant={isFree ? "secondary" : "default"} className="bg-white/90 backdrop-blur-sm">
-            {formatEventPrice(event.price || '0')}
-          </Badge>
+          {isFree ? (
+            <Badge className="bg-green-600 hover:bg-green-700 text-white backdrop-blur-sm font-bold">
+              Gratuito
+            </Badge>
+          ) : (
+            <Badge variant="default" className="bg-white/90 backdrop-blur-sm">
+              {formatEventPrice(event.price || '0')}
+            </Badge>
+          )}
           {event.is_recurring_weekly && (
             <Badge className="bg-blue-600 text-white">
               <Repeat className="mr-1 h-3 w-3" />

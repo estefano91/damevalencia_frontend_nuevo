@@ -21,7 +21,9 @@ import {
   Phone,
   Mail,
   Repeat,
-  CalendarDays
+  CalendarDays,
+  Music,
+  Coffee
 } from "lucide-react";
 
 const EventDetail = () => {
@@ -32,7 +34,6 @@ const EventDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
-  const [selectedRecurringDate, setSelectedRecurringDate] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEventDetail = async () => {
@@ -41,7 +42,13 @@ const EventDetail = () => {
       setLoading(true);
       try {
         const response = await dameEventsAPI.getEventBySlug(slug);
+        console.log('RESPUESTA DE LA API TOTAL', response);
         if (response.success && response.data) {
+          if (response.data.is_recurring_weekly) {
+            console.log('RECURRENCE_START_TIME', response.data.recurrence_start_time);
+            console.log('RECURRENCE_END_TIME', response.data.recurrence_end_time);
+            console.log('RECURRENCE_WEEKDAY', response.data.recurrence_weekday);
+          }
           setEvent(response.data);
         } else {
           setError(response.error || 'Evento no encontrado');
@@ -58,16 +65,25 @@ const EventDetail = () => {
   }, [slug]);
 
   // Helper functions
+  const MADRID_TZ = 'Europe/Madrid';
+
   const formatDateTime = (dateString: string): string => {
+    if (!dateString) return 'Fecha por determinar';
+    
     try {
       const date = new Date(dateString);
+      // Validar que la fecha es válida (no es 1970 o NaN)
+      if (isNaN(date.getTime()) || date.getFullYear() < 2000) {
+        return 'Fecha inválida';
+      }
       return date.toLocaleDateString('es-ES', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: MADRID_TZ
       });
     } catch {
       return 'Fecha por determinar';
@@ -86,6 +102,98 @@ const EventDetail = () => {
     if (hours === 0) return `${remainingMinutes} minutos`;
     if (remainingMinutes === 0) return `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
     return `${hours}h ${remainingMinutes}min`;
+  };
+
+  const formatOnlyDate = (dateString?: string): string => {
+    if (!dateString) return 'Fecha por determinar';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime()) || date.getFullYear() < 2000) return 'Fecha inválida';
+      return date.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: MADRID_TZ
+      });
+    } catch {
+      return 'Fecha por determinar';
+    }
+  };
+
+  const formatOnlyTime = (dateString?: string): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime()) || date.getFullYear() < 2000) return '';
+      return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: MADRID_TZ });
+    } catch {
+      return '';
+    }
+  };
+
+  const formatTimeRange = (start?: string, end?: string): string => {
+    const from = formatOnlyTime(start);
+    const to = formatOnlyTime(end);
+    if (from && to) return `De ${from} a ${to}`;
+    if (from) return `A las ${from}`;
+    return '';
+  };
+
+  const formatTimeFromHHmmss = (timeString?: string): string => {
+    if (!timeString) return '';
+    try {
+      // Parsear formato HH:mm:ss a solo HH:mm
+      const parts = timeString.split(':');
+      if (parts.length >= 2) {
+        return `${parts[0]}:${parts[1]}`;
+      }
+      return timeString;
+    } catch {
+      return timeString;
+    }
+  };
+
+  const getWeekdayName = (weekday?: number): string => {
+    if (weekday === undefined || weekday === null) return '';
+    const weekdays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    // weekday es 0-6 donde 0=lunes, 6=domingo
+    return weekdays[weekday] || '';
+  };
+
+  const formatRecurringSchedule = (eventData: DameEventDetail): string => {
+    if (!eventData.recurrence_weekday || !eventData.recurrence_start_time) {
+      return 'Horario semanal por determinar';
+    }
+    const dayName = getWeekdayName(eventData.recurrence_weekday);
+    const startTime = formatTimeFromHHmmss(eventData.recurrence_start_time);
+    const endTime = formatTimeFromHHmmss(eventData.recurrence_end_time);
+    
+    if (endTime) {
+      return `Todos los ${dayName} de ${startTime} a ${endTime}`;
+    }
+    return `Todos los ${dayName} a las ${startTime}`;
+  };
+
+  const formatRecurringTimeOnly = (eventData: DameEventDetail): string => {
+    const startTime = formatTimeFromHHmmss(eventData.recurrence_start_time);
+    const endTime = formatTimeFromHHmmss(eventData.recurrence_end_time);
+    if (startTime && endTime) return `${startTime} - ${endTime}`;
+    return startTime || '';
+  };
+
+  const getProgramIconNode = (iconText?: string) => {
+    // Evitar mostrar palabras tipo "SCHEDULE" y mapear a íconos
+    const normalized = (iconText || '').toUpperCase();
+    if (!iconText) return <Clock className="h-4 w-4" />;
+    if (/^[\p{Emoji}\uFE0F\u200D]+$/u.test(iconText)) {
+      // Si es claramente un emoji, úsalo
+      return <span className="text-lg leading-none">{iconText}</span>;
+    }
+    if (normalized.includes('SCHEDULE')) return <CalendarDays className="h-4 w-4" />;
+    if (normalized.includes('BREAK') || normalized.includes('PAUSA')) return <Coffee className="h-4 w-4" />;
+    if (normalized.includes('MUSIC') || normalized.includes('CONCIERTO')) return <Music className="h-4 w-4" />;
+    return <Clock className="h-4 w-4" />;
   };
 
   const getAvailableSpots = (capacity?: number, registered?: number): number => {
@@ -182,9 +290,14 @@ const EventDetail = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Title and Summary */}
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-4 dame-text-gradient">
+              <h1 className="text-3xl md:text-4xl font-bold mb-2 dame-text-gradient">
                 {event.title_es}
               </h1>
+              {event.is_recurring_weekly && (
+                <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+                  📅 Este evento se repite semanalmente
+                </p>
+              )}
               {event.summary_es && (
                 <p className="text-xl text-muted-foreground mb-4">
                   {event.summary_es}
@@ -232,7 +345,7 @@ const EventDetail = () => {
                       .sort((a, b) => a.sort_order - b.sort_order)
                       .map(program => (
                         <div key={program.id} className="flex items-start gap-4 p-4 rounded-lg border">
-                          <div className="text-2xl">{program.icon || '🕐'}</div>
+                          <div className="text-2xl">{getProgramIconNode(program.icon)}</div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-medium text-purple-600">{program.time}</span>
@@ -297,103 +410,6 @@ const EventDetail = () => {
               </Card>
             )}
 
-            {/* Fechas disponibles para eventos recurrentes */}
-            {event.is_recurring_weekly && event.recurring_info && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Repeat className="h-5 w-5 text-blue-600" />
-                    Fechas disponibles
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {event.recurring_info.schedule_info}
-                    {event.recurring_info.total_sessions && (
-                      <span className="ml-2">• Total: {event.recurring_info.total_sessions} sesiones</span>
-                    )}
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {event.recurring_info.next_dates.map((eventDate) => (
-                      <div
-                        key={eventDate.id}
-                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedRecurringDate === eventDate.id
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-                            : eventDate.is_full
-                            ? 'border-gray-200 bg-gray-50 dark:bg-gray-800/30 cursor-not-allowed'
-                            : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/20'
-                        }`}
-                        onClick={() => {
-                          if (!eventDate.is_full) {
-                            setSelectedRecurringDate(
-                              selectedRecurringDate === eventDate.id ? null : eventDate.id
-                            );
-                          }
-                        }}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <CalendarDays className="h-4 w-4 text-blue-600" />
-                            <span className="font-medium">
-                              {formatDateTime(eventDate.date)}
-                            </span>
-                          </div>
-                          {eventDate.is_full ? (
-                            <Badge variant="destructive" className="text-xs">
-                              Completo
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              {eventDate.available_spots} plazas
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        {eventDate.registration_deadline && (
-                          <p className="text-xs text-muted-foreground">
-                            Inscripción hasta: {formatDateTime(eventDate.registration_deadline)}
-                          </p>
-                        )}
-                        
-                        {selectedRecurringDate === eventDate.id && (
-                          <div className="mt-3 pt-3 border-t border-blue-200">
-                            <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
-                              ✓ Fecha seleccionada para reservar
-                            </p>
-                            <Button 
-                              size="sm" 
-                              className="w-full bg-blue-600 hover:bg-blue-700"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (event.whatsapp_contact) {
-                                  const message = `Hola, me gustaría reservar para "${event.title_es}" el ${formatDateTime(eventDate.date)}`;
-                                  window.open(
-                                    `https://wa.me/${event.whatsapp_contact.replace(/\+/, '').replace(/\s/g, '')}?text=${encodeURIComponent(message)}`,
-                                    '_blank'
-                                  );
-                                }
-                              }}
-                            >
-                              <MessageCircle className="mr-2 h-3 w-3" />
-                              Reservar esta fecha
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {!selectedRecurringDate && (
-                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                        💡 Selecciona una fecha específica para reservar tu plaza
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
 
             {/* FAQs */}
             {event.faqs && event.faqs.length > 0 && (
@@ -441,58 +457,54 @@ const EventDetail = () => {
                   <CardTitle>Detalles del evento</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                {/* Date & Time */}
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-purple-600" />
-                  <div>
-                    <p className="font-medium">
-                      {event.is_recurring_weekly ? "Horario semanal" : "Fecha y hora"}
-                    </p>
-                    {event.is_recurring_weekly && event.recurring_info ? (
+                {/* Date */}
+                {event.is_recurring_weekly ? (
+                  <>
+                    {/* Día de la semana */}
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-5 w-5 text-purple-600" />
                       <div>
-                        <p className="text-sm text-blue-600 font-medium">
-                          <Repeat className="inline h-3 w-3 mr-1" />
-                          {event.recurring_info.schedule_info}
-                        </p>
-                        {selectedRecurringDate && (
-                          <p className="text-sm text-green-600 font-medium mt-1">
-                            ✓ Fecha seleccionada: {
-                              event.recurring_info.next_dates
-                                .find(d => d.id === selectedRecurringDate)
-                                ?.date ? formatDateTime(
-                                  event.recurring_info.next_dates
-                                    .find(d => d.id === selectedRecurringDate)!.date
-                                ) : ''
-                            }
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div>
+                        <p className="font-medium">Día</p>
                         <p className="text-sm text-muted-foreground">
-                          {formatDateTime(event.start_datetime)}
+                          {`Todos los ${getWeekdayName(event.recurrence_weekday)}`}
                         </p>
-                        {event.end_datetime && (
-                          <p className="text-sm text-muted-foreground">
-                            Hasta: {formatDateTime(event.end_datetime)}
-                          </p>
-                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Duration */}
-                {event.duration_minutes && (
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="font-medium">Duración</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDuration(event.duration_minutes)}
-                      </p>
                     </div>
-                  </div>
+
+                    {/* Horario */}
+                    <div className="flex items-center gap-3">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium">Horario</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatRecurringTimeOnly(event)}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-5 w-5 text-purple-600" />
+                      <div>
+                        <p className="font-medium">Fecha</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatOnlyDate(event.start_datetime)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Time */}
+                    <div className="flex items-center gap-3">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium">Horario</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatTimeRange(event.start_datetime, event.end_datetime)}
+                        </p>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 {/* Location */}
@@ -538,20 +550,19 @@ const EventDetail = () => {
                   <Euro className="h-5 w-5 text-purple-600" />
                   <div>
                     <p className="font-medium">Precio</p>
-                    <p className="text-lg font-bold dame-text-gradient">
-                      {formatPrice(event.price_amount, event.price_currency)}
-                    </p>
+                    {parseFloat(event.price_amount || '0') === 0 ? (
+                      <Badge className="bg-green-600 hover:bg-green-700 text-white text-lg px-3 py-1">
+                        Gratuito
+                      </Badge>
+                    ) : (
+                      <p className="text-lg font-bold dame-text-gradient">
+                        {formatPrice(event.price_amount, event.price_currency)}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                {/* Recurring */}
-                {event.is_recurring_weekly && (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                      📅 Este evento se repite semanalmente
-                    </p>
-                  </div>
-                )}
+                {/* Recurring notice movido bajo el título */}
                 </CardContent>
               </Card>
 
@@ -565,15 +576,12 @@ const EventDetail = () => {
                 {event.whatsapp_contact && (
                   <Button 
                     className="w-full dame-gradient"
-                    disabled={event.is_recurring_weekly && !selectedRecurringDate}
                     onClick={() => {
                       let message = `Hola, me gustaría reservar para el evento "${event.title_es}"`;
-                      
-                      if (event.is_recurring_weekly && selectedRecurringDate && event.recurring_info) {
-                        const selectedDate = event.recurring_info.next_dates.find(d => d.id === selectedRecurringDate);
-                        if (selectedDate) {
-                          message += ` el ${formatDateTime(selectedDate.date)}`;
-                        }
+                      if (event.is_recurring_weekly) {
+                        message += ` (${formatRecurringSchedule(event)})`;
+                      } else {
+                        message += ` el ${formatOnlyDate(event.start_datetime)} ${formatTimeRange(event.start_datetime, event.end_datetime)}`;
                       }
                       
                       window.open(
@@ -583,10 +591,7 @@ const EventDetail = () => {
                     }}
                   >
                     <MessageCircle className="mr-2 h-4 w-4" />
-                    {event.is_recurring_weekly 
-                      ? (selectedRecurringDate ? 'Reservar fecha seleccionada' : 'Selecciona una fecha primero')
-                      : 'Reservar por WhatsApp'
-                    }
+                    Reservar por WhatsApp
                   </Button>
                 )}
 

@@ -113,7 +113,10 @@ export interface DameEventDetail {
   start_datetime: string;
   end_datetime?: string;
   is_recurring_weekly: boolean;
-  recurring_info?: RecurringEventInfo; // Info adicional para eventos recurrentes
+  recurrence_start_time?: string; // Formato HH:mm:ss (ej: "19:00:00")
+  recurrence_end_time?: string; // Formato HH:mm:ss (ej: "00:30:00")
+  recurrence_weekday?: number; // 0 = lunes, 1 = martes, ..., 6 = domingo
+  recurring_info?: RecurringEventInfo; // Info adicional para eventos recurrentes (legacy)
   place: EventPlace;
   categories: EventCategory[];
   tags: EventTag[];
@@ -173,8 +176,18 @@ export class DameEventsAPI {
         return this.getDemoData<T>(endpoint);
       }
 
-      const data = await response.json();
-      console.log('✅ Events loaded from DAME API with images:', data.length || 'N/A');
+      let data = await response.json();
+      
+      // Procesar eventos detallados para asegurar que recurring_info está correcto
+      if (endpoint.includes('/events/') && !endpoint.includes('/by-category/')) {
+        // Es un evento detallado (objeto único)
+        if (data && typeof data === 'object' && !Array.isArray(data) && data.is_recurring_weekly) {
+          data = this.processRecurringEvent(data);
+        }
+        console.log('✅ Event detail loaded from DAME API');
+      } else {
+        console.log('✅ Events loaded from DAME API with images:', data.length || 'N/A');
+      }
       
       return {
         success: true,
@@ -433,6 +446,60 @@ export class DameEventsAPI {
     return this.makeRequest<EventsByCategory>(`/events/by-category/${categoryId}/`);
   }
 
+  // Procesar evento recurrente para asegurar datos válidos
+  private processRecurringEvent(event: DameEventDetail): DameEventDetail {
+    // Validar fechas de inicio y fin
+    if (!event.start_datetime) {
+      console.warn('⚠️ Evento recurrente sin start_datetime:', event.slug);
+      return event;
+    }
+
+    const startDate = new Date(event.start_datetime);
+    if (isNaN(startDate.getTime()) || startDate.getFullYear() < 2000) {
+      console.warn('⚠️ Fecha de inicio inválida en evento recurrente:', event.slug, event.start_datetime);
+      return event;
+    }
+
+    // Si no existe recurring_info o está incompleto, generarlo
+    if (!event.recurring_info || !event.recurring_info.schedule_info) {
+      const schedule_info = formatRecurringSchedule(
+        event.start_datetime,
+        event.end_datetime
+      );
+      
+      if (!event.recurring_info) {
+        event.recurring_info = {
+          schedule_info,
+          next_dates: generateRecurringDates(event.start_datetime),
+        };
+      } else {
+        event.recurring_info.schedule_info = schedule_info;
+        // Regenerar fechas si están vacías o inválidas
+        if (!event.recurring_info.next_dates || event.recurring_info.next_dates.length === 0) {
+          event.recurring_info.next_dates = generateRecurringDates(event.start_datetime);
+        }
+      }
+    } else {
+      // Validar y limpiar fechas existentes
+      if (event.recurring_info.next_dates) {
+        event.recurring_info.next_dates = event.recurring_info.next_dates.filter(date => {
+          const d = new Date(date.date);
+          return !isNaN(d.getTime()) && d.getFullYear() >= 2000;
+        });
+      }
+
+      // Asegurar que schedule_info incluye hora de fin si hay end_datetime
+      if (event.end_datetime && !event.recurring_info.schedule_info.includes(' a ')) {
+        event.recurring_info.schedule_info = formatRecurringSchedule(
+          event.start_datetime,
+          event.end_datetime
+        );
+      }
+    }
+
+    return event;
+  }
+
   // NUEVO: Obtener detalles completos de un evento por slug
   private getEventDetailDemo(slug: string): ApiResponse<DameEventDetail> {
     // Datos demo detallados que simulan la respuesta de /api/events/{slug}/
@@ -578,7 +645,7 @@ export class DameEventsAPI {
         is_recurring_weekly: true,
         recurring_info: {
           next_dates: generateRecurringDates("2025-11-10T18:00:00+01:00"),
-          schedule_info: formatRecurringSchedule("2025-11-10T18:00:00+01:00"),
+          schedule_info: formatRecurringSchedule("2025-11-10T18:00:00+01:00", "2025-11-10T19:30:00+01:00"),
           total_sessions: 12 // 3 meses de clases
         },
         place: {
@@ -694,7 +761,7 @@ export class DameEventsAPI {
         is_recurring_weekly: true,
         recurring_info: {
           next_dates: generateRecurringDates("2025-11-04T08:00:00+01:00"),
-          schedule_info: formatRecurringSchedule("2025-11-04T08:00:00+01:00"),
+          schedule_info: formatRecurringSchedule("2025-11-04T08:00:00+01:00", "2025-11-04T09:00:00+01:00"),
           total_sessions: 8 // 2 meses de clases
         },
         place: {
@@ -823,7 +890,8 @@ export const formatEventDate = (dateString: string | null | undefined): string =
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Europe/Madrid'
     });
   } catch (error) {
     return 'Error en fecha';
@@ -856,38 +924,85 @@ export const isEventSoldOut = (event: DameEvent | null | undefined): boolean => 
 // Helper para generar fechas futuras de eventos recurrentes
 export const generateRecurringDates = (baseDate: string, weeksCount: number = 8): EventDate[] => {
   const dates: EventDate[] = [];
-  const startDate = new Date(baseDate);
   
-  for (let i = 0; i < weeksCount; i++) {
-    const nextDate = new Date(startDate);
-    nextDate.setDate(startDate.getDate() + (i * 7)); // Agregar semanas
+  if (!baseDate) return dates;
+  
+  try {
+    const startDate = new Date(baseDate);
     
-    // Solo incluir fechas futuras
-    if (nextDate > new Date()) {
-      dates.push({
-        id: `${nextDate.toISOString().split('T')[0]}`,
-        date: nextDate.toISOString(),
-        available_spots: Math.floor(Math.random() * 10) + 5, // Demo: 5-15 plazas
-        is_full: Math.random() < 0.1, // Demo: 10% probabilidad de estar lleno
-        registration_deadline: new Date(nextDate.getTime() - 24 * 60 * 60 * 1000).toISOString() // 24h antes
-      });
+    // Validar que la fecha base es válida
+    if (isNaN(startDate.getTime()) || startDate.getFullYear() < 2000) {
+      console.warn('⚠️ Fecha base inválida para evento recurrente:', baseDate);
+      return dates;
     }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Resetear horas para comparación
+    
+    for (let i = 0; i < weeksCount; i++) {
+      const nextDate = new Date(startDate);
+      nextDate.setDate(startDate.getDate() + (i * 7)); // Agregar semanas
+      
+      // Validar que la fecha generada es válida
+      if (isNaN(nextDate.getTime()) || nextDate.getFullYear() < 2000) {
+        continue;
+      }
+      
+      // Solo incluir fechas futuras
+      const nextDateOnly = new Date(nextDate);
+      nextDateOnly.setHours(0, 0, 0, 0);
+      
+      if (nextDateOnly >= today) {
+        dates.push({
+          id: `${nextDate.toISOString().split('T')[0]}`,
+          date: nextDate.toISOString(),
+          available_spots: Math.floor(Math.random() * 10) + 5, // Demo: 5-15 plazas
+          is_full: Math.random() < 0.1, // Demo: 10% probabilidad de estar lleno
+          registration_deadline: new Date(nextDate.getTime() - 24 * 60 * 60 * 1000).toISOString() // 24h antes
+        });
+      }
+    }
+    
+    return dates.slice(0, 6); // Máximo 6 fechas próximas
+  } catch (error) {
+    console.error('❌ Error generando fechas recurrentes:', error);
+    return dates;
   }
-  
-  return dates.slice(0, 6); // Máximo 6 fechas próximas
 };
 
 // Helper para formatear información de horario recurrente
-export const formatRecurringSchedule = (dateString: string): string => {
+export const formatRecurringSchedule = (startDateString: string, endDateString?: string): string => {
   try {
-    const date = new Date(dateString);
-    const dayName = date.toLocaleDateString('es-ES', { weekday: 'long' });
-    const time = date.toLocaleTimeString('es-ES', { 
+    const startDate = new Date(startDateString);
+    
+    // Validar fecha de inicio
+    if (isNaN(startDate.getTime()) || startDate.getFullYear() < 2000) {
+      return 'Horario semanal por determinar';
+    }
+    
+    const dayName = startDate.toLocaleDateString('es-ES', { weekday: 'long', timeZone: 'Europe/Madrid' });
+    const startTime = startDate.toLocaleTimeString('es-ES', { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: false 
+      hour12: false,
+      timeZone: 'Europe/Madrid'
     });
-    return `Todos los ${dayName} a las ${time}`;
+    
+    // Si hay hora de fin, formatear ambos
+    if (endDateString) {
+      const endDate = new Date(endDateString);
+      if (!isNaN(endDate.getTime()) && endDate.getFullYear() >= 2000) {
+        const endTime = endDate.toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false,
+          timeZone: 'Europe/Madrid'
+        });
+        return `Todos los ${dayName} de ${startTime} a ${endTime}`;
+      }
+    }
+    
+    return `Todos los ${dayName} a las ${startTime}`;
   } catch {
     return 'Horario semanal por determinar';
   }

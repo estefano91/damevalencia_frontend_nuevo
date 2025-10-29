@@ -79,7 +79,7 @@ const Navigation = ({ isMobile }: NavigationProps) => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/demo")}
+              onClick={() => navigate("/comunidad")}
               className="flex items-center gap-2 text-pink-600 hover:text-pink-700 hover:bg-pink-50 dark:hover:bg-pink-900/20"
             >
               <Users className="h-4 w-4" />
@@ -87,20 +87,8 @@ const Navigation = ({ isMobile }: NavigationProps) => {
             </Button>
           </div>
 
-          {/* Right side - WhatsApp + Theme + Language + Mi Perfil */}
+          {/* Right side - Theme + Language + Mi Perfil */}
           <div className="flex items-center space-x-2">
-            {/* WhatsApp Contact Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.open('https://wa.me/34658236665?text=Hola%2C%20me%20gustar%C3%ADa%20informaci%C3%B3n%20sobre%20DAME%20Valencia', '_blank')}
-              className="flex items-center gap-2 p-2 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
-              title="Contactar por WhatsApp"
-            >
-              <MessageCircle className="h-4 w-4" />
-              <span className="hidden lg:inline">WhatsApp</span>
-            </Button>
-
             {/* Theme Toggle */}
             <ThemeToggle />
 

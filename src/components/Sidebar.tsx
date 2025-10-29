@@ -6,13 +6,13 @@ import {
   Paintbrush2,
   Dumbbell,
   BrainCircuit,
-  Filter,
+  List,
   PartyPopper,
   ChevronLeft,
   ChevronRight,
   HeartPulse
 } from "lucide-react";
-import { Handshake, Castle } from "lucide-react";
+import { PersonStanding, Castle } from "lucide-react";
 
 interface SidebarProps {
   userType?: string | null;
@@ -35,7 +35,7 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
   const getIconForCategory = (iconName: string, nameEs?: string) => {
     const iconMap: Record<string, any> = {
       'music_note': Music2, // 🎵 Música - Icono más dinámico
-      'sports_kabaddi': Handshake, // 🤝 Baile - Handshake
+      'sports_kabaddi': PersonStanding, // 💃 Baile - PersonStanding
       'palette': Paintbrush2, // 🎨 Arte - Pincel más artístico
       'fitness_center': HeartPulse, // 🫀 Deporte - Pulso
       'psychology': BrainCircuit // 🧠 Bienestar Mental - Cerebro con circuitos
@@ -44,7 +44,7 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
     // Heurística por nombre cuando el backend no envía icono coherente
     const name = (nameEs || '').toLowerCase();
     if (name.includes('experienc')) return Castle;
-    if (name.includes('baile') || name.includes('dance')) return Handshake;
+    if (name.includes('baile') || name.includes('dance')) return PersonStanding;
     if (name.includes('deporte') || name.includes('fitness')) return HeartPulse;
     if (name.includes('música') || name.includes('musica') || name.includes('music')) return Music2;
     if (name.includes('arte') || name.includes('cultura') || name.includes('art')) return Paintbrush2;
@@ -154,7 +154,7 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
                 }`}
                 onClick={() => handleCategoryFilter(null)}
               >
-                <Filter className={`mr-3 h-5 w-5 ${selectedCategory === null ? 'text-white' : 'text-purple-600'}`} />
+                <List className={`mr-3 h-5 w-5 ${selectedCategory === null ? 'text-white' : 'text-purple-600'}`} />
                 <div className="text-left">
                   <div className={`font-bold text-sm ${selectedCategory === null ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                     Todos los eventos
@@ -228,7 +228,7 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
             onClick={() => handleCategoryFilter(null)}
             title="Todos los eventos"
           >
-            <Filter className={`h-5 w-5 ${selectedCategory === null ? 'text-white' : 'text-purple-600'}`} />
+            <List className={`h-5 w-5 ${selectedCategory === null ? 'text-white' : 'text-purple-600'}`} />
           </Button>
 
           {/* Iconos de Categorías verticales */}
