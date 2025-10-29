@@ -7,11 +7,12 @@ import {
   Dumbbell,
   BrainCircuit,
   Filter,
-  X,
   PartyPopper,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  HeartPulse
 } from "lucide-react";
+import { Handshake, Castle } from "lucide-react";
 
 interface SidebarProps {
   userType?: string | null;
@@ -31,15 +32,23 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 
   // Mapear iconos de la API a iconos más representativos y llamativos
-  const getIconForCategory = (iconName: string) => {
+  const getIconForCategory = (iconName: string, nameEs?: string) => {
     const iconMap: Record<string, any> = {
       'music_note': Music2, // 🎵 Música - Icono más dinámico
-      'sports_kabaddi': PartyPopper, // 💃 Baile - Icono de fiesta y celebración
+      'sports_kabaddi': Handshake, // 🤝 Baile - Handshake
       'palette': Paintbrush2, // 🎨 Arte - Pincel más artístico
-      'fitness_center': Dumbbell, // ⚡ Fitness - Pesa para ejercicio
+      'fitness_center': HeartPulse, // 🫀 Deporte - Pulso
       'psychology': BrainCircuit // 🧠 Bienestar Mental - Cerebro con circuitos
     };
-    return iconMap[iconName] || Music2;
+    if (iconMap[iconName]) return iconMap[iconName];
+    // Heurística por nombre cuando el backend no envía icono coherente
+    const name = (nameEs || '').toLowerCase();
+    if (name.includes('experienc')) return Castle;
+    if (name.includes('baile') || name.includes('dance')) return Handshake;
+    if (name.includes('deporte') || name.includes('fitness')) return HeartPulse;
+    if (name.includes('música') || name.includes('musica') || name.includes('music')) return Music2;
+    if (name.includes('arte') || name.includes('cultura') || name.includes('art')) return Paintbrush2;
+    return Music2;
   };
 
   // Colores sólidos coherentes con la paleta DAME
@@ -130,22 +139,7 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
       {/* Contenido cuando está expandido */}
       {sidebarOpen && (
         <>
-          {/* Header con botón limpiar filtro */}
-          {selectedCategory && (
-            <div className="mb-4 px-3 pt-4">
-              <div className="flex justify-start">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full"
-                  onClick={() => handleCategoryFilter(null)}
-                  title="Limpiar filtro"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* Sin botón de limpiar filtro; usar "Todos los eventos" */}
 
           {/* Filtros por Categoría */}
           <div className="flex-1 min-h-0 px-3 pt-4">
@@ -174,7 +168,7 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
               {/* Botones de Categorías */}
               <div className="space-y-2 flex-1 min-h-0 overflow-y-auto">
                 {availableCategories.map((category) => {
-                  const CategoryIcon = getIconForCategory(category.icon);
+                  const CategoryIcon = getIconForCategory(category.icon, category.name_es);
                   const colors = getCategoryColors(category.id);
                   const isSelected = selectedCategory === category.id;
                   
@@ -239,7 +233,7 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
 
           {/* Iconos de Categorías verticales */}
           {availableCategories.map((category) => {
-            const CategoryIcon = getIconForCategory(category.icon);
+            const CategoryIcon = getIconForCategory(category.icon, category.name_es);
             const colors = getCategoryColors(category.id);
             const isSelected = selectedCategory === category.id;
             

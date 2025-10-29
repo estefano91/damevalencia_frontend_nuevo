@@ -295,3 +295,5 @@ const getIconForCategory = (iconName: string) => {
 ## 📝 **ARCHIVOS MODIFICADOS:**
 - **`src/components/Sidebar.tsx`** → Iconos minimizados + limpieza WhatsApp/Theme
 - **`src/components/Navigation.tsx`** → WhatsApp + ThemeToggle agregados
+
+

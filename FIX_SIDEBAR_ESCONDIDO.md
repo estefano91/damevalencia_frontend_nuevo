@@ -190,3 +190,5 @@ Al cambiar de `overflow-y-auto` a `overflow-hidden` y modificar la estructura de
 **El sidebar ahora es completamente funcional y todos los botones son siempre visibles sin problemas de ocultamiento.**
 
 **Prueba la funcionalidad mejorada en: http://localhost:8080/** 🚀✨
+
+

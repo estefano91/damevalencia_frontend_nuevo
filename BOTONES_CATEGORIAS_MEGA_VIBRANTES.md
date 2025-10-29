@@ -204,3 +204,5 @@ className="hover:scale-110 hover:animate-bounce hover:shadow-2xl"
 # 🎭 **¡Los botones ya no están escondidos y son imposibles de ignorar!** ✨
 
 **Prueba la nueva experiencia súper vibrante en: http://localhost:8080/**
+
+

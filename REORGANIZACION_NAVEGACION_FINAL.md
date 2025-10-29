@@ -229,3 +229,5 @@ space-x-3 sm:space-x-6
 ## 📝 **ARCHIVOS MODIFICADOS:**
 - **`src/components/Sidebar.tsx`** → Botón WhatsApp verde agregado
 - **`src/components/Navigation.tsx`** → Mi Perfil movido + Logo agrandado
+
+

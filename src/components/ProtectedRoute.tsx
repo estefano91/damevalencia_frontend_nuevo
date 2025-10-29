@@ -5,9 +5,10 @@ import AppLayout from "./AppLayout";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  hideSidebar?: boolean;
 }
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, hideSidebar = false }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
 
   // En modo desarrollo, no mostrar loading y siempre permitir acceso
@@ -24,7 +25,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   //   return <Navigate to="/auth" replace />;
   // }
 
-  return <AppLayout>{children}</AppLayout>;
+  return <AppLayout hideSidebar={hideSidebar}>{children}</AppLayout>;
 };
 
 export default ProtectedRoute;

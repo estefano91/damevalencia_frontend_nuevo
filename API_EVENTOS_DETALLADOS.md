@@ -265,3 +265,5 @@ getAvailableSpots(capacity, registered): number
 
 **📞 Contacto Técnico**: admin@organizaciondame.org  
 **💬 WhatsApp**: (+34) 658 236 665
+
+

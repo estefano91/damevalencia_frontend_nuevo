@@ -30,7 +30,7 @@ const App = () => (
                   <Route 
                     path="/eventos/:slug" 
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute hideSidebar>
                         <EventDetail />
                       </ProtectedRoute>
                     } 

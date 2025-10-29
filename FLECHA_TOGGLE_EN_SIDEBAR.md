@@ -262,3 +262,5 @@ interface SidebarProps {
 - **`src/components/Sidebar.tsx`** → Flecha y toggle agregados
 - **`src/components/Navigation.tsx`** → Toggle removido, interfaz limpia
 - **`src/components/AppLayout.tsx`** → Props actualizadas para conectividad
+
+

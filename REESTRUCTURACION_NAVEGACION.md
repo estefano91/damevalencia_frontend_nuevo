@@ -236,3 +236,5 @@
 2. **`src/components/Navigation.tsx`** → Agregada navegación completa + dropdown Mi Perfil
 3. **Imports nuevos**: Avatar, DropdownMenu components
 4. **Rutas preparadas**: /perfil, /mensajes, /notificaciones, /configuracion
+
+

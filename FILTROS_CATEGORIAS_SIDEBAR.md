@@ -178,3 +178,5 @@ Visual: Botón "Baile" activo (rosa), icono Heart destacado
 
 **🌟 ¡Los filtros por categorías están funcionando perfectamente!**
 **Prueba la funcionalidad en http://localhost:8080/ 🎭✨**
+
+

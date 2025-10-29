@@ -366,3 +366,5 @@ export interface RecurrencePattern {
 
 **📞 Contacto**: admin@organizaciondame.org  
 **💬 WhatsApp**: (+34) 658 236 665
+
+

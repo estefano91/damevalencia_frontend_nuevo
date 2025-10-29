@@ -15,7 +15,9 @@ import {
   ExternalLink,
   Music,
   Palette,
-  Heart,
+  Handshake,
+  HeartPulse,
+  Castle,
   Zap,
   Brain,
   User,
@@ -109,15 +111,24 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
     }
   };
 
-  const getCategoryIcon = (iconName: string) => {
+  const getCategoryIcon = (iconName: string, nameEs?: string) => {
     switch (iconName) {
       case 'music_note': return <Music className="h-5 w-5" />;
-      case 'sports_kabaddi': return <Heart className="h-5 w-5" />;
+      case 'sports_kabaddi': return <Handshake className="h-5 w-5" />;
       case 'palette': return <Palette className="h-5 w-5" />;
-      case 'fitness_center': return <Zap className="h-5 w-5" />;
+      case 'castle': return <Castle className="h-5 w-5" />;
+      case 'fitness_center': return <HeartPulse className="h-5 w-5" />;
       case 'psychology': return <Brain className="h-5 w-5" />;
       default: return <User className="h-5 w-5" />;
     }
+    // Heurística por nombre si el iconName no es distintivo
+    const name = (nameEs || '').toLowerCase();
+    if (name.includes('experienc')) return <Castle className="h-5 w-5" />;
+    if (name.includes('baile') || name.includes('dance')) return <Handshake className="h-5 w-5" />;
+    if (name.includes('deporte') || name.includes('fitness')) return <HeartPulse className="h-5 w-5" />;
+    if (name.includes('música') || name.includes('musica') || name.includes('music')) return <Music className="h-5 w-5" />;
+    if (name.includes('arte') || name.includes('cultura') || name.includes('art')) return <Palette className="h-5 w-5" />;
+    return <User className="h-5 w-5" />;
   };
 
   const getCategoryColor = (categoryId: number) => {
@@ -178,16 +189,18 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-3xl font-bold mb-4 dame-text-gradient">
-          Eventos de DAME Valencia
-        </h2>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Descubre las próximas actividades organizadas por nuestra comunidad. 
-          Arte, música, baile, bienestar y mucho más te esperan en Valencia.
-        </p>
-      </div>
+      {/* Header solo en "Todos los eventos" */}
+      {selectedCategoryId === null && (
+        <div className="text-center">
+          <h2 className="text-3xl font-bold mb-4 dame-text-gradient">
+            Eventos de DAME Valencia
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Descubre las próximas actividades organizadas por nuestra comunidad. 
+            Arte, música, baile, bienestar y mucho más te esperan en Valencia.
+          </p>
+        </div>
+      )}
 
       {/* Eventos por categoría (incluye recurrentes y únicos) - Filtrados por sidebar */}
       {filteredEventsByCategory.length > 0 ? (
@@ -196,7 +209,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
             key={categoryData.category.id}
             categoryData={categoryData}
             categoryColor={getCategoryColor(categoryData.category.id)}
-            categoryIcon={getCategoryIcon(categoryData.category.icon)}
+            categoryIcon={getCategoryIcon(categoryData.category.icon, categoryData.category.name_es)}
             maxEvents={maxEventsPerCategory}
           />
         ))

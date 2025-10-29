@@ -275,3 +275,5 @@ sticky top-24 sm:top-28 md:top-32
 - **0 errores de linting** - Código limpio y funcional
 - **100% responsive** - Funciona en todos los dispositivos
 - **UX optimizada** - Interfaz más intuitiva y limpia
+
+

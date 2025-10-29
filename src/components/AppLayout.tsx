@@ -33,9 +33,10 @@ export const useCategoryFilter = () => {
 
 interface AppLayoutProps {
   children: React.ReactNode;
+  hideSidebar?: boolean;
 }
 
-const AppLayout = ({ children }: AppLayoutProps) => {
+const AppLayout = ({ children, hideSidebar = false }: AppLayoutProps) => {
   const { user } = useAuth();
   const [userType, setUserType] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true); // Sidebar abierto por defecto
@@ -74,7 +75,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         
         <div className="flex">
         {/* Sidebar - Desktop */}
-        {!isMobile && (
+        {!hideSidebar && !isMobile && (
           <div className={`fixed top-20 sm:top-24 md:top-28 left-0 h-[calc(100vh-5rem)] sm:h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] bg-card border-r shadow-lg transition-all duration-300 z-40 ${
             sidebarOpen ? 'w-64' : 'w-12'
           }`}>
@@ -88,8 +89,21 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           </div>
         )}
 
-        {/* Sidebar - Mobile con overlay */}
-        {isMobile && sidebarOpen && (
+        {/* Sidebar - Mobile: rail siempre visible; overlay al expandir */}
+        {!hideSidebar && isMobile && !sidebarOpen && (
+          <div className="fixed top-20 left-0 h-[calc(100vh-5rem)] w-12 bg-card border-r shadow-lg z-40">
+            <Sidebar
+              userType={userType}
+              onCategoryFilter={setSelectedCategoryId}
+              availableCategories={availableCategories}
+              sidebarOpen={false}
+              setSidebarOpen={setSidebarOpen}
+            />
+          </div>
+        )}
+
+        {/* Sidebar - Mobile con overlay cuando está expandido */}
+        {!hideSidebar && isMobile && sidebarOpen && (
           <>
             <div
               className="fixed inset-0 bg-black bg-opacity-50 z-30 top-20"
@@ -109,7 +123,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
         {/* Main content con margin automático */}
         <main className={`flex-1 pt-20 sm:pt-24 md:pt-28 min-h-screen transition-all duration-300 ${
-          !isMobile ? (sidebarOpen ? 'ml-64' : 'ml-12') : 'ml-0'
+          hideSidebar
+            ? 'ml-0'
+            : isMobile
+              ? (sidebarOpen ? 'ml-0' : 'ml-12')
+              : (sidebarOpen ? 'ml-64' : 'ml-12')
         }`}>
             <div className="container mx-auto px-4 py-6">
               {children}

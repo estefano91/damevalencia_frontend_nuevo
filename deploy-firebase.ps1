@@ -1,7 +1,7 @@
 # Script de Deploy a Firebase Hosting
-# AURA Sports
+# DAME Valencia Frontend
 
-Write-Host "🚀 AURA Sports - Firebase Deploy" -ForegroundColor Cyan
+Write-Host "🚀 DAME Valencia - Firebase Deploy" -ForegroundColor Cyan
 Write-Host ""
 
 # Paso 1: Verificar que estás en el directorio correcto
@@ -65,7 +65,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ ¡Despliegue exitoso!" -ForegroundColor Green
     Write-Host ""
     Write-Host "🌐 Tu aplicación estará disponible en:" -ForegroundColor Cyan
-    Write-Host "   https://aura-sports-app.web.app" -ForegroundColor White
+    Write-Host "   https://damevalencia-nuevo.web.app" -ForegroundColor White
 } else {
     Write-Host "❌ Error en el despliegue" -ForegroundColor Red
     exit 1

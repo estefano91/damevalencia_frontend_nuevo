@@ -174,12 +174,7 @@ const EventDetail = () => {
             </div>
           )}
 
-          {/* Price Badge */}
-          <div className="absolute top-4 right-4">
-            <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm text-lg font-bold">
-              {formatPrice(event.price_amount, event.price_currency)}
-            </Badge>
-          </div>
+          {/* Price Badge eliminado en portada */}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -438,13 +433,14 @@ const EventDetail = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Event Details Card */}
-            <Card className="sticky top-24 sm:top-28 md:top-32">
-              <CardHeader>
-                <CardTitle>Detalles del evento</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+          <div className="">
+            <div className="sticky top-24 sm:top-28 md:top-32 space-y-6">
+              {/* Event Details Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Detalles del evento</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
                 {/* Date & Time */}
                 <div className="flex items-center gap-3">
                   <Calendar className="h-5 w-5 text-purple-600" />
@@ -500,25 +496,29 @@ const EventDetail = () => {
                 )}
 
                 {/* Location */}
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="font-medium">Ubicación</p>
-                    <p className="text-sm text-muted-foreground">
-                      {event.place.name}
-                    </p>
-                    {event.place.address && (
-                      <p className="text-sm text-muted-foreground">
-                        {event.place.address}
-                      </p>
-                    )}
-                    {event.place.city && (
-                      <p className="text-sm text-muted-foreground">
-                        {event.place.city}
-                      </p>
-                    )}
+                {event.place && (
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="font-medium">Ubicación</p>
+                      {event.place.name && (
+                        <p className="text-sm text-muted-foreground">
+                          {event.place.name}
+                        </p>
+                      )}
+                      {event.place.address && (
+                        <p className="text-sm text-muted-foreground">
+                          {event.place.address}
+                        </p>
+                      )}
+                      {event.place.city && (
+                        <p className="text-sm text-muted-foreground">
+                          {event.place.city}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Capacity */}
                 {event.capacity && (
@@ -552,15 +552,15 @@ const EventDetail = () => {
                     </p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Contact & Registration */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Reservar tu lugar</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              {/* Contact & Registration */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Reservar tu lugar</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
                 {/* WhatsApp Contact */}
                 {event.whatsapp_contact && (
                   <Button 
@@ -640,8 +640,9 @@ const EventDetail = () => {
                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>

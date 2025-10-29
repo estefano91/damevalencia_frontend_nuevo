@@ -221,3 +221,5 @@ className={`w-full justify-start h-auto py-3 px-3 rounded-lg border-2 transition
 # 🎭 **¡Ajustes completados según especificaciones exactas!**
 
 **Prueba los cambios en: http://localhost:8080/**
+
+

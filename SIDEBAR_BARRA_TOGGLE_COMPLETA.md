@@ -256,3 +256,5 @@
 
 ## 📝 **ARCHIVO MODIFICADO:**
 - **`src/components/Sidebar.tsx`** → Barra toggle completa + espaciado optimizado
+
+

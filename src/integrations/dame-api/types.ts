@@ -476,3 +476,4 @@ export const EXPERIENCE_LEVEL_LABELS = {
   advanced: 'Avanzado',
   expert: 'Experto'
 } as const;
+

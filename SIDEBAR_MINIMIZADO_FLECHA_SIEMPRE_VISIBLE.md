@@ -266,3 +266,5 @@ ${sidebarOpen ? 'w-64' : 'w-12'}
 ## 📝 **ARCHIVOS MODIFICADOS:**
 - **`src/components/AppLayout.tsx`** → Ancho dinámico + márgenes ajustados
 - **`src/components/Sidebar.tsx`** → Contenido condicional + flecha inteligente
+
+
