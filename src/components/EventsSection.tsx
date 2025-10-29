@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCategoryFilter } from './AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,12 +38,28 @@ interface EventsSectionProps {
 
 const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const [eventsByCategory, setEventsByCategory] = useState<EventsByCategory[]>([]);
+  const [filteredEventsByCategory, setFilteredEventsByCategory] = useState<EventsByCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { selectedCategoryId, setAvailableCategories } = useCategoryFilter();
 
   useEffect(() => {
     loadEvents();
   }, []);
+
+  // Efecto para filtrar eventos por categoría
+  useEffect(() => {
+    if (selectedCategoryId === null) {
+      // Mostrar todas las categorías
+      setFilteredEventsByCategory(eventsByCategory);
+    } else {
+      // Filtrar solo la categoría seleccionada
+      const filtered = eventsByCategory.filter(
+        categoryData => categoryData.category.id === selectedCategoryId
+      );
+      setFilteredEventsByCategory(filtered);
+    }
+  }, [selectedCategoryId, eventsByCategory]);
 
   const loadEvents = async () => {
     setLoading(true);
@@ -72,6 +89,16 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
 
         console.log(`✅ Eventos únicos cargados: ${seenEventSlugs.size} eventos en ${uniqueCategories.length} categorías`);
         setEventsByCategory(uniqueCategories);
+
+        // Enviar categorías reales al Sidebar
+        const categoriesForSidebar = uniqueCategories.map(categoryData => ({
+          id: categoryData.category.id,
+          name_es: categoryData.category.name_es,
+          name_en: categoryData.category.name_en,
+          icon: categoryData.category.icon,
+          total_events: categoryData.events.length
+        }));
+        setAvailableCategories(categoriesForSidebar);
       } else {
         setError(response.error || 'Error cargando eventos');
       }
@@ -162,16 +189,33 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
         </p>
       </div>
 
-      {/* Eventos por categoría (incluye recurrentes y únicos) */}
-      {eventsByCategory.map((categoryData) => (
-        <CategorySection 
-          key={categoryData.category.id}
-          categoryData={categoryData}
-          categoryColor={getCategoryColor(categoryData.category.id)}
-          categoryIcon={getCategoryIcon(categoryData.category.icon)}
-          maxEvents={maxEventsPerCategory}
-        />
-      ))}
+      {/* Eventos por categoría (incluye recurrentes y únicos) - Filtrados por sidebar */}
+      {filteredEventsByCategory.length > 0 ? (
+        filteredEventsByCategory.map((categoryData) => (
+          <CategorySection 
+            key={categoryData.category.id}
+            categoryData={categoryData}
+            categoryColor={getCategoryColor(categoryData.category.id)}
+            categoryIcon={getCategoryIcon(categoryData.category.icon)}
+            maxEvents={maxEventsPerCategory}
+          />
+        ))
+      ) : selectedCategoryId !== null ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🎭</div>
+          <h3 className="text-xl font-semibold mb-2">No hay eventos en esta categoría</h3>
+          <p className="text-muted-foreground">
+            Próximamente tendremos más eventos para ti. 
+            <br />Mientras tanto, explora otras categorías.
+          </p>
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🎪</div>
+          <h3 className="text-xl font-semibold mb-2">Cargando eventos...</h3>
+          <p className="text-muted-foreground">Un momento por favor</p>
+        </div>
+      )}
 
       {/* Footer call to action */}
       <div className="text-center pt-8 border-t">

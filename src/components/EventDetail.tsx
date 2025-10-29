@@ -440,7 +440,7 @@ const EventDetail = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Event Details Card */}
-            <Card className="sticky top-20">
+            <Card className="sticky top-24 sm:top-28 md:top-32">
               <CardHeader>
                 <CardTitle>Detalles del evento</CardTitle>
               </CardHeader>
