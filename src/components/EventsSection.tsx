@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCategoryFilter } from './AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -39,11 +40,27 @@ interface EventsSectionProps {
 }
 
 const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
+  const { i18n } = useTranslation();
+  const [, forceUpdate] = useState({});
   const [eventsByCategory, setEventsByCategory] = useState<EventsByCategory[]>([]);
   const [filteredEventsByCategory, setFilteredEventsByCategory] = useState<EventsByCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { selectedCategoryId, setAvailableCategories } = useCategoryFilter();
+  const [eventSummaries, setEventSummaries] = useState<Record<string, { summary_es?: string; summary_en?: string }>>({});
+  
+  // Forzar re-render cuando cambie el idioma
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      forceUpdate({});
+    };
+    
+    i18n.on('languageChanged', handleLanguageChange);
+    
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
 
   useEffect(() => {
     loadEvents();
@@ -110,6 +127,37 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
       setLoading(false);
     }
   };
+
+  // Obtener summaries faltantes por slug cuando cambian los eventos filtrados
+  useEffect(() => {
+    const collectSlugs = (): string[] => {
+      const slugs: string[] = [];
+      filteredEventsByCategory.forEach(cat => {
+        cat.events.forEach(ev => {
+          const inList = (ev as any).summary_es || (ev as any).summary_en;
+          if (!inList && !eventSummaries[ev.event_slug]) {
+            slugs.push(ev.event_slug);
+          }
+        });
+      });
+      return Array.from(new Set(slugs));
+    };
+
+    const fetchAll = async (slugs: string[]) => {
+      if (slugs.length === 0) return;
+      const results = await Promise.allSettled(slugs.map(slug => dameEventsAPI.getEventBySlug(slug)));
+      const next = { ...eventSummaries };
+      results.forEach((res, idx) => {
+        if (res.status === 'fulfilled' && res.value.success && res.value.data) {
+          const data: any = res.value.data;
+          next[slugs[idx]] = { summary_es: data.summary_es, summary_en: data.summary_en };
+        }
+      });
+      setEventSummaries(next);
+    };
+
+    fetchAll(collectSlugs());
+  }, [filteredEventsByCategory]);
 
   const getCategoryIcon = (iconName: string, nameEs?: string) => {
     switch (iconName) {
@@ -193,11 +241,12 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
       {selectedCategoryId === null && (
         <div className="text-center">
           <h2 className="text-3xl font-bold mb-4 dame-text-gradient">
-            Eventos de DAME Valencia
+            {i18n.language === 'en' ? 'DAME Valencia Events' : 'Eventos de DAME Valencia'}
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Descubre las próximas actividades organizadas por nuestra comunidad. 
-            Arte, música, baile, bienestar y mucho más te esperan en Valencia.
+            {i18n.language === 'en'
+              ? 'Discover our upcoming community activities. Art, music, dance, wellness and much more await you in Valencia.'
+              : 'Descubre las próximas actividades organizadas por nuestra comunidad. Arte, música, baile, bienestar y mucho más te esperan en Valencia.'}
           </p>
         </div>
       )}
@@ -211,6 +260,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
             categoryColor={getCategoryColor(categoryData.category.id)}
             categoryIcon={getCategoryIcon(categoryData.category.icon, categoryData.category.name_es)}
             maxEvents={maxEventsPerCategory}
+            summariesMap={eventSummaries}
           />
         ))
       ) : selectedCategoryId !== null ? (
@@ -233,7 +283,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
       {/* Footer call to action */}
       <div className="text-center pt-8 border-t">
         <p className="text-muted-foreground mb-4">
-          ¿Te interesa algún evento? ¡Contáctanos para más información!
+          {i18n.language === 'en' ? 'Interested in an event? Contact us for more info!' : '¿Te interesa algún evento? ¡Contáctanos para más información!'}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button asChild>
@@ -257,12 +307,19 @@ interface CategorySectionProps {
   categoryColor: string;
   categoryIcon: React.ReactNode;
   maxEvents: number;
+  summariesMap: Record<string, { summary_es?: string; summary_en?: string }>;
 }
 
-const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents }: CategorySectionProps) => {
+const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents, summariesMap }: CategorySectionProps) => {
   const { category, events } = categoryData;
   const displayEvents = events.slice(0, maxEvents);
   const hasMoreEvents = events.length > maxEvents;
+  const { i18n } = useTranslation();
+  
+  const getLocalizedText = (textEs?: string, textEn?: string, generic?: string): string => {
+    if (i18n.language === 'en' && textEn) return textEn;
+    return (textEs || textEn || generic || '').toString();
+  };
 
   return (
     <div className="space-y-4">
@@ -274,9 +331,11 @@ const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents 
           </div>
         </div>
         <div>
-          <h3 className="text-2xl font-bold">{category.name_es}</h3>
+          <h3 className="text-2xl font-bold">{getLocalizedText(category.name_es, category.name_en)}</h3>
           <p className="text-sm text-muted-foreground">
-            {category.total_events} evento{category.total_events !== 1 ? 's' : ''} próximo{category.total_events !== 1 ? 's' : ''}
+            {i18n.language === 'en'
+              ? `${events.length} upcoming event${events.length !== 1 ? 's' : ''}`
+              : `${events.length} evento${events.length !== 1 ? 's' : ''} próximo${events.length !== 1 ? 's' : ''}`}
           </p>
         </div>
       </div>
@@ -288,6 +347,7 @@ const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents 
             key={`${event.event_slug}-${index}`} 
             event={event} 
             categoryColor={categoryColor}
+            summariesMap={summariesMap}
           />
         ))}
       </div>
@@ -296,7 +356,9 @@ const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents 
       {hasMoreEvents && (
         <div className="text-center">
           <Button variant="outline" size="sm">
-            Ver {events.length - maxEvents} evento{events.length - maxEvents !== 1 ? 's' : ''} más de {category.name_es}
+            {i18n.language === 'en'
+              ? `See ${events.length - maxEvents} more event${events.length - maxEvents !== 1 ? 's' : ''} from ${getLocalizedText(category.name_es, category.name_en)}`
+              : `Ver ${events.length - maxEvents} evento${events.length - maxEvents !== 1 ? 's' : ''} más de ${getLocalizedText(category.name_es, category.name_en)}`}
           </Button>
         </div>
       )}
@@ -307,16 +369,24 @@ const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents 
 interface EventCardProps {
   event: DameEvent;
   categoryColor: string;
+  summariesMap: Record<string, { summary_es?: string; summary_en?: string }>;
 }
 
-const EventCard = ({ event, categoryColor }: EventCardProps) => {
+const EventCard = ({ event, categoryColor, summariesMap }: EventCardProps) => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   
   if (!event) return null;
 
   const availableSpots = getAvailableSpots(event);
   const soldOut = isEventSoldOut(event);
   const isFree = parseFloat(event.price || '0') === 0;
+  
+  // Helper para obtener el texto en el idioma correcto
+  const getLocalizedText = (textEs?: string, textEn?: string, generic?: string): string => {
+    if (i18n.language === 'en' && textEn) return textEn;
+    return textEs || textEn || generic || '';
+  };
 
   const handleCardClick = () => {
     navigate(`/eventos/${event.event_slug}`);
@@ -354,47 +424,55 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
         <div className="absolute top-3 right-3 flex flex-col gap-2">
           {isFree ? (
             <Badge className="bg-green-600 hover:bg-green-700 text-white backdrop-blur-sm font-bold">
-              Gratuito
+              {i18n.language === 'en' ? 'Free' : 'Gratuito'}
             </Badge>
           ) : (
             <Badge variant="default" className="bg-white/90 backdrop-blur-sm">
-              {formatEventPrice(event.price || '0')}
+              {formatEventPrice(event.price || '0', i18n.language === 'en' ? 'en-US' : 'es-ES')}
             </Badge>
           )}
           {event.is_recurring_weekly && (
             <Badge className="bg-blue-600 text-white">
               <Repeat className="mr-1 h-3 w-3" />
-              Semanal
+              {i18n.language === 'en' ? 'Weekly' : 'Semanal'}
             </Badge>
           )}
         </div>
       </div>
       
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <CardTitle className="text-lg leading-tight group-hover:text-purple-600 transition-colors">
-          {event.title_es}
+          {getLocalizedText(event.title_es, event.title_en)}
         </CardTitle>
-        
-        {/* Descripción si existe */}
-        {event.description_es && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {event.description_es}
-          </p>
-        )}
       </CardHeader>
 
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 flex-1 flex flex-col">
+        {/* Resumen del evento visible y consistente */}
+        {(() => {
+          const fromDetail = summariesMap[event.event_slug];
+          const rawSummary = getLocalizedText(event.summary_es, event.summary_en, (event as any).summary)
+            || getLocalizedText(fromDetail?.summary_es, fromDetail?.summary_en)
+            || getLocalizedText(event.description_es, event.description_en, (event as any).description);
+          const summary = rawSummary ? String(rawSummary) : '';
+          const trimmed = summary.length > 240 ? summary.slice(0, 240) + '…' : summary;
+          return (
+            <div className="h-16 overflow-hidden">
+              <p className="text-sm text-muted-foreground line-clamp-3">{trimmed}</p>
+            </div>
+          );
+        })()}
+
         {/* Fecha y hora */}
         <div className="flex items-center gap-2 text-sm">
           <Calendar className="h-4 w-4 text-purple-600" />
           <div className="flex-1">
             <span className="font-medium">
-              {formatEventDate(event.start)}
+              {formatEventDate(event.start, i18n.language === 'en' ? 'en-US' : 'es-ES')}
             </span>
             {event.is_recurring_weekly && (
               <p className="text-xs text-blue-600 mt-1 font-medium">
                 <Repeat className="inline h-3 w-3 mr-1" />
-                Se repite semanalmente
+                {i18n.language === 'en' ? 'Repeats weekly' : 'Se repite semanalmente'}
               </p>
             )}
           </div>
@@ -413,41 +491,21 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
           <div className="flex items-center gap-2 text-sm">
             <Users className="h-4 w-4 text-blue-600" />
             <span>
-              {event.registered_count || 0}/{event.capacity} personas
+              {i18n.language === 'en' 
+                ? `${event.registered_count || 0}/${event.capacity} people`
+                : `${event.registered_count || 0}/${event.capacity} personas`}
             </span>
             {soldOut ? (
-              <Badge variant="destructive" className="ml-auto">Completo</Badge>
+              <Badge variant="destructive" className="ml-auto">{i18n.language === 'en' ? 'Full' : 'Completo'}</Badge>
             ) : (
               <Badge variant="outline" className="ml-auto">
-                {availableSpots} disponible{availableSpots !== 1 ? 's' : ''}
+                {i18n.language === 'en' 
+                  ? `${availableSpots} spot${availableSpots !== 1 ? 's' : ''} available`
+                  : `${availableSpots} disponible${availableSpots !== 1 ? 's' : ''}`}
               </Badge>
             )}
           </div>
         )}
-
-        {/* Botón de acción */}
-        <div className="pt-2">
-          <Button 
-            className={`w-full bg-gradient-to-r ${categoryColor} hover:opacity-90`}
-            disabled={soldOut}
-            onClick={(e) => {
-              e.stopPropagation(); // Evitar que se dispare el click del card
-              handleCardClick();
-            }}
-          >
-            {soldOut ? (
-              <>
-                <Users className="mr-2 h-4 w-4" />
-                Ver Detalles
-              </>
-            ) : (
-              <>
-                <ExternalLink className="mr-2 h-4 w-4" />
-                {isFree ? 'Ver Detalles' : 'Reservar Plaza'}
-              </>
-            )}
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );

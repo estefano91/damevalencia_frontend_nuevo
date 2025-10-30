@@ -35,7 +35,7 @@ interface NavigationProps {
 
 const Navigation = ({ isMobile }: NavigationProps) => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { i18n } = useTranslation();
   const { theme } = useTheme();
   const { user, logout } = useAuth();
 
@@ -62,17 +62,19 @@ const Navigation = ({ isMobile }: NavigationProps) => {
             </div>
           </div>
 
-          {/* Center - Navigation Menu */}
-          <div className="hidden md:flex items-center space-x-4">
+          {/* Center - Navigation Menu - Visible on all screens */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {/* Inicio */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate("/demo")}
               className="flex items-center gap-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+              title={i18n.language === 'en' ? 'Home' : 'Inicio'}
+              aria-label={i18n.language === 'en' ? 'Home' : 'Inicio'}
             >
               <Home className="h-4 w-4" />
-              Inicio
+              <span className="hidden lg:inline">{i18n.language === 'en' ? 'Home' : 'Inicio'}</span>
             </Button>
 
             {/* Comunidad */}
@@ -81,9 +83,11 @@ const Navigation = ({ isMobile }: NavigationProps) => {
               size="sm"
               onClick={() => navigate("/comunidad")}
               className="flex items-center gap-2 text-pink-600 hover:text-pink-700 hover:bg-pink-50 dark:hover:bg-pink-900/20"
+              title={i18n.language === 'en' ? 'Community' : 'Comunidad'}
+              aria-label={i18n.language === 'en' ? 'Community' : 'Comunidad'}
             >
               <Users className="h-4 w-4" />
-              Comunidad
+              <span className="hidden lg:inline">{i18n.language === 'en' ? 'Community' : 'Comunidad'}</span>
             </Button>
           </div>
 
@@ -104,7 +108,7 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                   className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                 >
                   <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">Mi Perfil</span>
+                  <span className="hidden sm:inline">{i18n.language === 'en' ? 'My Profile' : 'Mi Perfil'}</span>
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
@@ -127,28 +131,28 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                   className="cursor-pointer"
                 >
                   <User className="mr-2 h-4 w-4" />
-                  Ver mi perfil
+                  {i18n.language === 'en' ? 'View my profile' : 'Ver mi perfil'}
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => navigate("/mensajes")}
                   className="cursor-pointer"
                 >
                   <MessageSquare className="mr-2 h-4 w-4" />
-                  Mensajes
+                  {i18n.language === 'en' ? 'Messages' : 'Mensajes'}
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => navigate("/notificaciones")}
                   className="cursor-pointer"
                 >
                   <Bell className="mr-2 h-4 w-4" />
-                  Notificaciones
+                  {i18n.language === 'en' ? 'Notifications' : 'Notificaciones'}
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => navigate("/configuracion")}
                   className="cursor-pointer"
                 >
                   <Settings className="mr-2 h-4 w-4" />
-                  Configuración
+                  {i18n.language === 'en' ? 'Settings' : 'Configuración'}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
@@ -156,7 +160,7 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                   className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar sesión
+                  {i18n.language === 'en' ? 'Log out' : 'Cerrar sesión'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

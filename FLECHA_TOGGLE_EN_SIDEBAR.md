@@ -264,3 +264,6 @@ interface SidebarProps {
 - **`src/components/AppLayout.tsx`** → Props actualizadas para conectividad
 
 
+
+
+

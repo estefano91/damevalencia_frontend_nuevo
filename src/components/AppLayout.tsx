@@ -82,6 +82,7 @@ const AppLayout = ({ children, hideSidebar = false }: AppLayoutProps) => {
             <Sidebar
               userType={userType}
               onCategoryFilter={setSelectedCategoryId}
+              selectedCategoryId={selectedCategoryId}
               availableCategories={availableCategories}
               sidebarOpen={sidebarOpen}
               setSidebarOpen={setSidebarOpen}
@@ -95,6 +96,7 @@ const AppLayout = ({ children, hideSidebar = false }: AppLayoutProps) => {
             <Sidebar
               userType={userType}
               onCategoryFilter={setSelectedCategoryId}
+              selectedCategoryId={selectedCategoryId}
               availableCategories={availableCategories}
               sidebarOpen={false}
               setSidebarOpen={setSidebarOpen}
@@ -113,6 +115,7 @@ const AppLayout = ({ children, hideSidebar = false }: AppLayoutProps) => {
               <Sidebar
                 userType={userType}
                 onCategoryFilter={setSelectedCategoryId}
+                selectedCategoryId={selectedCategoryId}
                 availableCategories={availableCategories}
                 sidebarOpen={sidebarOpen}
                 setSidebarOpen={setSidebarOpen}

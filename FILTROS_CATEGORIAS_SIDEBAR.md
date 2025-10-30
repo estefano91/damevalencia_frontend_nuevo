@@ -180,3 +180,6 @@ Visual: Botón "Baile" activo (rosa), icono Heart destacado
 **Prueba la funcionalidad en http://localhost:8080/ 🎭✨**
 
 
+
+
+

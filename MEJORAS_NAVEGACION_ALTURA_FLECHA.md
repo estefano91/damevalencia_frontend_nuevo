@@ -277,3 +277,6 @@ sticky top-24 sm:top-28 md:top-32
 - **UX optimizada** - Interfaz más intuitiva y limpia
 
 
+
+
+

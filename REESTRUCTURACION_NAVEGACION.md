@@ -238,3 +238,6 @@
 4. **Rutas preparadas**: /perfil, /mensajes, /notificaciones, /configuracion
 
 
+
+
+

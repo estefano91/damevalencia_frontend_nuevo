@@ -1,13 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Home, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 const CommunityLinks = () => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const whatsappGroups = [
     { name: "Comunidad Salsa", icon: "💃", url: "https://chat.whatsapp.com/JhtzEylNaAT1EnHQmNi3Dc" },
     { name: "Comunidad Bachata", icon: "🕺", url: "https://chat.whatsapp.com/GSfzCHspYY1LJxmbozWc1m" },
+    { name: "Comunidad Baloncesto", icon: "🏀", url: "https://chat.whatsapp.com/CtLfrELuYQjFxzvYiw61fX" },
     { name: "Actividades Zen", icon: "🧘", url: "https://chat.whatsapp.com/CFgD6wStj2q7PJjiY633qY" },
     { name: "Comunidad Fútbol", icon: "⚽", url: "https://chat.whatsapp.com/GLTEVz2YjVTAq7F6JgXPeO" },
     { name: "Búsqueda de Empleo DAME", icon: "💼", url: "https://chat.whatsapp.com/KfjUGTqVbel38etVlAQ9nu" },
@@ -73,25 +76,25 @@ const CommunityLinks = () => {
             className="flex items-center gap-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20"
           >
             <ArrowLeft className="h-4 w-4" />
-            Volver al inicio
+            {i18n.language === 'en' ? 'Back to home' : 'Volver al inicio'}
           </Button>
         </div>
 
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4 dame-text-gradient">
-            Comunidad DAME Valencia
+            {i18n.language === 'en' ? 'DAME Valencia Community' : 'Comunidad DAME Valencia'}
           </h1>
           <p className="text-xl text-muted-foreground">
-            Conecta con nuestras comunidades especializadas
+            {i18n.language === 'en' ? 'Connect with our specialized communities' : 'Conecta con nuestras comunidades especializadas'}
           </p>
         </div>
 
         {/* Grupos de WhatsApp */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-2xl">Grupos de WhatsApp</CardTitle>
+            <CardTitle className="text-2xl">{i18n.language === 'en' ? 'WhatsApp Groups' : 'Grupos de WhatsApp'}</CardTitle>
             <p className="text-muted-foreground">
-              Únete a nuestros grupos comunitarios y conecta con personas que comparten tus intereses.
+              {i18n.language === 'en' ? 'Join our community groups and connect with people who share your interests.' : 'Únete a nuestros grupos comunitarios y conecta con personas que comparten tus intereses.'}
             </p>
           </CardHeader>
           <CardContent>
@@ -106,9 +109,9 @@ const CommunityLinks = () => {
         {/* Páginas de Instagram */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-2xl">Páginas de Instagram</CardTitle>
+            <CardTitle className="text-2xl">{i18n.language === 'en' ? 'Instagram Pages' : 'Páginas de Instagram'}</CardTitle>
             <p className="text-muted-foreground">
-              Síguenos en Instagram y mantente al día con nuestras comunidades especializadas.
+              {i18n.language === 'en' ? 'Follow us on Instagram and stay up to date with our specialized communities.' : 'Síguenos en Instagram y mantente al día con nuestras comunidades especializadas.'}
             </p>
           </CardHeader>
           <CardContent>
@@ -123,9 +126,9 @@ const CommunityLinks = () => {
         {/* Playlists */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-2xl">Nuestras Playlists</CardTitle>
+            <CardTitle className="text-2xl">{i18n.language === 'en' ? 'Our Playlists' : 'Nuestras Playlists'}</CardTitle>
             <p className="text-muted-foreground">
-              Disfruta de nuestra música seleccionada para cada ocasión.
+              {i18n.language === 'en' ? 'Enjoy our handpicked music for every occasion.' : 'Disfruta de nuestra música seleccionada para cada ocasión.'}
             </p>
           </CardHeader>
           <CardContent>
@@ -140,7 +143,7 @@ const CommunityLinks = () => {
         {/* Más Enlaces */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Más Enlaces</CardTitle>
+            <CardTitle className="text-2xl">{i18n.language === 'en' ? 'More Links' : 'Más Enlaces'}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
@@ -152,9 +155,9 @@ const CommunityLinks = () => {
                   <div className="flex items-center gap-3 flex-1">
                     <div className="text-2xl flex-shrink-0">👕</div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg">Camisetas DAME®</h3>
-                      <p className="text-sm text-muted-foreground">¡Consigue tu camiseta oficial!</p>
-                      <span className="text-xs text-orange-600 font-medium">Próximamente</span>
+                      <h3 className="font-semibold text-lg">{i18n.language === 'en' ? 'DAME® T-shirts' : 'Camisetas DAME®'}</h3>
+                      <p className="text-sm text-muted-foreground">{i18n.language === 'en' ? 'Get your official t-shirt!' : '¡Consigue tu camiseta oficial!'}</p>
+                      <span className="text-xs text-orange-600 font-medium">{i18n.language === 'en' ? 'Coming soon' : 'Próximamente'}</span>
                     </div>
                   </div>
                   <div className="text-2xl text-purple-600">🔒</div>
@@ -165,9 +168,9 @@ const CommunityLinks = () => {
                   <div className="flex items-center gap-3 flex-1">
                     <div className="text-2xl flex-shrink-0">⭐</div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg">Evalúanos en Google</h3>
-                      <p className="text-sm text-muted-foreground">Comparte tu experiencia con la comunidad</p>
-                      <span className="text-xs text-orange-600 font-medium">Próximamente</span>
+                      <h3 className="font-semibold text-lg">{i18n.language === 'en' ? 'Rate us on Google' : 'Evalúanos en Google'}</h3>
+                      <p className="text-sm text-muted-foreground">{i18n.language === 'en' ? 'Share your experience with the community' : 'Comparte tu experiencia con la comunidad'}</p>
+                      <span className="text-xs text-orange-600 font-medium">{i18n.language === 'en' ? 'Coming soon' : 'Próximamente'}</span>
                     </div>
                   </div>
                   <div className="text-2xl text-purple-600">🔒</div>

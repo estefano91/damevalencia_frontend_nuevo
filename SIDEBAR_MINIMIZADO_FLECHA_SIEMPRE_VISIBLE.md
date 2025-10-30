@@ -268,3 +268,6 @@ ${sidebarOpen ? 'w-64' : 'w-12'}
 - **`src/components/Sidebar.tsx`** → Contenido condicional + flecha inteligente
 
 
+
+
+

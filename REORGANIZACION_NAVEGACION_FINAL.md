@@ -231,3 +231,6 @@ space-x-3 sm:space-x-6
 - **`src/components/Navigation.tsx`** → Mi Perfil movido + Logo agrandado
 
 
+
+
+

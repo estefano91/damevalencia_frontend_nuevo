@@ -82,3 +82,6 @@ agregar al sistema i18n existente.
 - [Directiva ePrivacy](https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32002L0058)
 - [LGPD - Brasil](https://www.gov.br/cidadania/pt-br/acesso-a-informacao/lgpd)
 
+
+
+

@@ -267,3 +267,6 @@ getAvailableSpots(capacity, registered): number
 **💬 WhatsApp**: (+34) 658 236 665
 
 
+
+
+

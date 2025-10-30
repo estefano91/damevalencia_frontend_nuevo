@@ -206,3 +206,6 @@ className="hover:scale-110 hover:animate-bounce hover:shadow-2xl"
 **Prueba la nueva experiencia súper vibrante en: http://localhost:8080/**
 
 
+
+
+

@@ -28,6 +28,9 @@ export interface DameEvent {
   event_slug: string;
   title_es: string;
   title_en?: string;
+  summary_es?: string;
+  summary_en?: string;
+  summary?: string; // fallback genérico si la API lo envía sin sufijo de idioma
   start: string; // ISO date string
   end?: string;
   price?: string;
@@ -877,14 +880,21 @@ export class DameEventsAPI {
 export const dameEventsAPI = new DameEventsAPI();
 
 // Utilidades para formateo de fechas y precios
-export const formatEventDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return 'Fecha por determinar';
+export const formatEventDate = (dateString: string | null | undefined, locale: string = 'es-ES'): string => {
+  const messages = {
+    'es': { pending: 'Fecha por determinar', invalid: 'Fecha inválida', error: 'Error en fecha' },
+    'en': { pending: 'Date TBD', invalid: 'Invalid date', error: 'Date error' }
+  };
+  const lang = locale.split('-')[0] as 'es' | 'en';
+  const msg = messages[lang] || messages.es;
+  
+  if (!dateString) return msg.pending;
   
   try {
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Fecha inválida';
+    if (isNaN(date.getTime())) return msg.invalid;
     
-    return date.toLocaleDateString('es-ES', {
+    return date.toLocaleDateString(locale, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -894,20 +904,27 @@ export const formatEventDate = (dateString: string | null | undefined): string =
       timeZone: 'Europe/Madrid'
     });
   } catch (error) {
-    return 'Error en fecha';
+    return msg.error;
   }
 };
 
-export const formatEventPrice = (price: string | null | undefined): string => {
-  if (!price) return 'Consultar precio';
+export const formatEventPrice = (price: string | null | undefined, locale: string = 'es-ES'): string => {
+  const messages = {
+    'es': { consult: 'Consultar precio', free: 'Gratuito' },
+    'en': { consult: 'Contact for price', free: 'Free' }
+  };
+  const lang = locale.split('-')[0] as 'es' | 'en';
+  const msg = messages[lang] || messages.es;
+  
+  if (!price) return msg.consult;
   
   try {
     const numPrice = parseFloat(price);
-    if (isNaN(numPrice)) return 'Consultar precio';
-    if (numPrice === 0) return 'Gratuito';
+    if (isNaN(numPrice)) return msg.consult;
+    if (numPrice === 0) return msg.free;
     return `${numPrice.toFixed(2)}€`;
   } catch (error) {
-    return 'Consultar precio';
+    return msg.consult;
   }
 };
 

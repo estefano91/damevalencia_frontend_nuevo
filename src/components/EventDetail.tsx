@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { dameEventsAPI } from "@/integrations/dame-api/events";
 import type { DameEventDetail } from "@/integrations/dame-api/events";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,11 +30,33 @@ import {
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { i18n, ready } = useTranslation();
   const [event, setEvent] = useState<DameEventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
+  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
+  const [, forceUpdate] = useState({});
+  
+  // Forzar re-render cuando cambie el idioma
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      forceUpdate({});
+    };
+    
+    i18n.on('languageChanged', handleLanguageChange);
+    
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+    };
+  }, [i18n]);
+  
+  // Helper para obtener el texto en el idioma correcto
+  const getLocalizedText = (textEs?: string, textEn?: string): string => {
+    if (i18n.language === 'en' && textEn) return textEn;
+    return textEs || textEn || '';
+  };
 
   useEffect(() => {
     const fetchEventDetail = async () => {
@@ -62,6 +85,11 @@ const EventDetail = () => {
     };
 
     fetchEventDetail();
+  }, [slug]);
+
+  // Scroll al inicio al abrir la página de detalle o cambiar de evento
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, [slug]);
 
   // Helper functions
@@ -156,23 +184,31 @@ const EventDetail = () => {
 
   const getWeekdayName = (weekday?: number): string => {
     if (weekday === undefined || weekday === null) return '';
-    const weekdays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const weekdaysEs = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const weekdaysEn = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     // weekday es 0-6 donde 0=lunes, 6=domingo
-    return weekdays[weekday] || '';
+    return i18n.language === 'en' ? (weekdaysEn[weekday] || '') : (weekdaysEs[weekday] || '');
   };
 
   const formatRecurringSchedule = (eventData: DameEventDetail): string => {
     if (!eventData.recurrence_weekday || !eventData.recurrence_start_time) {
-      return 'Horario semanal por determinar';
+      return i18n.language === 'en' ? 'Weekly schedule TBD' : 'Horario semanal por determinar';
     }
     const dayName = getWeekdayName(eventData.recurrence_weekday);
     const startTime = formatTimeFromHHmmss(eventData.recurrence_start_time);
     const endTime = formatTimeFromHHmmss(eventData.recurrence_end_time);
     
+    if (i18n.language === 'en') {
+      if (endTime) {
+        return `Every ${dayName} from ${startTime} to ${endTime}`;
+      }
+      return `Every ${dayName} at ${startTime}`;
+    } else {
     if (endTime) {
       return `Todos los ${dayName} de ${startTime} a ${endTime}`;
     }
     return `Todos los ${dayName} a las ${startTime}`;
+    }
   };
 
   const formatRecurringTimeOnly = (eventData: DameEventDetail): string => {
@@ -201,6 +237,27 @@ const EventDetail = () => {
     return capacity - (registered || 0);
   };
 
+  // Mapeo de categorías a comunidades de WhatsApp
+  const getCommunityWhatsAppLink = (categoryName: string): string | null => {
+    const categoryLower = categoryName.toLowerCase();
+    
+    if (categoryLower.includes('salsa')) {
+      return "https://chat.whatsapp.com/JhtzEylNaAT1EnHQmNi3Dc";
+    } else if (categoryLower.includes('bachata')) {
+      return "https://chat.whatsapp.com/GSfzCHspYY1LJxmbozWc1m";
+    } else if (categoryLower.includes('baloncesto') || categoryLower.includes('basket') || categoryLower.includes('basketball')) {
+      return "https://chat.whatsapp.com/CtLfrELuYQjFxzvYiw61fX";
+    } else if (categoryLower.includes('zen') || categoryLower.includes('yoga')) {
+      return "https://chat.whatsapp.com/CFgD6wStj2q7PJjiY633qY";
+    } else if (categoryLower.includes('fútbol') || categoryLower.includes('deporte')) {
+      return "https://chat.whatsapp.com/GLTEVz2YjVTAq7F6JgXPeO";
+    } else if (categoryLower.includes('música') || categoryLower.includes('jam')) {
+      return "https://chat.whatsapp.com/HYnZYcXgAti3XrBRPtqyWv";
+    }
+    
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900">
@@ -226,12 +283,12 @@ const EventDetail = () => {
             className="mb-6"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver al inicio
+            {i18n.language === 'en' ? 'Back to home' : 'Volver al inicio'}
           </Button>
           <Alert>
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>{i18n.language === 'en' ? 'Error' : 'Error'}</AlertTitle>
             <AlertDescription>
-              {error || 'No se pudo cargar el evento.'}
+              {error || (i18n.language === 'en' ? 'Could not load event.' : 'No se pudo cargar el evento.')}
             </AlertDescription>
           </Alert>
         </div>
@@ -249,7 +306,7 @@ const EventDetail = () => {
           className="mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver al inicio
+          {i18n.language === 'en' ? 'Back' : 'Volver al inicio'}
         </Button>
 
         {/* Main Event Image */}
@@ -257,7 +314,7 @@ const EventDetail = () => {
           {event.main_photo_url ? (
             <img 
               src={event.main_photo_url}
-              alt={event.title_es}
+              alt={getLocalizedText(event.title_es, event.title_en)}
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNlOGZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzk4MzNlYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkRBTUUgVmFsZW5jaWE8L3RleHQ+Cjwvc3ZnPgo=';
@@ -277,7 +334,7 @@ const EventDetail = () => {
             <div className="absolute top-4 left-4">
               <Badge className="bg-yellow-500 text-white">
                 <Star className="mr-1 h-3 w-3" />
-                Destacado
+                {i18n.language === 'en' ? 'Featured' : 'Destacado'}
               </Badge>
             </div>
           )}
@@ -291,43 +348,39 @@ const EventDetail = () => {
             {/* Title and Summary */}
             <div>
               <h1 className="text-3xl md:text-4xl font-bold mb-2 dame-text-gradient">
-                {event.title_es}
+                {getLocalizedText(event.title_es, event.title_en)}
               </h1>
               {event.is_recurring_weekly && (
                 <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
-                  📅 Este evento se repite semanalmente
+                  📅 {i18n.language === 'en' ? 'This event repeats weekly' : 'Este evento se repite semanalmente'}
                 </p>
               )}
-              {event.summary_es && (
-                <p className="text-xl text-muted-foreground mb-4">
-                  {event.summary_es}
-                </p>
-              )}
+              {/* Resumen eliminado según requisitos */}
               
               {/* Tags */}
               <div className="flex flex-wrap gap-2 mb-4">
                 {event.categories.map(category => (
                   <Badge key={category.id} variant="outline" className="border-purple-200">
-                    {category.name_es}
+                    {getLocalizedText(category.name_es, category.name_en)}
                   </Badge>
                 ))}
                 {event.tags.map(tag => (
                   <Badge key={tag.id} variant="secondary">
-                    {tag.name_es}
+                    {getLocalizedText(tag.name_es, tag.name_en)}
                   </Badge>
                 ))}
               </div>
             </div>
 
             {/* Description */}
-            {event.description_es && (
+            {getLocalizedText(event.description_es, event.description_en) && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Descripción del evento</CardTitle>
+                  <CardTitle>{i18n.language === 'en' ? 'Event description' : 'Descripción del evento'}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                    {event.description_es}
+                    {getLocalizedText(event.description_es, event.description_en)}
                   </p>
                 </CardContent>
               </Card>
@@ -337,7 +390,7 @@ const EventDetail = () => {
             {event.programs && event.programs.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Programa del evento</CardTitle>
+                  <CardTitle>{i18n.language === 'en' ? 'Event program' : 'Programa del evento'}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -349,11 +402,11 @@ const EventDetail = () => {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-medium text-purple-600">{program.time}</span>
-                              <span className="font-semibold">{program.title_es}</span>
+                              <span className="font-semibold">{getLocalizedText(program.title_es, program.title_en)}</span>
                             </div>
-                            {program.description_es && (
+                            {getLocalizedText(program.description_es, program.description_en) && (
                               <p className="text-sm text-muted-foreground">
-                                {program.description_es}
+                                {getLocalizedText(program.description_es, program.description_en)}
                               </p>
                             )}
                           </div>
@@ -369,16 +422,16 @@ const EventDetail = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    Galería de fotos
+                    {i18n.language === 'en' ? 'Photo gallery' : 'Galería de fotos'}
                     <Button 
                       variant="ghost" 
                       size="sm"
                       onClick={() => setShowAllPhotos(!showAllPhotos)}
                     >
                       {showAllPhotos ? (
-                        <>Ocultar <ChevronUp className="ml-1 h-4 w-4" /></>
+                        <>{i18n.language === 'en' ? 'Hide' : 'Ocultar'} <ChevronUp className="ml-1 h-4 w-4" /></>
                       ) : (
-                        <>Ver todas <ChevronDown className="ml-1 h-4 w-4" /></>
+                        <>{i18n.language === 'en' ? 'Show all' : 'Ver todas'} <ChevronDown className="ml-1 h-4 w-4" /></>
                       )}
                     </Button>
                   </CardTitle>
@@ -389,18 +442,22 @@ const EventDetail = () => {
                       .sort((a, b) => a.sort_order - b.sort_order)
                       .slice(0, showAllPhotos ? undefined : 4)
                       .map(photo => (
-                        <div key={photo.id} className="relative aspect-video rounded-lg overflow-hidden">
+                        <div 
+                          key={photo.id} 
+                          className="relative aspect-video rounded-lg overflow-hidden cursor-zoom-in"
+                          onClick={() => setSelectedPhotoUrl(photo.image_url)}
+                        >
                           <img 
                             src={photo.image_url}
-                            alt={photo.caption_es || event.title_es}
+                            alt={getLocalizedText(photo.caption_es, photo.caption_en) || getLocalizedText(event.title_es, event.title_en)}
                             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
                               e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNlOGZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzk4MzNlYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkRBTUUgVmFsZW5jaWE8L3RleHQ+Cjwvc3ZnPgo=';
                             }}
                           />
-                          {photo.caption_es && (
+                          {getLocalizedText(photo.caption_es, photo.caption_en) && (
                             <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2">
-                              <p className="text-sm">{photo.caption_es}</p>
+                              <p className="text-sm">{getLocalizedText(photo.caption_es, photo.caption_en)}</p>
                             </div>
                           )}
                         </div>
@@ -415,7 +472,7 @@ const EventDetail = () => {
             {event.faqs && event.faqs.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Preguntas frecuentes</CardTitle>
+                  <CardTitle>{i18n.language === 'en' ? 'Frequently asked questions' : 'Preguntas frecuentes'}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
@@ -428,7 +485,7 @@ const EventDetail = () => {
                             className="w-full justify-between p-4 h-auto text-left"
                             onClick={() => setExpandedFAQ(expandedFAQ === faq.id ? null : faq.id)}
                           >
-                            <span className="font-medium">{faq.question_es}</span>
+                            <span className="font-medium">{getLocalizedText(faq.question_es, faq.question_en)}</span>
                             {expandedFAQ === faq.id ? (
                               <ChevronUp className="h-4 w-4" />
                             ) : (
@@ -437,7 +494,7 @@ const EventDetail = () => {
                           </Button>
                           {expandedFAQ === faq.id && (
                             <div className="px-4 pb-4">
-                              <p className="text-muted-foreground">{faq.answer_es}</p>
+                              <p className="text-muted-foreground">{getLocalizedText(faq.answer_es, faq.answer_en)}</p>
                             </div>
                           )}
                         </div>
@@ -454,7 +511,7 @@ const EventDetail = () => {
               {/* Event Details Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Detalles del evento</CardTitle>
+                  <CardTitle>{i18n.language === 'en' ? 'Event details' : 'Detalles del evento'}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                 {/* Date */}
@@ -464,9 +521,11 @@ const EventDetail = () => {
                     <div className="flex items-center gap-3">
                       <Calendar className="h-5 w-5 text-purple-600" />
                       <div>
-                        <p className="font-medium">Día</p>
+                        <p className="font-medium">{i18n.language === 'en' ? 'Day' : 'Día'}</p>
                         <p className="text-sm text-muted-foreground">
-                          {`Todos los ${getWeekdayName(event.recurrence_weekday)}`}
+                          {i18n.language === 'en' 
+                            ? `Every ${getWeekdayName(event.recurrence_weekday)}` 
+                            : `Todos los ${getWeekdayName(event.recurrence_weekday)}`}
                         </p>
                       </div>
                     </div>
@@ -475,7 +534,7 @@ const EventDetail = () => {
                     <div className="flex items-center gap-3">
                       <Clock className="h-5 w-5 text-blue-600" />
                       <div>
-                        <p className="font-medium">Horario</p>
+                        <p className="font-medium">{i18n.language === 'en' ? 'Time' : 'Horario'}</p>
                         <p className="text-sm text-muted-foreground">
                           {formatRecurringTimeOnly(event)}
                         </p>
@@ -487,7 +546,7 @@ const EventDetail = () => {
                     <div className="flex items-center gap-3">
                       <Calendar className="h-5 w-5 text-purple-600" />
                       <div>
-                        <p className="font-medium">Fecha</p>
+                        <p className="font-medium">{i18n.language === 'en' ? 'Date' : 'Fecha'}</p>
                         <p className="text-sm text-muted-foreground">
                           {formatOnlyDate(event.start_datetime)}
                         </p>
@@ -498,7 +557,7 @@ const EventDetail = () => {
                     <div className="flex items-center gap-3">
                       <Clock className="h-5 w-5 text-blue-600" />
                       <div>
-                        <p className="font-medium">Horario</p>
+                        <p className="font-medium">{i18n.language === 'en' ? 'Time' : 'Horario'}</p>
                         <p className="text-sm text-muted-foreground">
                           {formatTimeRange(event.start_datetime, event.end_datetime)}
                         </p>
@@ -512,7 +571,7 @@ const EventDetail = () => {
                   <div className="flex items-center gap-3">
                     <MapPin className="h-5 w-5 text-green-600" />
                     <div>
-                      <p className="font-medium">Ubicación</p>
+                      <p className="font-medium">{i18n.language === 'en' ? 'Location' : 'Ubicación'}</p>
                       {event.place.name && (
                         <p className="text-sm text-muted-foreground">
                           {event.place.name}
@@ -537,9 +596,11 @@ const EventDetail = () => {
                   <div className="flex items-center gap-3">
                     <Users className="h-5 w-5 text-orange-600" />
                     <div>
-                      <p className="font-medium">Capacidad</p>
+                      <p className="font-medium">{i18n.language === 'en' ? 'Capacity' : 'Capacidad'}</p>
                       <p className="text-sm text-muted-foreground">
-                        {getAvailableSpots(event.capacity)} plazas disponibles de {event.capacity}
+                        {i18n.language === 'en' 
+                          ? `${getAvailableSpots(event.capacity)} spots available out of ${event.capacity}`
+                          : `${getAvailableSpots(event.capacity)} plazas disponibles de ${event.capacity}`}
                       </p>
                     </div>
                   </div>
@@ -549,10 +610,10 @@ const EventDetail = () => {
                 <div className="flex items-center gap-3">
                   <Euro className="h-5 w-5 text-purple-600" />
                   <div>
-                    <p className="font-medium">Precio</p>
+                    <p className="font-medium">{i18n.language === 'en' ? 'Price' : 'Precio'}</p>
                     {parseFloat(event.price_amount || '0') === 0 ? (
                       <Badge className="bg-green-600 hover:bg-green-700 text-white text-lg px-3 py-1">
-                        Gratuito
+                        {i18n.language === 'en' ? 'Free' : 'Gratuito'}
                       </Badge>
                     ) : (
                       <p className="text-lg font-bold dame-text-gradient">
@@ -569,7 +630,7 @@ const EventDetail = () => {
               {/* Contact & Registration */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Reservar tu lugar</CardTitle>
+                  <CardTitle>{i18n.language === 'en' ? 'Reserve your spot' : 'Reservar tu lugar'}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                 {/* WhatsApp Contact */}
@@ -577,11 +638,17 @@ const EventDetail = () => {
                   <Button 
                     className="w-full dame-gradient"
                     onClick={() => {
-                      let message = `Hola, me gustaría reservar para el evento "${event.title_es}"`;
+                      let message = i18n.language === 'en' 
+                        ? `Hello, I would like to reserve a spot for the event "${getLocalizedText(event.title_es, event.title_en)}"`
+                        : `Hola, me gustaría reservar para el evento "${getLocalizedText(event.title_es, event.title_en)}"`;
                       if (event.is_recurring_weekly) {
                         message += ` (${formatRecurringSchedule(event)})`;
                       } else {
+                        if (i18n.language === 'en') {
+                          message += ` on ${formatOnlyDate(event.start_datetime)} ${formatTimeRange(event.start_datetime, event.end_datetime)}`;
+                      } else {
                         message += ` el ${formatOnlyDate(event.start_datetime)} ${formatTimeRange(event.start_datetime, event.end_datetime)}`;
+                        }
                       }
                       
                       window.open(
@@ -591,14 +658,32 @@ const EventDetail = () => {
                     }}
                   >
                     <MessageCircle className="mr-2 h-4 w-4" />
-                    Reservar por WhatsApp
+                    {i18n.language === 'en' ? 'Reserve via WhatsApp' : 'Reservar por WhatsApp'}
                   </Button>
                 )}
+
+                {/* Community WhatsApp Link */}
+                {event.categories && event.categories.length > 0 && (() => {
+                  const communityLink = getCommunityWhatsAppLink(event.categories[0].name_es);
+                  if (communityLink) {
+                    return (
+                      <Button 
+                        variant="outline"
+                        className="w-full border-green-600 text-green-600 hover:bg-green-50"
+                        onClick={() => window.open(communityLink, '_blank')}
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        {i18n.language === 'en' ? 'Join Community' : 'Unirse a la Comunidad'}
+                      </Button>
+                    );
+                  }
+                  return null;
+                })()}
 
                 {/* Organizers Contact */}
                 {event.organizers && event.organizers.length > 0 && (
                   <div>
-                    <p className="font-medium mb-2">Organizadores:</p>
+                    <p className="font-medium mb-2">{i18n.language === 'en' ? 'Organizers:' : 'Organizadores:'}</p>
                     <div className="space-y-2">
                       {event.organizers.map(organizer => (
                         <div key={organizer.id} className="text-sm">
@@ -621,7 +706,7 @@ const EventDetail = () => {
                 {/* General Contact */}
                 <div className="pt-4 border-t">
                   <p className="text-sm text-muted-foreground mb-2">
-                    ¿Tienes preguntas? Contáctanos:
+                    {i18n.language === 'en' ? 'Have questions? Contact us:' : '¿Tienes preguntas? Contáctanos:'}
                   </p>
                   <div className="space-y-1">
                     <Button 
@@ -651,6 +736,26 @@ const EventDetail = () => {
           </div>
         </div>
       </div>
+    {/* Modal de imagen completa */}
+    {selectedPhotoUrl && (
+      <div 
+        className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"
+        onClick={() => setSelectedPhotoUrl(null)}
+      >
+        <img 
+          src={selectedPhotoUrl} 
+          alt={getLocalizedText(event.title_es, event.title_en)}
+          className="max-w-full max-h-full rounded-lg shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        />
+        <button 
+          className="absolute top-4 right-4 bg-white/90 hover:bg-white text-black rounded-full px-3 py-1 text-sm"
+          onClick={() => setSelectedPhotoUrl(null)}
+        >
+          {i18n.language === 'en' ? 'Close' : 'Cerrar'}
+        </button>
+      </div>
+    )}
     </div>
   );
 };

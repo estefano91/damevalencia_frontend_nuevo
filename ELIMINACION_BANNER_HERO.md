@@ -200,3 +200,6 @@ import { Palette, Music, Heart } from "lucide-react";
 - **Imports optimizados**: Solo imports necesarios
 
 
+
+
+

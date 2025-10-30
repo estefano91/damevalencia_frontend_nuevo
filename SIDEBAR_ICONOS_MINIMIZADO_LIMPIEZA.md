@@ -297,3 +297,6 @@ const getIconForCategory = (iconName: string) => {
 - **`src/components/Navigation.tsx`** → WhatsApp + ThemeToggle agregados
 
 
+
+
+

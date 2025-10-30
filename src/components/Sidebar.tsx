@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "react-i18next";
 import {
   Music2,
   Paintbrush2,
@@ -17,6 +18,7 @@ import { PersonStanding, Castle } from "lucide-react";
 interface SidebarProps {
   userType?: string | null;
   onCategoryFilter?: (categoryId: number | null) => void;
+  selectedCategoryId?: number | null;
   availableCategories?: Array<{
     id: number;
     name_es: string;
@@ -28,8 +30,24 @@ interface SidebarProps {
   setSidebarOpen?: (open: boolean) => void;
 }
 
-const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebarOpen, setSidebarOpen }: SidebarProps) => {
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availableCategories = [], sidebarOpen, setSidebarOpen }: SidebarProps) => {
+  const { i18n } = useTranslation();
+
+  // Auto-colapsar sidebar al seleccionar una categoría en mobile
+  const handleCategoryClick = (categoryId: number | null) => {
+    if (onCategoryFilter) {
+      onCategoryFilter(categoryId);
+    }
+    // Auto-colapsar en mobile (cuando sidebarOpen puede ser true)
+    if (sidebarOpen && setSidebarOpen) {
+      // Solo colapsar si estamos en mobile (detectado por la existencia de setSidebarOpen y sidebarOpen)
+      // En desktop, sidebarOpen se gestiona manualmente
+      const isMobileSidebar = window.innerWidth < 768;
+      if (isMobileSidebar) {
+        setSidebarOpen(false);
+      }
+    }
+  };
 
   // Mapear iconos de la API a iconos más representativos y llamativos
   const getIconForCategory = (iconName: string, nameEs?: string) => {
@@ -51,59 +69,88 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
     return Music2;
   };
 
-  // Colores sólidos coherentes con la paleta DAME
+  // Colores sólidos coherentes con la paleta DAME por tipo de categoría
   const getCategoryColors = (categoryId: number) => {
     const dameColors = [
       // Música - Morado sólido DAME
       {
         color: "text-white",
-        bgColor: "bg-purple-600",
-        bgColorInactive: "bg-purple-100 dark:bg-purple-900/30",
-        borderColor: "border-purple-500",
-        hoverColor: "hover:bg-purple-700"
+        iconColor: "text-purple-700",
+        bgColor: "bg-purple-700",
+        bgColorInactive: "bg-purple-200 dark:bg-purple-900/40",
+        borderColor: "border-purple-600",
+        hoverColor: "hover:bg-purple-800",
+        ringColor: "ring-purple-200"
       },
       // Baile - Rosa sólido DAME  
       {
         color: "text-white",
-        bgColor: "bg-pink-600",
-        bgColorInactive: "bg-pink-100 dark:bg-pink-900/30",
-        borderColor: "border-pink-500",
-        hoverColor: "hover:bg-pink-700"
+        iconColor: "text-pink-700",
+        bgColor: "bg-pink-700",
+        bgColorInactive: "bg-pink-200 dark:bg-pink-900/40",
+        borderColor: "border-pink-600",
+        hoverColor: "hover:bg-pink-800",
+        ringColor: "ring-pink-200"
       },
       // Arte - Índigo sólido
       {
         color: "text-white",
-        bgColor: "bg-indigo-600",
-        bgColorInactive: "bg-indigo-100 dark:bg-indigo-900/30", 
-        borderColor: "border-indigo-500",
-        hoverColor: "hover:bg-indigo-700"
+        iconColor: "text-indigo-700",
+        bgColor: "bg-indigo-700",
+        bgColorInactive: "bg-indigo-200 dark:bg-indigo-900/40", 
+        borderColor: "border-indigo-600",
+        hoverColor: "hover:bg-indigo-800",
+        ringColor: "ring-indigo-200"
       },
       // Fitness - Verde sólido
       {
         color: "text-white",
-        bgColor: "bg-green-600",
-        bgColorInactive: "bg-green-100 dark:bg-green-900/30",
-        borderColor: "border-green-500", 
-        hoverColor: "hover:bg-green-700"
+        iconColor: "text-green-700",
+        bgColor: "bg-green-700",
+        bgColorInactive: "bg-green-200 dark:bg-green-900/40",
+        borderColor: "border-green-600", 
+        hoverColor: "hover:bg-green-800",
+        ringColor: "ring-green-200"
       },
       // Apoyo - Azul sólido
       {
         color: "text-white",
-        bgColor: "bg-blue-600",
-        bgColorInactive: "bg-blue-100 dark:bg-blue-900/30",
-        borderColor: "border-blue-500",
-        hoverColor: "hover:bg-blue-700"
+        iconColor: "text-blue-700",
+        bgColor: "bg-blue-700",
+        bgColorInactive: "bg-blue-200 dark:bg-blue-900/40",
+        borderColor: "border-blue-600",
+        hoverColor: "hover:bg-blue-800",
+        ringColor: "ring-blue-200"
       }
     ];
     
     return dameColors[(categoryId - 1) % dameColors.length];
   };
 
-  const handleCategoryFilter = (categoryId: number | null) => {
-    setSelectedCategory(categoryId);
-    if (onCategoryFilter) {
-      onCategoryFilter(categoryId);
+  // Determina colores por nombre de categoría (más fiable que el id)
+  const getColorsForCategoryName = (nameEs?: string) => {
+    const name = (nameEs || '').toLowerCase();
+    if (name.includes('música') || name.includes('musica') || name.includes('music')) {
+      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-purple-700', bgColorInactive: 'bg-purple-200', borderColor: 'border-purple-600', hoverColor: 'hover:bg-purple-800', ringColor: 'ring-purple-200' };
     }
+    if (name.includes('baile') || name.includes('dance')) {
+      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-pink-700', bgColorInactive: 'bg-pink-200', borderColor: 'border-pink-600', hoverColor: 'hover:bg-pink-800', ringColor: 'ring-pink-200' };
+    }
+    if (name.includes('arte') || name.includes('cultura') || name.includes('art')) {
+      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-indigo-700', bgColorInactive: 'bg-indigo-200', borderColor: 'border-indigo-600', hoverColor: 'hover:bg-indigo-800', ringColor: 'ring-indigo-200' };
+    }
+    if (name.includes('fit') || name.includes('deporte') || name.includes('fitness')) {
+      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-green-700', bgColorInactive: 'bg-green-200', borderColor: 'border-green-600', hoverColor: 'hover:bg-green-800', ringColor: 'ring-green-200' };
+    }
+    if (name.includes('apoyo') || name.includes('comunidad') || name.includes('support') || name.includes('community')) {
+      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-blue-700', bgColorInactive: 'bg-blue-200', borderColor: 'border-blue-600', hoverColor: 'hover:bg-blue-800', ringColor: 'ring-blue-200' };
+    }
+    // Fallback al mapping por id
+    return getCategoryColors((nameEs?.length || 0) % 5 + 1);
+  };
+
+  const handleCategoryFilter = (categoryId: number | null) => {
+    handleCategoryClick(categoryId);
   };
 
   return (
@@ -114,10 +161,10 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
           variant="ghost"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="w-full h-12 px-4 py-2 text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:hover:bg-purple-800/50 border-b-2 border-purple-200 dark:border-purple-700 hover:border-purple-400 transition-all duration-200 rounded-none flex items-center justify-between group"
-          title="Minimizar menú"
+          title={i18n.language === 'en' ? 'Minimize menu' : 'Minimizar menú'}
         >
           <span className="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-purple-600">
-            Menú lateral
+            {i18n.language === 'en' ? 'Sidebar menu' : 'Menú lateral'}
           </span>
           <ChevronLeft className="h-5 w-5" />
         </Button>
@@ -130,7 +177,7 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
           size="sm"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="absolute top-2 left-1/2 transform -translate-x-1/2 h-10 w-10 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg border-2 border-purple-300 hover:border-purple-500 transition-all duration-200 shadow-md hover:shadow-lg z-10"
-          title="Expandir menú"
+          title={i18n.language === 'en' ? 'Expand menu' : 'Expandir menú'}
         >
           <ChevronRight className="h-5 w-5" />
         </Button>
@@ -147,20 +194,20 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
               {/* Botón "Todos los eventos" */}
               <Button
                 variant="ghost"
-                className={`w-full justify-start h-auto py-3 px-3 rounded-lg border-2 transition-all duration-200 ${
-                  selectedCategory === null
-                    ? 'bg-purple-600 border-purple-500 text-white shadow-lg'
-                    : 'bg-purple-100 dark:bg-purple-900/30 border-gray-300 hover:border-purple-400 hover:bg-purple-200 dark:hover:bg-purple-800/50'
+                className={`w-full justify-start h-auto py-3 px-3 rounded-lg transition-all duration-200 ${
+                  selectedCategoryId === null
+                    ? 'bg-purple-700 border-purple-600 text-white shadow-lg border-4 ring-2 ring-white/70'
+                    : 'bg-purple-700 border-purple-600 text-white border-2 hover:bg-purple-800 hover:border-purple-700'
                 }`}
                 onClick={() => handleCategoryFilter(null)}
               >
-                <List className={`mr-3 h-5 w-5 ${selectedCategory === null ? 'text-white' : 'text-purple-600'}`} />
+                <List className={`mr-3 h-5 w-5 text-white`} />
                 <div className="text-left">
-                  <div className={`font-bold text-sm ${selectedCategory === null ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                    Todos los eventos
+                  <div className={`font-bold text-sm ${selectedCategoryId === null ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                    {i18n.language === 'en' ? 'All events' : 'Todos los eventos'}
                   </div>
-                  <div className={`text-xs ${selectedCategory === null ? 'text-purple-100' : 'text-gray-500'}`}>
-                    Ver todas las categorías
+                  <div className={`text-xs ${selectedCategoryId === null ? 'text-purple-100' : 'text-gray-500'}`}>
+                    {i18n.language === 'en' ? 'View all categories' : 'Ver todas las categorías'}
                   </div>
                 </div>
               </Button>
@@ -169,33 +216,35 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
               <div className="space-y-2 flex-1 min-h-0 overflow-y-auto">
                 {availableCategories.map((category) => {
                   const CategoryIcon = getIconForCategory(category.icon, category.name_es);
-                  const colors = getCategoryColors(category.id);
-                  const isSelected = selectedCategory === category.id;
+                  const colors = getColorsForCategoryName(category.name_es);
+                  const isSelected = selectedCategoryId === category.id;
                   
                   return (
                     <Button
                       key={category.id}
                       variant="ghost"
-                      className={`w-full justify-start h-auto py-3 px-3 rounded-lg border-2 transition-all duration-200 ${
-                        isSelected
-                          ? `${colors.bgColor} ${colors.borderColor} text-white shadow-lg`
-                          : `${colors.bgColorInactive} border-gray-300 ${colors.hoverColor} hover:shadow-md`
-                      }`}
+                className={`w-full justify-start h-auto py-3 px-3 rounded-lg transition-all duration-200 ${
+                  isSelected
+                    ? `${colors.bgColor} ${colors.borderColor} text-white shadow-lg border-4 ring-2 ${colors.ringColor}`
+                    : `${colors.bgColor} ${colors.borderColor} text-white border-2 ${colors.hoverColor} hover:shadow-md`
+                }`}
                       onClick={() => handleCategoryFilter(category.id)}
                     >
                       <CategoryIcon 
-                        className={`mr-3 h-5 w-5 ${colors.color}`} 
+                        className={`mr-3 h-5 w-5 text-white`} 
                       />
                       <div className="text-left flex-1">
                         <div className={`font-bold text-sm ${
                           isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-200'
                         }`}>
-                          {category.name_es}
+                          {i18n.language === 'en' ? (category.name_en || category.name_es) : category.name_es}
                         </div>
                         <div className={`text-xs ${
                           isSelected ? 'text-white/90' : 'text-gray-500 dark:text-gray-400'
                         }`}>
-                          {category.total_events || 0} eventos
+                          {i18n.language === 'en' 
+                            ? `${category.total_events || 0} events`
+                            : `${category.total_events || 0} eventos`}
                         </div>
                       </div>
                       {isSelected && (
@@ -221,45 +270,45 @@ const Sidebar = ({ userType, onCategoryFilter, availableCategories = [], sidebar
             variant="ghost"
             size="sm"
             className={`h-10 w-10 p-0 rounded-lg border-2 transition-all duration-200 ${
-              selectedCategory === null
-                ? 'bg-purple-600 border-purple-500 text-white shadow-lg'
-                : 'bg-purple-100 dark:bg-purple-900/30 border-gray-300 hover:border-purple-400 hover:bg-purple-200 dark:hover:bg-purple-800/50'
+              selectedCategoryId === null
+                ? 'bg-purple-700 border-purple-600 text-white shadow-lg'
+                : 'bg-purple-200 dark:bg-purple-900/40 border-purple-600 hover:border-purple-700 hover:bg-purple-300 dark:hover:bg-purple-800/60'
             }`}
             onClick={() => handleCategoryFilter(null)}
-            title="Todos los eventos"
+            title={i18n.language === 'en' ? 'All events' : 'Todos los eventos'}
           >
-            <List className={`h-5 w-5 ${selectedCategory === null ? 'text-white' : 'text-purple-600'}`} />
+            <List className={`h-5 w-5 ${selectedCategoryId === null ? 'text-white' : 'text-purple-600'}`} />
           </Button>
 
           {/* Iconos de Categorías verticales */}
           {availableCategories.map((category) => {
             const CategoryIcon = getIconForCategory(category.icon, category.name_es);
-            const colors = getCategoryColors(category.id);
-            const isSelected = selectedCategory === category.id;
+            const colors = getColorsForCategoryName(category.name_es);
+            const isSelected = selectedCategoryId === category.id;
             
             return (
               <Button
                 key={category.id}
                 variant="ghost"
                 size="sm"
-                className={`h-10 w-10 p-0 rounded-lg border-2 transition-all duration-200 ${
+                className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 ${
                   isSelected
-                    ? `${colors.bgColor} ${colors.borderColor} text-white shadow-lg`
-                    : `${colors.bgColorInactive} border-gray-300 ${colors.hoverColor} hover:shadow-md`
+                    ? `${colors.bgColor} ${colors.borderColor} text-white shadow-lg border-4 ring-2 ${colors.ringColor}`
+                    : `${colors.bgColor} ${colors.borderColor} text-white border-2 ${colors.hoverColor} hover:shadow-md`
                 }`}
                 onClick={() => handleCategoryFilter(category.id)}
                 title={category.name_es}
               >
                 <CategoryIcon 
-                  className={`h-5 w-5 ${colors.color}`} 
+                  className={`h-5 w-5 text-white`} 
                 />
               </Button>
             );
           })}
 
           {/* Indicador de filtro activo cuando minimizado */}
-          {selectedCategory && (
-            <div className="mt-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" title="Filtro activo" />
+          {selectedCategoryId && (
+            <div className="mt-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" title={i18n.language === 'en' ? 'Active filter' : 'Filtro activo'} />
           )}
         </div>
       )}
