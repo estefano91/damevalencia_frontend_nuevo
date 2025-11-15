@@ -723,16 +723,16 @@ const EventDetail = () => {
         if (!reserveLink) return null;
         return (
           <div className="fixed bottom-4 left-0 right-0 px-4 z-40">
-            <div className="relative max-w-md mx-auto">
+            <div className="relative max-w-4xl mx-auto">
               <div className="absolute inset-0 rounded-full bg-black/40 blur-xl opacity-70" />
-              <div className="relative flex items-center gap-2 bg-white rounded-full p-1 shadow-[0_15px_40px_rgba(0,0,0,0.25)]">
-                <span className="px-3 py-1 rounded-full border text-xs font-semibold text-gray-800 bg-white">
+              <div className="relative flex flex-row items-center gap-3 bg-white rounded-full p-2 sm:p-3 shadow-[0_25px_50px_rgba(0,0,0,0.25)]">
+                <span className="px-4 py-2 rounded-full border text-sm font-semibold text-gray-800 bg-white text-center min-w-[110px] flex items-center justify-center">
                   {parseFloat(event?.price_amount || '0') === 0
                     ? (i18n.language === 'en' ? 'FREE' : 'GRATIS')
                     : formatPrice(event?.price_amount, event?.price_currency)}
                 </span>
                 <Button 
-                  className="flex-1 h-12 rounded-full text-base font-semibold bg-gray-900 text-white hover:bg-gray-800 transition-colors"
+                  className="flex-1 h-16 sm:h-14 rounded-[999px] text-lg font-semibold bg-gray-900 text-white hover:bg-gray-800 transition-colors"
                   onClick={() => window.open(reserveLink, '_blank')}
                 >
                   {i18n.language === 'en' ? 'Attend' : 'Asistir'}
