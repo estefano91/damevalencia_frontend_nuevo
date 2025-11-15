@@ -12,10 +12,7 @@ import {
   ArrowLeft, 
   Calendar, 
   MapPin, 
-  Users, 
   Clock, 
-  Euro,
-  MessageCircle,
   Star,
   ChevronDown,
   ChevronUp,
@@ -34,7 +31,6 @@ const EventDetail = () => {
   const [event, setEvent] = useState<DameEventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showAllPhotos, setShowAllPhotos] = useState(false);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [, forceUpdate] = useState({});
@@ -218,6 +214,53 @@ const EventDetail = () => {
     return startTime || '';
   };
 
+  // Genera próximas ocurrencias para eventos semanales (siguientes 4)
+  const generateNextWeeklyOccurrences = (eventData: DameEventDetail, count: number = 4): Date[] => {
+    try {
+      if (!eventData || !eventData.is_recurring_weekly || eventData.recurrence_weekday === undefined || !eventData.recurrence_start_time) {
+        return [];
+      }
+      if (!i18n || !i18n.language) {
+        return [];
+      }
+      const results: Date[] = [];
+      const today = new Date();
+      // Convertir nuestro weekday (0=lunes..6=domingo) a JS getDay (0=domingo..6=sábado)
+      const jsTargetDay = (eventData.recurrence_weekday + 1) % 7; // lunes(0)->1 ... domingo(6)->0
+      const currentJsDay = today.getDay();
+      let addDays = jsTargetDay - currentJsDay;
+      if (addDays < 0) addDays += 7;
+      // Si es hoy pero la hora ya pasó, igualmente apuntar a la próxima semana
+      const timeParts = eventData.recurrence_start_time.split(":");
+      if (!timeParts || timeParts.length < 2) return [];
+      const hh = parseInt(timeParts[0], 10) || 0;
+      const mm = parseInt(timeParts[1], 10) || 0;
+      const candidate = new Date(today);
+      candidate.setDate(today.getDate() + addDays);
+      candidate.setHours(hh, mm, 0, 0);
+      if (candidate <= today) {
+        candidate.setDate(candidate.getDate() + 7);
+      }
+      for (let i = 0; i < count; i++) {
+        const d = new Date(candidate);
+        d.setDate(candidate.getDate() + i * 7);
+        results.push(new Date(d));
+      }
+      return results;
+    } catch (error) {
+      console.error('Error generating next occurrences:', error);
+      return [];
+    }
+  };
+
+  const formatCompactDate = (date: Date): string => {
+    const locale = i18n.language === 'en' ? 'en-US' : 'es-ES';
+    return date.toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   const getProgramIconNode = (iconText?: string) => {
     // Evitar mostrar palabras tipo "SCHEDULE" y mapear a íconos
     const normalized = (iconText || '').toUpperCase();
@@ -255,6 +298,19 @@ const EventDetail = () => {
       return "https://chat.whatsapp.com/HYnZYcXgAti3XrBRPtqyWv";
     }
     
+    return null;
+  };
+
+  const getReserveLink = () => {
+    if (event?.tickets_webview) return event.tickets_webview;
+    const whatsappLink = event?.whatsapp_contact;
+    if (whatsappLink) {
+      const sanitized = whatsappLink.replace(/\+/, '').replace(/\s/g, '');
+      const message = i18n.language === 'en' 
+        ? `Hello, I would like to reserve a spot for the event "${getLocalizedText(event.title_es, event.title_en)}"`
+        : `Hola, me gustaría reservar para el evento "${getLocalizedText(event.title_es, event.title_en)}"`;
+      return `https://wa.me/${sanitized}?text=${encodeURIComponent(message)}`;
+    }
     return null;
   };
 
@@ -298,7 +354,7 @@ const EventDetail = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-8 pb-28">
         {/* Back Button */}
         <Button 
           onClick={() => navigate("/")} 
@@ -309,52 +365,63 @@ const EventDetail = () => {
           {i18n.language === 'en' ? 'Back' : 'Volver al inicio'}
         </Button>
 
-        {/* Main Event Image */}
-        <div className="relative w-full h-64 sm:h-80 md:h-96 rounded-lg overflow-hidden mb-6 shadow-lg">
-          {event.main_photo_url ? (
-            <img 
-              src={event.main_photo_url}
-              alt={getLocalizedText(event.title_es, event.title_en)}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNlOGZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzk4MzNlYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkRBTUUgVmFsZW5jaWE8L3RleHQ+Cjwvc3ZnPgo=';
-              }}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-pink-100">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🎭</div>
-                <p className="text-xl text-purple-600 font-medium">DAME Valencia</p>
+        {/* Hero Image for mobile */}
+        <div className="lg:hidden w-full mb-6">
+          <div className="relative w-full aspect-[680/384] rounded-lg overflow-hidden shadow-lg">
+            {event.main_photo_url ? (
+              <img 
+                src={event.main_photo_url}
+                alt={getLocalizedText(event.title_es, event.title_en)}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNlOGZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzk4MzNlYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkRBTUUgVmFsZW5jaWE8L3RleHQ+Cjwvc3ZnPgo=';
+                }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-pink-100">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">🎭</div>
+                  <p className="text-xl text-purple-600 font-medium">DAME Valencia</p>
+                </div>
               </div>
-            </div>
-          )}
-          
-          {/* Featured Badge */}
-          {event.is_featured && (
-            <div className="absolute top-4 left-4">
-              <Badge className="bg-yellow-500 text-white">
-                <Star className="mr-1 h-3 w-3" />
-                {i18n.language === 'en' ? 'Featured' : 'Destacado'}
-              </Badge>
-            </div>
-          )}
-
-          {/* Price Badge eliminado en portada */}
+            )}
+            {event.is_featured && (
+              <div className="absolute top-4 left-4">
+                <Badge className="bg-yellow-500 text-white">
+                  <Star className="mr-1 h-3 w-3" />
+                  {i18n.language === 'en' ? 'Featured' : 'Destacado'}
+                </Badge>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             {/* Title and Summary */}
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2 dame-text-gradient">
+              <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 dark:text-white">
                 {getLocalizedText(event.title_es, event.title_en)}
               </h1>
-              {event.is_recurring_weekly && (
-                <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
-                  📅 {i18n.language === 'en' ? 'This event repeats weekly' : 'Este evento se repite semanalmente'}
-                </p>
-              )}
+              {event.is_recurring_weekly && (() => {
+                const nextOccurrences = generateNextWeeklyOccurrences(event, 8);
+                if (nextOccurrences.length === 0) return null;
+                return (
+                  <div className="mb-4 -mx-1">
+                    <div className="flex gap-2 overflow-x-auto pb-2 px-1">
+                      {nextOccurrences.map((occ, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1 rounded-full border text-xs font-medium text-gray-800 whitespace-nowrap bg-white border-gray-200 shadow-sm"
+                        >
+                          {formatCompactDate(occ)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               {/* Resumen eliminado según requisitos */}
               
               {/* Tags */}
@@ -382,6 +449,44 @@ const EventDetail = () => {
                   <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
                     {getLocalizedText(event.description_es, event.description_en)}
                   </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Photo Gallery */}
+            {event.photos && event.photos.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {i18n.language === 'en' ? 'Photo gallery' : 'Galería de fotos'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+                    {event.photos
+                      .sort((a, b) => a.sort_order - b.sort_order)
+                      .map(photo => (
+                        <div 
+                          key={photo.id} 
+                          className="relative aspect-video rounded-lg overflow-hidden cursor-zoom-in"
+                          onClick={() => setSelectedPhotoUrl(photo.image_url)}
+                        >
+                          <img 
+                            src={photo.image_url}
+                            alt={getLocalizedText(photo.caption_es, photo.caption_en) || getLocalizedText(event.title_es, event.title_en)}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNlOGZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzk4MzNlYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkRBTUUgVmFsZW5jaWE8L3RleHQ+Cjwvc3ZnPgo=';
+                            }}
+                          />
+                          {getLocalizedText(photo.caption_es, photo.caption_en) && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2">
+                              <p className="text-sm">{getLocalizedText(photo.caption_es, photo.caption_en)}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -417,326 +522,228 @@ const EventDetail = () => {
               </Card>
             )}
 
-            {/* Additional Photos */}
-            {event.photos && event.photos.length > 1 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    {i18n.language === 'en' ? 'Photo gallery' : 'Galería de fotos'}
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setShowAllPhotos(!showAllPhotos)}
-                    >
-                      {showAllPhotos ? (
-                        <>{i18n.language === 'en' ? 'Hide' : 'Ocultar'} <ChevronUp className="ml-1 h-4 w-4" /></>
-                      ) : (
-                        <>{i18n.language === 'en' ? 'Show all' : 'Ver todas'} <ChevronDown className="ml-1 h-4 w-4" /></>
-                      )}
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className={`grid gap-4 ${showAllPhotos ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
-                    {event.photos
-                      .sort((a, b) => a.sort_order - b.sort_order)
-                      .slice(0, showAllPhotos ? undefined : 4)
-                      .map(photo => (
-                        <div 
-                          key={photo.id} 
-                          className="relative aspect-video rounded-lg overflow-hidden cursor-zoom-in"
-                          onClick={() => setSelectedPhotoUrl(photo.image_url)}
-                        >
-                          <img 
-                            src={photo.image_url}
-                            alt={getLocalizedText(photo.caption_es, photo.caption_en) || getLocalizedText(event.title_es, event.title_en)}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                            onError={(e) => {
-                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNlOGZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzk4MzNlYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkRBTUUgVmFsZW5jaWE8L3RleHQ+Cjwvc3ZnPgo=';
-                            }}
-                          />
-                          {getLocalizedText(photo.caption_es, photo.caption_en) && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2">
-                              <p className="text-sm">{getLocalizedText(photo.caption_es, photo.caption_en)}</p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-
-            {/* FAQs */}
-            {event.faqs && event.faqs.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{i18n.language === 'en' ? 'Frequently asked questions' : 'Preguntas frecuentes'}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {event.faqs
-                      .sort((a, b) => a.sort_order - b.sort_order)
-                      .map(faq => (
-                        <div key={faq.id} className="border rounded-lg">
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-between p-4 h-auto text-left"
-                            onClick={() => setExpandedFAQ(expandedFAQ === faq.id ? null : faq.id)}
-                          >
-                            <span className="font-medium">{getLocalizedText(faq.question_es, faq.question_en)}</span>
-                            {expandedFAQ === faq.id ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button>
-                          {expandedFAQ === faq.id && (
-                            <div className="px-4 pb-4">
-                              <p className="text-muted-foreground">{getLocalizedText(faq.answer_es, faq.answer_en)}</p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           {/* Sidebar */}
-          <div className="">
+          <div className="lg:col-span-2">
             <div className="sticky top-24 sm:top-28 md:top-32 space-y-6">
+              {/* Hero Image */}
+              <div className="rounded-lg overflow-hidden shadow-lg hidden lg:block">
+                <div className="relative w-full aspect-[680/384] bg-gradient-to-br from-purple-100 to-pink-100">
+                  {event.main_photo_url ? (
+                    <img
+                      src={event.main_photo_url}
+                      alt={getLocalizedText(event.title_es, event.title_en)}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNlOGZmIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzk4MzNlYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkRBTUUgVmFsZW5jaWE8L3RleHQ+Cjwvc3ZnPgo=';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-6xl mb-4">🎭</div>
+                        <p className="text-xl text-purple-600 font-medium">DAME Valencia</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {event.is_featured && (
+                    <div className="absolute top-4 left-4">
+                      <Badge className="bg-yellow-500 text-white">
+                        <Star className="mr-1 h-3 w-3" />
+                        {i18n.language === 'en' ? 'Featured' : 'Destacado'}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Event Details Card */}
               <Card>
                 <CardHeader>
                   <CardTitle>{i18n.language === 'en' ? 'Event details' : 'Detalles del evento'}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                {/* Date */}
-                {event.is_recurring_weekly ? (
-                  <>
-                    {/* Día de la semana */}
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-purple-600" />
-                      <div>
-                        <p className="font-medium">{i18n.language === 'en' ? 'Day' : 'Día'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {i18n.language === 'en' 
-                            ? `Every ${getWeekdayName(event.recurrence_weekday)}` 
-                            : `Todos los ${getWeekdayName(event.recurrence_weekday)}`}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Horario */}
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <p className="font-medium">{i18n.language === 'en' ? 'Time' : 'Horario'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatRecurringTimeOnly(event)}
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-purple-600" />
-                      <div>
-                        <p className="font-medium">{i18n.language === 'en' ? 'Date' : 'Fecha'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatOnlyDate(event.start_datetime)}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Time */}
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-5 w-5 text-blue-600" />
-                      <div>
-                        <p className="font-medium">{i18n.language === 'en' ? 'Time' : 'Horario'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatTimeRange(event.start_datetime, event.end_datetime)}
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Location */}
-                {event.place && (
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-green-600" />
-                    <div>
-                      <p className="font-medium">{i18n.language === 'en' ? 'Location' : 'Ubicación'}</p>
-                      {event.place.name && (
-                        <p className="text-sm text-muted-foreground">
-                          {event.place.name}
-                        </p>
-                      )}
-                      {event.place.address && (
-                        <p className="text-sm text-muted-foreground">
-                          {event.place.address}
-                        </p>
-                      )}
-                      {event.place.city && (
-                        <p className="text-sm text-muted-foreground">
-                          {event.place.city}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Capacity */}
-                {event.capacity && (
-                  <div className="flex items-center gap-3">
-                    <Users className="h-5 w-5 text-orange-600" />
-                    <div>
-                      <p className="font-medium">{i18n.language === 'en' ? 'Capacity' : 'Capacidad'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {i18n.language === 'en' 
-                          ? `${getAvailableSpots(event.capacity)} spots available out of ${event.capacity}`
-                          : `${getAvailableSpots(event.capacity)} plazas disponibles de ${event.capacity}`}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Price */}
-                <div className="flex items-center gap-3">
-                  <Euro className="h-5 w-5 text-purple-600" />
-                  <div>
-                    <p className="font-medium">{i18n.language === 'en' ? 'Price' : 'Precio'}</p>
-                    {parseFloat(event.price_amount || '0') === 0 ? (
-                      <Badge className="bg-green-600 hover:bg-green-700 text-white text-lg px-3 py-1">
-                        {i18n.language === 'en' ? 'Free' : 'Gratuito'}
-                      </Badge>
-                    ) : (
-                      <p className="text-lg font-bold dame-text-gradient">
-                        {formatPrice(event.price_amount, event.price_currency)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Recurring notice movido bajo el título */}
-                </CardContent>
-              </Card>
-
-              {/* Contact & Registration */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>{i18n.language === 'en' ? 'Reserve your spot' : 'Reservar tu lugar'}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                {/* WhatsApp Contact */}
-                {event.whatsapp_contact && (
-                  <Button 
-                    className="w-full dame-gradient"
-                    onClick={() => {
-                      let message = i18n.language === 'en' 
-                        ? `Hello, I would like to reserve a spot for the event "${getLocalizedText(event.title_es, event.title_en)}"`
-                        : `Hola, me gustaría reservar para el evento "${getLocalizedText(event.title_es, event.title_en)}"`;
-                      if (event.is_recurring_weekly) {
-                        message += ` (${formatRecurringSchedule(event)})`;
-                      } else {
-                        if (i18n.language === 'en') {
-                          message += ` on ${formatOnlyDate(event.start_datetime)} ${formatTimeRange(event.start_datetime, event.end_datetime)}`;
-                      } else {
-                        message += ` el ${formatOnlyDate(event.start_datetime)} ${formatTimeRange(event.start_datetime, event.end_datetime)}`;
-                        }
-                      }
-                      
-                      window.open(
-                        `https://wa.me/${event.whatsapp_contact.replace(/\+/, '').replace(/\s/g, '')}?text=${encodeURIComponent(message)}`,
-                        '_blank'
-                      );
-                    }}
-                  >
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    {i18n.language === 'en' ? 'Reserve via WhatsApp' : 'Reservar por WhatsApp'}
-                  </Button>
-                )}
-
-                {/* Community WhatsApp Link */}
-                {event.categories && event.categories.length > 0 && (() => {
-                  const communityLink = getCommunityWhatsAppLink(event.categories[0].name_es);
-                  if (communityLink) {
-                    return (
-                      <Button 
-                        variant="outline"
-                        className="w-full border-green-600 text-green-600 hover:bg-green-50"
-                        onClick={() => window.open(communityLink, '_blank')}
-                      >
-                        <Users className="mr-2 h-4 w-4" />
-                        {i18n.language === 'en' ? 'Join Community' : 'Unirse a la Comunidad'}
-                      </Button>
-                    );
-                  }
-                  return null;
-                })()}
-
-                {/* Organizers Contact */}
-                {event.organizers && event.organizers.length > 0 && (
-                  <div>
-                    <p className="font-medium mb-2">{i18n.language === 'en' ? 'Organizers:' : 'Organizadores:'}</p>
-                    <div className="space-y-2">
-                      {event.organizers.map(organizer => (
-                        <div key={organizer.id} className="text-sm">
-                          <p className="font-medium">{organizer.name}</p>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="p-0 h-auto text-muted-foreground hover:text-primary"
-                            onClick={() => window.open(`mailto:${organizer.email}`)}
-                          >
-                            <Mail className="mr-1 h-3 w-3" />
-                            {organizer.email}
-                          </Button>
+                  {/* Date */}
+                  {event.is_recurring_weekly ? (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-purple-600" />
+                        <div className="flex-1">
+                          <p className="font-medium">{i18n.language === 'en' ? 'Day' : 'Día'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {i18n.language === 'en' 
+                              ? `Every ${getWeekdayName(event.recurrence_weekday)}`
+                              : `Todos los ${getWeekdayName(event.recurrence_weekday)}`}
+                          </p>
+                          {(() => {
+                            const nextOccurrences = generateNextWeeklyOccurrences(event, 4);
+                            return nextOccurrences.length > 0 ? (
+                              <div className="mt-2 space-y-1">
+                                <p className="text-xs font-medium text-muted-foreground/80">
+                                  {i18n.language === 'en' ? 'Next dates:' : 'Próximas fechas:'}
+                                </p>
+                                <div className="space-y-0.5">
+                                  {nextOccurrences.map((occ, idx) => (
+                                    <p key={idx} className="text-xs text-muted-foreground">
+                                      • {formatCompactDate(occ)}
+                                    </p>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Clock className="h-5 w-5 text-blue-600" />
+                        <div>
+                          <p className="font-medium">{i18n.language === 'en' ? 'Time' : 'Horario'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatRecurringTimeOnly(event)}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-purple-600" />
+                        <div>
+                          <p className="font-medium">{i18n.language === 'en' ? 'Date' : 'Fecha'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatOnlyDate(event.start_datetime)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Clock className="h-5 w-5 text-blue-600" />
+                        <div>
+                          <p className="font-medium">{i18n.language === 'en' ? 'Time' : 'Horario'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatTimeRange(event.start_datetime, event.end_datetime)}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
 
-                {/* General Contact */}
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {i18n.language === 'en' ? 'Have questions? Contact us:' : '¿Tienes preguntas? Contáctanos:'}
-                  </p>
-                  <div className="space-y-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="p-0 h-auto text-muted-foreground hover:text-primary"
-                      onClick={() => window.open('tel:+34658236665')}
-                    >
-                      <Phone className="mr-1 h-3 w-3" />
-                      (+34) 658 236 665
-                    </Button>
-                    <br />
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="p-0 h-auto text-muted-foreground hover:text-primary"
-                      onClick={() => window.open('mailto:admin@organizaciondame.org')}
-                    >
-                      <Mail className="mr-1 h-3 w-3" />
-                      admin@organizaciondame.org
-                    </Button>
-                  </div>
-                </div>
+                  {/* Location */}
+                  {event.place && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <MapPin className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="font-medium">{i18n.language === 'en' ? 'Location' : 'Ubicación'}</p>
+                          {event.place.name && (
+                            <p className="text-sm text-muted-foreground">{event.place.name}</p>
+                          )}
+                          {event.place.address && (
+                            <p className="text-sm text-muted-foreground">{event.place.address}</p>
+                          )}
+                          {event.place.city && (
+                            <p className="text-sm text-muted-foreground">{event.place.city}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="rounded-lg overflow-hidden border shadow-sm">
+                        <a
+                          href={
+                            event.place.latitude && event.place.longitude
+                              ? `https://www.google.com/maps/search/?api=1&query=${event.place.latitude},${event.place.longitude}`
+                              : event.place.address
+                                ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.place.address)}`
+                                : 'https://maps.google.com'
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <img
+                            src={
+                              event.place.latitude && event.place.longitude
+                                ? `https://maps.googleapis.com/maps/api/staticmap?center=${event.place.latitude},${event.place.longitude}&zoom=15&size=600x300&maptype=roadmap&markers=color:red%7C${event.place.latitude},${event.place.longitude}`
+                                : `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(event.place.address || 'Valencia')}&zoom=14&size=600x300&maptype=roadmap`
+                            }
+                            alt="Map preview"
+                            className="w-full h-40 object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://maps.gstatic.com/tactile/basepage/pegman_sherlock.png';
+                            }}
+                          />
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+
+              {/* FAQs */}
+              {event.faqs && event.faqs.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{i18n.language === 'en' ? 'Frequently asked questions' : 'Preguntas frecuentes'}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {event.faqs
+                        .sort((a, b) => a.sort_order - b.sort_order)
+                        .map(faq => (
+                          <div key={faq.id} className="border rounded-lg">
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-between p-4 h-auto text-left"
+                              onClick={() => setExpandedFAQ(expandedFAQ === faq.id ? null : faq.id)}
+                            >
+                              <span className="font-medium">{getLocalizedText(faq.question_es, faq.question_en)}</span>
+                              {expandedFAQ === faq.id ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                            {expandedFAQ === faq.id && (
+                              <div className="px-4 pb-4">
+                                <p className="text-muted-foreground">{getLocalizedText(faq.answer_es, faq.answer_en)}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>
       </div>
-    {/* Modal de imagen completa */}
+      {/* Floating reserve button */}
+      {(() => {
+        const reserveLink = getReserveLink();
+        if (!reserveLink) return null;
+        return (
+          <div className="fixed bottom-4 left-0 right-0 px-4 z-40">
+            <div className="relative max-w-md mx-auto">
+              <div className="absolute inset-0 rounded-full bg-black/40 blur-xl opacity-70" />
+              <div className="relative flex items-center gap-2 bg-white rounded-full p-1 shadow-[0_15px_40px_rgba(0,0,0,0.25)]">
+                <span className="px-3 py-1 rounded-full border text-xs font-semibold text-gray-800 bg-white">
+                  {parseFloat(event?.price_amount || '0') === 0
+                    ? (i18n.language === 'en' ? 'FREE' : 'GRATIS')
+                    : formatPrice(event?.price_amount, event?.price_currency)}
+                </span>
+                <Button 
+                  className="flex-1 h-12 rounded-full text-base font-semibold bg-gray-900 text-white hover:bg-gray-800 transition-colors"
+                  onClick={() => window.open(reserveLink, '_blank')}
+                >
+                  {i18n.language === 'en' ? 'Attend' : 'Asistir'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Modal de imagen completa */}
     {selectedPhotoUrl && (
       <div 
         className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"

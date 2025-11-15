@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCategoryFilter } from './AppLayout';
@@ -14,13 +14,14 @@ import {
   Users, 
   Clock, 
   ExternalLink,
-  Music,
-  Palette,
+  Music2,
+  Paintbrush2,
   PersonStanding,
   HeartPulse,
   Castle,
   Zap,
-  Brain,
+  BrainCircuit,
+  Flower2,
   User,
   RefreshCw,
   Repeat
@@ -160,26 +161,53 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   }, [filteredEventsByCategory]);
 
   const getCategoryIcon = (iconName: string, nameEs?: string) => {
-    switch (iconName) {
-      case 'music_note': return <Music className="h-5 w-5" />;
-      case 'sports_kabaddi': return <PersonStanding className="h-5 w-5" />;
-      case 'palette': return <Palette className="h-5 w-5" />;
-      case 'castle': return <Castle className="h-5 w-5" />;
-      case 'fitness_center': return <HeartPulse className="h-5 w-5" />;
-      case 'psychology': return <Brain className="h-5 w-5" />;
-      default: return <User className="h-5 w-5" />;
-    }
+    // Primero intentar por icono de la API
+    const iconMap: Record<string, React.ReactNode> = {
+      'music_note': <Music2 className="h-5 w-5" />, // 🎵 Música
+      'sports_kabaddi': <PersonStanding className="h-5 w-5" />, // 💃 Baile
+      'palette': <Paintbrush2 className="h-5 w-5" />, // 🎨 Arte
+      'castle': <Castle className="h-5 w-5" />, // 🏰 Experiencias
+      'fitness_center': <HeartPulse className="h-5 w-5" />, // 💪 Fitness
+      'psychology': <BrainCircuit className="h-5 w-5" /> // 🧠 Bienestar Mental
+    };
+    
+    if (iconMap[iconName]) return iconMap[iconName];
+    
     // Heurística por nombre si el iconName no es distintivo
     const name = (nameEs || '').toLowerCase();
+    if (name.includes('zen') || name.includes('yoga') || name.includes('mindfulness')) return <Flower2 className="h-5 w-5" />; // 🧘 Zen/Yoga
     if (name.includes('experienc')) return <Castle className="h-5 w-5" />;
     if (name.includes('baile') || name.includes('dance')) return <PersonStanding className="h-5 w-5" />;
     if (name.includes('deporte') || name.includes('fitness')) return <HeartPulse className="h-5 w-5" />;
-    if (name.includes('música') || name.includes('musica') || name.includes('music')) return <Music className="h-5 w-5" />;
-    if (name.includes('arte') || name.includes('cultura') || name.includes('art')) return <Palette className="h-5 w-5" />;
+    if (name.includes('música') || name.includes('musica') || name.includes('music')) return <Music2 className="h-5 w-5" />;
+    if (name.includes('arte') || name.includes('cultura') || name.includes('art')) return <Paintbrush2 className="h-5 w-5" />;
     return <User className="h-5 w-5" />;
   };
 
-  const getCategoryColor = (categoryId: number) => {
+  const getCategoryColor = (categoryId: number, categoryNameEs?: string) => {
+    // Detectar por nombre primero (más preciso)
+    if (categoryNameEs) {
+      const name = categoryNameEs.toLowerCase();
+      if (name.includes('zen') || name.includes('yoga') || name.includes('mindfulness')) {
+        return 'from-sky-400 to-cyan-500'; // Azul claro para Zen
+      }
+      if (name.includes('música') || name.includes('musica') || name.includes('music')) {
+        return 'from-pink-500 to-rose-500'; // Música
+      }
+      if (name.includes('baile') || name.includes('dance')) {
+        return 'from-purple-500 to-violet-500'; // Baile
+      }
+      if (name.includes('arte') || name.includes('cultura') || name.includes('art')) {
+        return 'from-blue-500 to-indigo-500'; // Arte
+      }
+      if (name.includes('fit') || name.includes('deporte') || name.includes('fitness')) {
+        return 'from-green-500 to-emerald-500'; // Fitness
+      }
+      if (name.includes('apoyo') || name.includes('comunidad') || name.includes('support') || name.includes('community')) {
+        return 'from-orange-500 to-red-500'; // Apoyo
+      }
+    }
+    // Fallback por ID
     const colors = [
       'from-pink-500 to-rose-500',      // Música
       'from-purple-500 to-violet-500',  // Baile  
@@ -257,7 +285,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
           <CategorySection 
             key={categoryData.category.id}
             categoryData={categoryData}
-            categoryColor={getCategoryColor(categoryData.category.id)}
+            categoryColor={getCategoryColor(categoryData.category.id, categoryData.category.name_es)}
             categoryIcon={getCategoryIcon(categoryData.category.icon, categoryData.category.name_es)}
             maxEvents={maxEventsPerCategory}
             summariesMap={eventSummaries}
@@ -427,7 +455,7 @@ const EventCard = ({ event, categoryColor, summariesMap }: EventCardProps) => {
               {i18n.language === 'en' ? 'Free' : 'Gratuito'}
             </Badge>
           ) : (
-            <Badge variant="default" className="bg-white/90 backdrop-blur-sm">
+            <Badge variant="default" className="bg-white text-black dark:bg-white dark:text-black border border-input backdrop-blur-sm font-bold">
               {formatEventPrice(event.price || '0', i18n.language === 'en' ? 'en-US' : 'es-ES')}
             </Badge>
           )}

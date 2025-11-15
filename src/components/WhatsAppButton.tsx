@@ -1,6 +1,11 @@
 import { Phone } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const WhatsAppButton = () => {
+  const location = useLocation();
+  const hideOnEventDetail = location.pathname.startsWith("/eventos/");
+  if (hideOnEventDetail) return null;
+
   const whatsappNumber = "34658236665";
   const message = "Hola, me gustaría información sobre DAME Valencia";
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;

@@ -25,7 +25,6 @@ const App = () => (
       <Toaster />
       <Sonner />
       <CookieBanner />
-      <WhatsAppButton />
       <BrowserRouter>
         <AuthProvider>
           <Routes>
@@ -88,6 +87,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
+        <WhatsAppButton />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

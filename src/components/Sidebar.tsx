@@ -11,9 +11,11 @@ import {
   PartyPopper,
   ChevronLeft,
   ChevronRight,
-  HeartPulse
+  HeartPulse,
+  Flower2,
+  PersonStanding,
+  Castle
 } from "lucide-react";
-import { PersonStanding, Castle } from "lucide-react";
 
 interface SidebarProps {
   userType?: string | null;
@@ -61,6 +63,7 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
     if (iconMap[iconName]) return iconMap[iconName];
     // Heurística por nombre cuando el backend no envía icono coherente
     const name = (nameEs || '').toLowerCase();
+    if (name.includes('zen') || name.includes('yoga') || name.includes('mindfulness')) return Flower2; // 🧘 Zen/Yoga - Flor de loto
     if (name.includes('experienc')) return Castle;
     if (name.includes('baile') || name.includes('dance')) return PersonStanding;
     if (name.includes('deporte') || name.includes('fitness')) return HeartPulse;
@@ -141,6 +144,9 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
     }
     if (name.includes('fit') || name.includes('deporte') || name.includes('fitness')) {
       return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-green-700', bgColorInactive: 'bg-green-200', borderColor: 'border-green-600', hoverColor: 'hover:bg-green-800', ringColor: 'ring-green-200' };
+    }
+    if (name.includes('zen') || name.includes('yoga') || name.includes('mindfulness')) {
+      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-sky-500', bgColorInactive: 'bg-sky-200', borderColor: 'border-sky-400', hoverColor: 'hover:bg-sky-600', ringColor: 'ring-sky-200' };
     }
     if (name.includes('apoyo') || name.includes('comunidad') || name.includes('support') || name.includes('community')) {
       return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-blue-700', bgColorInactive: 'bg-blue-200', borderColor: 'border-blue-600', hoverColor: 'hover:bg-blue-800', ringColor: 'ring-blue-200' };
@@ -235,12 +241,12 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
                       />
                       <div className="text-left flex-1">
                         <div className={`font-bold text-sm ${
-                          isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-200'
+                          isSelected ? 'text-white' : 'text-white'
                         }`}>
                           {i18n.language === 'en' ? (category.name_en || category.name_es) : category.name_es}
                         </div>
                         <div className={`text-xs ${
-                          isSelected ? 'text-white/90' : 'text-gray-500 dark:text-gray-400'
+                          isSelected ? 'text-white/90' : 'text-white/80'
                         }`}>
                           {i18n.language === 'en' 
                             ? `${category.total_events || 0} events`
