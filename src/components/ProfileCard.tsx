@@ -228,7 +228,7 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
               </h3>
               <div className="flex items-center gap-0.5 flex-shrink-0 mt-0.5">
                 {profile.verified && (
-                  <Badge variant="secondary" className="bg-accent px-1 py-0 h-4">
+                  <Badge variant="secondary" className="bg-accent text-white px-1 py-0 h-4">
                     <CheckCircle className="h-2.5 w-2.5" />
                   </Badge>
                 )}

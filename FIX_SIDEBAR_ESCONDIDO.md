@@ -195,3 +195,12 @@ Al cambiar de `overflow-y-auto` a `overflow-hidden` y modificar la estructura de
 
 
 
+
+
+
+
+
+
+
+
+

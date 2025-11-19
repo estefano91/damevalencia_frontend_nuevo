@@ -1,25 +1,24 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Palette, Music, Heart } from "lucide-react";
-import type { DameUserType } from "@/integrations/dame-api/types";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, login, register } = useAuth();
+  const { user, login, loginWithGoogle, register } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [userType, setUserType] = useState<DameUserType>("participant");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -41,28 +40,67 @@ const Auth = () => {
           throw new Error(result.error);
         }
       } else {
+        // Validar contraseñas antes de enviar
+        if (password !== passwordConfirm) {
+          throw new Error("Las contraseñas no coinciden");
+        }
+
         const result = await register({
           email,
           password,
-          full_name: fullName,
-          user_type: userType,
+          password_confirm: passwordConfirm,
         });
         if (result.success) {
-          toast({ title: "¡Cuenta creada! Completa tu perfil. ✨" });
+          toast({ title: "¡Cuenta creada exitosamente! ✨" });
           navigate("/demo");
         } else {
-          throw new Error(result.error);
+          throw new Error(result.error || "Error al registrar usuario");
         }
       }
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Ocurrió un error inesperado";
       toast({
         title: "Error",
-        description: error.message,
+        description: message,
         variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleToken = async (idToken: string) => {
+    if (!idToken || googleLoading) return;
+
+    setGoogleLoading(true);
+    try {
+      const result = await loginWithGoogle(idToken);
+      if (result.success) {
+        toast({
+          title: result.isNewUser ? "¡Cuenta conectada con Google!" : "¡Bienvenido/a con Google! 🎉",
+        });
+        navigate("/demo");
+      } else {
+        throw new Error(result.error || "No se pudo iniciar sesión con Google");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo conectar con Google";
+      toast({
+        title: "Error con Google",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = (message: string) => {
+    toast({
+      title: "Google Sign-In",
+      description: message,
+      variant: "destructive",
+    });
   };
 
   return (
@@ -86,39 +124,6 @@ const Auth = () => {
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
-          {!isLogin && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Nombre Completo</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="Tu nombre completo"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="userType">¿Cómo te defines?</Label>
-                <Select value={userType} onValueChange={(value: DameUserType) => setUserType(value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona tu rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="participant">🎭 Participante - Quiero aprender y disfrutar</SelectItem>
-                    <SelectItem value="instructor">👨‍🏫 Instructor/a - Enseño baile, música o arte</SelectItem>
-                    <SelectItem value="artist">🎨 Artista - Creador/a y performer</SelectItem>
-                    <SelectItem value="volunteer">🤝 Voluntario/a - Quiero colaborar</SelectItem>
-                    <SelectItem value="coordinator">📋 Coordinador/a - Organizo actividades</SelectItem>
-                    <SelectItem value="sponsor">💼 Patrocinador/a - Apoyo la organización</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </>
-          )}
-
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -129,6 +134,11 @@ const Auth = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
+            {!isLogin && (
+              <p className="text-xs text-muted-foreground">
+                El username se generará automáticamente a partir de tu email
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -149,28 +159,89 @@ const Auth = () => {
             )}
           </div>
 
+          {!isLogin && (
+            <div className="space-y-2">
+              <Label htmlFor="passwordConfirm">Confirmar Contraseña</Label>
+              <Input
+                id="passwordConfirm"
+                type="password"
+                placeholder="••••••••"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+          )}
+
           <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isLogin ? "Iniciar Sesión" : "Crear Cuenta"}
           </Button>
         </form>
 
+        <div className="flex items-center gap-4">
+          <div className="h-px flex-1 bg-muted" />
+          <span className="text-xs uppercase text-muted-foreground">o</span>
+          <div className="h-px flex-1 bg-muted" />
+        </div>
+
+        <div className="space-y-2">
+          <GoogleSignInButton
+            onToken={handleGoogleToken}
+            onError={handleGoogleError}
+            disabled={loading || googleLoading}
+          />
+          {googleLoading && (
+            <p className="text-xs text-center text-muted-foreground">
+              Verificando tu cuenta con Google...
+            </p>
+          )}
+        </div>
+
         <div className="space-y-4">
-          <div className="text-center text-sm">
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                // Limpiar campos al cambiar modo
-                setEmail("");
-                setPassword("");
-                setFullName("");
-                setUserType("participant");
-              }}
-              className="text-purple-600 hover:underline font-medium"
-            >
-              {isLogin ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia sesión"}
-            </button>
+          <div className="text-center text-sm space-y-2">
+            {isLogin ? (
+              <>
+                <div>
+                  <span className="text-muted-foreground">¿No tienes cuenta? </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsLogin(false);
+                      setEmail("");
+                      setPassword("");
+                      setPasswordConfirm("");
+                    }}
+                    className="text-purple-600 hover:underline font-medium"
+                  >
+                    Regístrate aquí
+                  </button>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">O </span>
+                  <Link
+                    to="/register"
+                    className="text-purple-600 hover:underline font-medium"
+                  >
+                    crea una cuenta nueva
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLogin(true);
+                  setEmail("");
+                  setPassword("");
+                  setPasswordConfirm("");
+                }}
+                className="text-purple-600 hover:underline font-medium"
+              >
+                ¿Ya tienes cuenta? Inicia sesión
+              </button>
+            )}
           </div>
 
           {!isLogin && (

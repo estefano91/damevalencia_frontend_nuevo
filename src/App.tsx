@@ -6,11 +6,14 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Auth from "./pages/Auth";
+import Register from "./pages/Register";
 import Demo from "./pages/Demo";
 import Disclaimer from "./pages/Disclaimer";
 import NotFound from "./pages/NotFound";
 import EventDetail from "./components/EventDetail";
 import CommunityLinks from "./pages/CommunityLinks";
+import TShirtDesigner from "./pages/TShirtDesigner";
+import EditProfile from "./pages/EditProfile";
 import CookieBanner from "./components/CookieBanner";
 import CookiePolicy from "./pages/CookiePolicy";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -32,6 +35,7 @@ const App = () => (
                   <Route path="/" element={<ProtectedRoute><Demo /></ProtectedRoute>} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/login" element={<Auth />} />
+                  <Route path="/register" element={<Register />} />
                   
                   {/* Vista detallada de eventos */}
                   <Route 
@@ -49,6 +53,26 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar>
                         <CommunityLinks />
+                      </ProtectedRoute>
+                    }
+                  />
+                  
+                  {/* Diseñador de camisetas */}
+                  <Route
+                    path="/camiseta"
+                    element={
+                      <ProtectedRoute hideSidebar>
+                        <TShirtDesigner />
+                      </ProtectedRoute>
+                    }
+                  />
+                  
+                  {/* Editar perfil */}
+                  <Route
+                    path="/editar-perfil"
+                    element={
+                      <ProtectedRoute hideSidebar>
+                        <EditProfile />
                       </ProtectedRoute>
                     }
                   />
