@@ -136,10 +136,6 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                     <User className="mr-2 h-4 w-4" />
                     {i18n.language === 'en' ? 'Profile' : 'Mi Perfil'}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/editar-perfil")}>
-                    <Edit2 className="mr-2 h-4 w-4" />
-                    {i18n.language === 'en' ? 'Edit Profile' : 'Editar Perfil'}
-                  </DropdownMenuItem>
                   {!user.member && (
                     <DropdownMenuItem 
                       onClick={() => navigate("/afiliarse")}

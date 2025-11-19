@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
-import { authApi } from "@/api/auth";
-import type { UserStats } from "@/types/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +16,7 @@ import {
   ShieldCheck,
   User,
   Plus,
-  BarChart3,
+  Edit2,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -27,8 +25,6 @@ const UserProfile = () => {
   const { t, i18n } = useTranslation();
   const { user, loading, refreshUser } = useAuth();
   const [syncing, setSyncing] = useState(false);
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(false);
 
   const formatDate = (value?: string) => {
     if (!value) return "—";
@@ -44,33 +40,9 @@ const UserProfile = () => {
     }
   };
 
-  const loadStats = async () => {
-    const accessToken = localStorage.getItem('dame_access_token');
-    if (!accessToken) return;
-
-    setLoadingStats(true);
-    try {
-      const result = await authApi.getUserStats(accessToken);
-      if (result.ok && result.data?.success && result.data.stats) {
-        setStats(result.data.stats);
-      }
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      loadStats();
-    }
-  }, [user]);
-
   const handleSync = async () => {
     setSyncing(true);
     await refreshUser();
-    await loadStats();
     setSyncing(false);
   };
 
@@ -100,82 +72,95 @@ const UserProfile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-white dark:from-gray-900 dark:to-gray-950">
-      <nav className="sticky top-0 z-10 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b px-3 sm:px-4 py-3 flex flex-wrap items-center gap-3 sm:gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">{t("profile.myProfile")}</p>
-          <p className="text-lg font-semibold leading-tight">{t("profile.personalInfo")}</p>
+      <nav className="sticky top-0 z-10 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md border-b px-3 sm:px-4 py-2 sm:py-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground truncate">{t("profile.myProfile")}</p>
+            <p className="text-base sm:text-lg font-semibold leading-tight truncate">{t("profile.personalInfo")}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={handleSync}
+              disabled={syncing}
+              className="w-full sm:w-auto text-sm"
+              size="sm"
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              {t("profile.update")}
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col min-[480px]:flex-row items-start min-[480px]:items-center gap-2 ml-auto w-full min-[480px]:w-auto">
-          <p className="text-xs text-muted-foreground order-2 min-[480px]:order-1 w-full">
-            {t("profile.lastUpdate")}: {formatDate(user.updated_at)}
-          </p>
-          <Button
-            variant="outline"
-            onClick={handleSync}
-            disabled={syncing}
-            className="order-1 min-[480px]:order-2 w-full min-[480px]:w-auto"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-            {t("profile.update")}
-          </Button>
-        </div>
+        <p className="text-xs text-muted-foreground mt-2 hidden sm:block">
+          {t("profile.lastUpdate")}: {formatDate(user.updated_at)}
+        </p>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 space-y-4 sm:space-y-6">
         <Card className="shadow-md border border-purple-100 dark:border-primary/20">
-          <CardHeader>
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-xl sm:text-2xl flex items-center gap-2 flex-wrap">
-                  <User className="h-6 w-6 text-primary" />
-                  {user.full_name}
+          <CardHeader className="pb-3 sm:pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-lg sm:text-xl md:text-2xl flex items-center gap-2 flex-wrap">
+                  <User className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+                  <span className="break-words">{user.full_name}</span>
                 </CardTitle>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   ID #{user.id} · {user.active ? t("profile.active") : t("profile.inactive")}
                 </p>
               </div>
-              <Badge variant={user.active ? "default" : "secondary"}>
+              <Badge variant={user.active ? "default" : "secondary"} className="self-start sm:self-center">
                 {user.active ? t("profile.active") : t("profile.inactive")}
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-lg border bg-muted/30 p-4">
-                <p className="text-xs uppercase text-muted-foreground">{t("profile.email")}</p>
-                <div className="flex items-center gap-2 mt-1 font-semibold">
-                  <Mail className="h-4 w-4 text-primary" />
-                  {user.email}
+          <CardContent className="space-y-4 pt-0">
+            <div className="flex justify-end">
+              <Button
+                onClick={() => navigate("/editar-perfil")}
+                className="bg-orange-500 text-white hover:bg-orange-600 focus:bg-orange-600 w-full sm:w-auto"
+                size="sm"
+              >
+                <Edit2 className="mr-2 h-4 w-4" />
+                <span className="text-sm">{i18n.language === 'en' ? 'Edit Profile' : 'Editar Perfil'}</span>
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
+                <p className="text-xs uppercase text-muted-foreground mb-2">{t("profile.email")}</p>
+                <div className="flex items-center gap-2 font-semibold text-sm sm:text-base break-words">
+                  <Mail className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="min-w-0 break-all">{user.email}</span>
                 </div>
               </div>
-              <div className="rounded-lg border bg-muted/30 p-4">
-                <p className="text-xs uppercase text-muted-foreground">{t("profile.username")}</p>
-                <div className="flex items-center gap-2 mt-1 font-semibold">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  {user.email}
+              <div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
+                <p className="text-xs uppercase text-muted-foreground mb-2">{t("profile.username")}</p>
+                <div className="flex items-center gap-2 font-semibold text-sm sm:text-base break-words">
+                  <ShieldCheck className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="min-w-0 break-all">{user.email}</span>
                 </div>
               </div>
             </div>
 
-            <Separator />
+            <Separator className="my-3 sm:my-4" />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-lg border bg-muted/20 p-4">
-                <p className="text-xs uppercase text-muted-foreground">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="rounded-lg border bg-muted/20 p-3 sm:p-4">
+                <p className="text-xs uppercase text-muted-foreground mb-2">
                   {t("profile.registrationDate")}
                 </p>
-                <div className="flex items-center gap-2 mt-1 font-semibold">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  {formatDate(user.created_at)}
+                <div className="flex items-center gap-2 font-semibold text-sm sm:text-base">
+                  <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="break-words">{formatDate(user.created_at)}</span>
                 </div>
               </div>
-              <div className="rounded-lg border bg-muted/20 p-4">
-                <p className="text-xs uppercase text-muted-foreground">
+              <div className="rounded-lg border bg-muted/20 p-3 sm:p-4">
+                <p className="text-xs uppercase text-muted-foreground mb-2">
                   {t("profile.lastUpdate")}
                 </p>
-                <div className="flex items-center gap-2 mt-1 font-semibold">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  {formatDate(user.updated_at)}
+                <div className="flex items-center gap-2 font-semibold text-sm sm:text-base">
+                  <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="break-words">{formatDate(user.updated_at)}</span>
                 </div>
               </div>
             </div>
@@ -183,145 +168,90 @@ const UserProfile = () => {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <IdCard className="h-5 w-5 text-primary" />
-              {t("profile.memberInfo")}
-            </CardTitle>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              {t("profile.memberInfoDesc")}
-            </p>
+          <CardHeader className="pb-3 sm:pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <IdCard className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span>{t("profile.memberInfo")}</span>
+                </CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  {t("profile.memberInfoDesc")}
+                </p>
+              </div>
+              {member && (
+                <Button
+                  onClick={() => navigate("/editar-miembro")}
+                  className="bg-orange-500 text-white hover:bg-orange-600 focus:bg-orange-600 w-full sm:w-auto"
+                  size="sm"
+                >
+                  <Edit2 className="mr-2 h-4 w-4" />
+                  <span className="text-xs sm:text-sm">
+                    {i18n.language === 'en' ? 'Edit Member Info' : 'Editar Información de Miembro'}
+                  </span>
+                </Button>
+              )}
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {member ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-lg border p-4 space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="rounded-lg border p-3 sm:p-4 space-y-1">
+                  <p className="text-xs uppercase text-muted-foreground mb-2">
                     {t("profile.fullName")}
                   </p>
-                  <p className="font-semibold">{member.full_name}</p>
+                  <p className="font-semibold text-sm sm:text-base break-words">{member.full_name}</p>
                 </div>
-                <div className="rounded-lg border p-4 space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">{t("profile.document")}</p>
-                  <p className="font-semibold">
+                <div className="rounded-lg border p-3 sm:p-4 space-y-1">
+                  <p className="text-xs uppercase text-muted-foreground mb-2">{t("profile.document")}</p>
+                  <p className="font-semibold text-sm sm:text-base break-words">
                     {member.document_type} · {member.document_number}
                   </p>
                 </div>
-                <div className="rounded-lg border p-4 space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">
+                <div className="rounded-lg border p-3 sm:p-4 space-y-1">
+                  <p className="text-xs uppercase text-muted-foreground mb-2">
                     {t("profile.birthDate")}
                   </p>
-                  <p className="font-semibold">{formatDate(member.birth_date)}</p>
+                  <p className="font-semibold text-sm sm:text-base break-words">{formatDate(member.birth_date)}</p>
                 </div>
-                <div className="rounded-lg border p-4 space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">{t("profile.age")}</p>
-                  <p className="font-semibold">{member.age ?? "—"} {t("profile.years")}</p>
+                <div className="rounded-lg border p-3 sm:p-4 space-y-1">
+                  <p className="text-xs uppercase text-muted-foreground mb-2">{t("profile.age")}</p>
+                  <p className="font-semibold text-sm sm:text-base">{member.age ?? "—"} {t("profile.years")}</p>
                 </div>
-                <div className="rounded-lg border p-4 space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">
+                <div className="rounded-lg border p-3 sm:p-4 space-y-1">
+                  <p className="text-xs uppercase text-muted-foreground mb-2">
                     {t("profile.affiliationStatus")}
                   </p>
-                  <Badge variant={member.is_active ? "default" : "secondary"}>
+                  <Badge variant={member.is_active ? "default" : "secondary"} className="text-xs">
                     {member.is_active ? t("profile.active") : t("profile.inactive")}
                   </Badge>
                 </div>
-                <div className="rounded-lg border p-4 space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    {t("profile.enrollmentDate")}
+                <div className="rounded-lg border p-3 sm:p-4 space-y-1">
+                  <p className="text-xs uppercase text-muted-foreground mb-2">
+                    {i18n.language === 'en' ? 'Member Since' : 'Miembro Desde'}
                   </p>
-                  <p className="font-semibold">{formatDate(member.created_at)}</p>
+                  <p className="font-semibold text-sm sm:text-base break-words">{formatDate(member.created_at)}</p>
                 </div>
               </div>
             ) : (
-              <Alert variant="secondary">
+              <Alert variant="secondary" className="mt-2">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>{t("profile.noAffiliation")}</AlertTitle>
-                <AlertDescription className="space-y-3">
-                  <p>{t("profile.noAffiliationDesc")}</p>
+                <AlertTitle className="text-sm sm:text-base">{t("profile.noAffiliation")}</AlertTitle>
+                <AlertDescription className="space-y-3 mt-2">
+                  <p className="text-sm">{t("profile.noAffiliationDesc")}</p>
                   <Button
                     onClick={() => navigate("/afiliarse")}
                     className="w-full sm:w-auto"
                     size="sm"
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    {i18n.language === 'en' ? 'Join Benefits Program' : 'Afiliarse al Programa'}
+                    <span className="text-sm">{i18n.language === 'en' ? 'Join Benefits Program' : 'Afiliarse al Programa'}</span>
                   </Button>
                 </AlertDescription>
               </Alert>
             )}
           </CardContent>
         </Card>
-
-        {/* Estadísticas del Usuario */}
-        {stats && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                {i18n.language === 'en' ? 'User Statistics' : 'Estadísticas del Usuario'}
-              </CardTitle>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                {i18n.language === 'en' 
-                  ? 'Overview of your account and membership information'
-                  : 'Resumen de la información de tu cuenta y membresía'}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="rounded-lg border bg-muted/20 p-4 space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    {i18n.language === 'en' ? 'Registration Date' : 'Fecha de Registro'}
-                  </p>
-                  <p className="font-semibold">{formatDate(stats.registration_date)}</p>
-                </div>
-                <div className="rounded-lg border bg-muted/20 p-4 space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    {i18n.language === 'en' ? 'Status' : 'Estado'}
-                  </p>
-                  <Badge variant={stats.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                    {stats.status}
-                  </Badge>
-                </div>
-                <div className="rounded-lg border bg-muted/20 p-4 space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    {i18n.language === 'en' ? 'Account Status' : 'Estado de la Cuenta'}
-                  </p>
-                  <Badge variant={stats.is_blocked ? 'destructive' : 'default'}>
-                    {stats.is_blocked 
-                      ? (i18n.language === 'en' ? 'Blocked' : 'Bloqueado')
-                      : (i18n.language === 'en' ? 'Active' : 'Activo')}
-                  </Badge>
-                </div>
-                <div className="rounded-lg border bg-muted/20 p-4 space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    {i18n.language === 'en' ? 'Has Member' : 'Tiene Miembro'}
-                  </p>
-                  <Badge variant={stats.has_member ? 'default' : 'secondary'}>
-                    {stats.has_member 
-                      ? (i18n.language === 'en' ? 'Yes' : 'Sí')
-                      : (i18n.language === 'en' ? 'No' : 'No')}
-                  </Badge>
-                </div>
-                {stats.has_member && stats.member_since && (
-                  <div className="rounded-lg border bg-muted/20 p-4 space-y-1">
-                    <p className="text-xs uppercase text-muted-foreground">
-                      {i18n.language === 'en' ? 'Member Since' : 'Miembro Desde'}
-                    </p>
-                    <p className="font-semibold">{formatDate(stats.member_since)}</p>
-                  </div>
-                )}
-                {stats.has_member && stats.member_age !== null && stats.member_age !== undefined && (
-                  <div className="rounded-lg border bg-muted/20 p-4 space-y-1">
-                    <p className="text-xs uppercase text-muted-foreground">
-                      {i18n.language === 'en' ? 'Member Age' : 'Edad del Miembro'}
-                    </p>
-                    <p className="font-semibold">{stats.member_age} {i18n.language === 'en' ? 'years' : 'años'}</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );

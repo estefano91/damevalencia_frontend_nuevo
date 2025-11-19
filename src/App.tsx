@@ -21,6 +21,7 @@ import AboutUs from "./pages/AboutUs";
 import WhatsAppButton from "./components/WhatsAppButton";
 import UserProfile from "./pages/UserProfile";
 import Membership from "./pages/Membership";
+import EditMember from "./pages/EditMember";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +94,16 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar requireAuth>
                         <Membership />
+                      </ProtectedRoute>
+                    }
+                  />
+                  
+                  {/* Editar información de miembro */}
+                  <Route
+                    path="/editar-miembro"
+                    element={
+                      <ProtectedRoute hideSidebar requireAuth>
+                        <EditMember />
                       </ProtectedRoute>
                     }
                   />
