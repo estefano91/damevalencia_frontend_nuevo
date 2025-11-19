@@ -1,26 +1,27 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Palette, Music, Heart } from "lucide-react";
+import { Loader2, Home } from "lucide-react";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
+import logoDame from "@/assets/2.png";
 
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string })?.from || "/demo";
+  const { t } = useTranslation();
+  const from = (location.state as { from?: string })?.from || "/";
   const { toast } = useToast();
-  const { user, login, loginWithGoogle, register } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const { user, login, loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -33,36 +34,17 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const result = await login(email, password);
-        if (result.success) {
-          toast({ title: "¡Bienvenido/a de vuelta! 🎉" });
-          navigate(from);
-        } else {
-          throw new Error(result.error);
-        }
+      const result = await login(email, password);
+      if (result.success) {
+        toast({ title: t("auth.welcomeBack") });
+        navigate(from);
       } else {
-        // Validar contraseñas antes de enviar
-        if (password !== passwordConfirm) {
-          throw new Error("Las contraseñas no coinciden");
-        }
-
-        const result = await register({
-          email,
-          password,
-          password_confirm: passwordConfirm,
-        });
-        if (result.success) {
-          toast({ title: "¡Cuenta creada exitosamente! ✨" });
-          navigate(from);
-        } else {
-          throw new Error(result.error || "Error al registrar usuario");
-        }
+        throw new Error(result.error);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Ocurrió un error inesperado";
+      const message = error instanceof Error ? error.message : t("auth.unexpectedError");
       toast({
-        title: "Error",
+        title: t("common.error"),
         description: message,
         variant: "destructive",
       });
@@ -79,16 +61,16 @@ const Auth = () => {
       const result = await loginWithGoogle(idToken);
       if (result.success) {
         toast({
-          title: result.isNewUser ? "¡Cuenta conectada con Google!" : "¡Bienvenido/a con Google! 🎉",
+          title: result.isNewUser ? t("auth.accountConnected") : t("auth.welcomeGoogle"),
         });
         navigate(from);
       } else {
-        throw new Error(result.error || "No se pudo iniciar sesión con Google");
+        throw new Error(result.error || t("auth.googleLoginError"));
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudo conectar con Google";
+      const message = error instanceof Error ? error.message : t("auth.googleConnectionError");
       toast({
-        title: "Error con Google",
+        title: t("auth.googleSignInError"),
         description: message,
         variant: "destructive",
       });
@@ -99,7 +81,7 @@ const Auth = () => {
 
   const handleGoogleError = (message: string) => {
     toast({
-      title: "Google Sign-In",
+      title: t("auth.googleSignInTitle"),
       description: message,
       variant: "destructive",
     });
@@ -107,84 +89,66 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900 p-4">
-      <Card className="w-full max-w-md p-8 space-y-6 shadow-xl">
+      <Card className="w-full max-w-md p-8 space-y-6 shadow-xl relative">
+        <Button
+          variant="outline"
+          onClick={() => navigate("/")}
+          className="absolute top-4 right-4 flex items-center gap-2"
+        >
+          <Home className="h-4 w-4" />
+          <span className="hidden sm:inline">{t("auth.home")}</span>
+        </Button>
         <div className="text-center space-y-4">
-          <div className="flex justify-center space-x-2 text-4xl mb-2">
-            <Palette className="text-purple-600" />
-            <Music className="text-pink-600" />
-            <Heart className="text-red-500" />
+          <div className="flex justify-center mb-4">
+            <img 
+              src={logoDame} 
+              alt="DAME Logo" 
+              className="h-24 w-auto object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            {isLogin ? "¡Bienvenido/a!" : "Únete a DAME"}
+            {t("auth.welcome")}
           </h1>
           <p className="text-muted-foreground text-sm">
-            {isLogin 
-              ? "Inicia sesión en la comunidad de arte y cultura de Valencia" 
-              : "Crea tu perfil en la Asociación DAME - Arte, Cultura y Bienestar"
-            }
+            {t("auth.welcomeDesc")}
           </p>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="tu@email.com"
+              placeholder={t("auth.emailPlaceholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            {!isLogin && (
-              <p className="text-xs text-muted-foreground">
-                El username se generará automáticamente a partir de tu email
-              </p>
-            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
+            <Label htmlFor="password">{t("auth.password")}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder={t("auth.passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
             />
-            {!isLogin && (
-              <p className="text-xs text-muted-foreground">
-                Mínimo 6 caracteres
-              </p>
-            )}
           </div>
-
-          {!isLogin && (
-            <div className="space-y-2">
-              <Label htmlFor="passwordConfirm">Confirmar Contraseña</Label>
-              <Input
-                id="passwordConfirm"
-                type="password"
-                placeholder="••••••••"
-                value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
-          )}
 
           <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isLogin ? "Iniciar Sesión" : "Crear Cuenta"}
+            {t("auth.signIn")}
           </Button>
         </form>
 
         <div className="flex items-center gap-4">
           <div className="h-px flex-1 bg-muted" />
-          <span className="text-xs uppercase text-muted-foreground">o</span>
+          <span className="text-xs uppercase text-muted-foreground">{t("auth.or")}</span>
           <div className="h-px flex-1 bg-muted" />
         </div>
 
@@ -196,72 +160,33 @@ const Auth = () => {
           />
           {googleLoading && (
             <p className="text-xs text-center text-muted-foreground">
-              Verificando tu cuenta con Google...
+              {t("auth.verifyingGoogle")}
             </p>
           )}
         </div>
 
         <div className="space-y-4">
-          <div className="text-center text-sm space-y-2">
-            {isLogin ? (
-              <>
-                <div>
-                  <span className="text-muted-foreground">¿No tienes cuenta? </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsLogin(false);
-                      setEmail("");
-                      setPassword("");
-                      setPasswordConfirm("");
-                    }}
-                    className="text-purple-600 hover:underline font-medium"
-                  >
-                    Regístrate aquí
-                  </button>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">O </span>
-                  <Link
-                    to="/register"
-                    className="text-purple-600 hover:underline font-medium"
-                  >
-                    crea una cuenta nueva
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsLogin(true);
-                  setEmail("");
-                  setPassword("");
-                  setPasswordConfirm("");
-                }}
-                className="text-purple-600 hover:underline font-medium"
-              >
-                ¿Ya tienes cuenta? Inicia sesión
-              </button>
-            )}
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-3">
+              {t("auth.noAccount")}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate("/register")}
+              className="w-full"
+            >
+              {t("auth.createAccount")}
+            </Button>
           </div>
-
-          {!isLogin && (
-            <div className="text-xs text-center text-muted-foreground space-y-2">
-              <p>Al crear tu cuenta, aceptas nuestros términos de uso y política de privacidad.</p>
-              <p className="font-medium text-purple-600">
-                ¡Únete a nuestra comunidad de más de 10K miembros de 50+ países!
-              </p>
-            </div>
-          )}
         </div>
 
         <div className="text-center pt-4 border-t">
           <p className="text-xs text-muted-foreground">
-            Asociación DAME - Valencia, España
+            {t("auth.association")}
           </p>
           <p className="text-xs text-purple-600 font-medium">
-            Arte • Cultura • Música • Bienestar
+            {t("auth.tagline")}
           </p>
         </div>
       </Card>

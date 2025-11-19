@@ -7,7 +7,9 @@ import {
   LogOut,
   Settings,
   Edit2,
-  LogIn
+  LogIn,
+  Plus,
+  IdCard
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/providers/ThemeProvider";
@@ -50,7 +52,7 @@ const Navigation = ({ isMobile }: NavigationProps) => {
             {/* Logo DAME - Más grande y centrado */}
             <div 
               className="flex items-center cursor-pointer hover:opacity-80 transition-all duration-300 hover:scale-105 ml-4"
-              onClick={() => navigate("/demo")}
+              onClick={() => navigate("/")}
             >
               <img 
                 src={theme === 'dark' ? logoDameDark : logoDameLight}
@@ -70,7 +72,7 @@ const Navigation = ({ isMobile }: NavigationProps) => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/demo")}
+              onClick={() => navigate("/")}
               className="flex items-center gap-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20"
               title={i18n.language === 'en' ? 'Home' : 'Inicio'}
               aria-label={i18n.language === 'en' ? 'Home' : 'Inicio'}
@@ -138,6 +140,15 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                     <Edit2 className="mr-2 h-4 w-4" />
                     {i18n.language === 'en' ? 'Edit Profile' : 'Editar Perfil'}
                   </DropdownMenuItem>
+                  {!user.member && (
+                    <DropdownMenuItem 
+                      onClick={() => navigate("/afiliarse")}
+                      className="bg-orange-500 text-white hover:bg-orange-600 focus:bg-orange-600 focus:text-white cursor-pointer"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      {i18n.language === 'en' ? 'Join Benefits Program' : 'Afiliarse al Programa'}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => navigate("/configuracion")}>
                     <Settings className="mr-2 h-4 w-4" />
                     {i18n.language === 'en' ? 'Settings' : 'Configuración'}

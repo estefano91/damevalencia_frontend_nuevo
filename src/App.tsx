@@ -20,6 +20,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AboutUs from "./pages/AboutUs";
 import WhatsAppButton from "./components/WhatsAppButton";
 import UserProfile from "./pages/UserProfile";
+import Membership from "./pages/Membership";
 
 const queryClient = new QueryClient();
 
@@ -86,8 +87,18 @@ const App = () => (
                     }
                   />
                   
+                  {/* Afiliarse al programa de beneficios */}
                   <Route
-                    path="/demo"
+                    path="/afiliarse"
+                    element={
+                      <ProtectedRoute hideSidebar requireAuth>
+                        <Membership />
+                      </ProtectedRoute>
+                    }
+                  />
+                  
+                  <Route
+                    path="/"
                     element={
                       <ProtectedRoute>
                         <Demo />

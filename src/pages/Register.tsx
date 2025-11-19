@@ -34,7 +34,7 @@ const Register = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/demo");
+      navigate("/");
     }
   }, [user, navigate]);
 
@@ -129,7 +129,7 @@ const Register = () => {
             ? "Welcome to DAME Valencia!" 
             : "¡Bienvenido/a a DAME Valencia!"
         });
-        navigate("/demo");
+        navigate("/");
       } else {
         throw new Error(result.error || (i18n.language === 'en' ? "Error registering user" : "Error al registrar usuario"));
       }

@@ -72,6 +72,59 @@ export interface GoogleLoginPayload {
   id_token: string;
 }
 
+export interface CreateMemberPayload {
+  document_type: "DNI" | "PASAPORTE" | "NIE";
+  document_number: string;
+  birth_date: string; // YYYY-MM-DD
+}
+
+export interface CreateMemberResponse {
+  success: boolean;
+  message: string;
+  member?: ApiMember;
+  errors?: Record<string, string[]>;
+}
+
+// GET /api/users/member/
+export interface GetMemberResponse {
+  success: boolean;
+  member?: ApiMember;
+  message?: string;
+  errors?: Record<string, string[]>;
+}
+
+// PUT /api/users/member/update/
+export interface UpdateMemberPayload {
+  document_type?: "DNI" | "PASAPORTE" | "NIE";
+  document_number?: string;
+  birth_date?: string; // YYYY-MM-DD
+}
+
+export interface UpdateMemberResponse {
+  success: boolean;
+  message: string;
+  member?: ApiMember;
+  errors?: Record<string, string[]>;
+}
+
+// GET /api/users/stats/
+export interface UserStats {
+  user_id: number;
+  registration_date: string;
+  status: string;
+  is_blocked: boolean;
+  has_member: boolean;
+  member_since?: string | null;
+  member_age?: number | null;
+}
+
+export interface UserStatsResponse {
+  success: boolean;
+  stats?: UserStats;
+  message?: string;
+  errors?: Record<string, string[]>;
+}
+
 export interface ApiRequestResult<T> {
   ok: boolean;
   data?: T;

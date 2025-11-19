@@ -2,10 +2,16 @@ import type {
   ApiRequestResult,
   AuthErrorPayload,
   AuthSuccessPayload,
+  CreateMemberPayload,
+  CreateMemberResponse,
+  GetMemberResponse,
   GoogleLoginPayload,
   LoginPayload,
   RegisterPayload,
+  UpdateMemberPayload,
+  UpdateMemberResponse,
   UserProfileResponse,
+  UserStatsResponse,
 } from "@types/auth";
 
 const API_BASE_URL = import.meta.env.VITE_DAME_API_URL || "https://organizaciondame.org/api";
@@ -116,6 +122,40 @@ export const authApi = {
 
   me: (accessToken: string) =>
     request<UserProfileResponse>("/users/profile/", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }),
+
+  createMember: (accessToken: string, payload: CreateMemberPayload) =>
+    request<CreateMemberResponse>("/users/member/create/", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: payload,
+    }),
+
+  getMember: (accessToken: string) =>
+    request<GetMemberResponse>("/users/member/", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }),
+
+  updateMember: (accessToken: string, payload: UpdateMemberPayload) =>
+    request<UpdateMemberResponse>("/users/member/update/", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: payload,
+    }),
+
+  getUserStats: (accessToken: string) =>
+    request<UserStatsResponse>("/users/stats/", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
