@@ -1,28 +1,40 @@
-import { Navigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "./AppLayout";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   hideSidebar?: boolean;
+  requireAuth?: boolean;
 }
 
-const ProtectedRoute = ({ children, hideSidebar = false }: ProtectedRouteProps) => {
+const ProtectedRoute = ({
+  children,
+  hideSidebar = false,
+  requireAuth = false,
+}: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
-  // Mostrar loading mientras se verifica autenticación
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  if (requireAuth) {
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
 
-  // Si no hay usuario autenticado, redirigir al login
-  if (!user) {
-    return <Navigate to="/auth" replace />;
+    if (!user) {
+      return (
+        <Navigate
+          to="/auth"
+          state={{ from: location.pathname + location.search }}
+          replace
+        />
+      );
+    }
   }
 
   return <AppLayout hideSidebar={hideSidebar}>{children}</AppLayout>;

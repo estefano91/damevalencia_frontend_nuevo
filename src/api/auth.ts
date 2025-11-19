@@ -1,11 +1,11 @@
 import type {
   ApiRequestResult,
   AuthErrorPayload,
-  AuthMeResponse,
   AuthSuccessPayload,
   GoogleLoginPayload,
   LoginPayload,
   RegisterPayload,
+  UserProfileResponse,
 } from "@types/auth";
 
 const API_BASE_URL = import.meta.env.VITE_DAME_API_URL || "https://organizaciondame.org/api";
@@ -115,7 +115,7 @@ export const authApi = {
     }),
 
   me: (accessToken: string) =>
-    request<AuthMeResponse>("/users/auth/me/", {
+    request<UserProfileResponse>("/users/profile/", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,

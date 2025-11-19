@@ -19,6 +19,7 @@ import CookiePolicy from "./pages/CookiePolicy";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AboutUs from "./pages/AboutUs";
 import WhatsAppButton from "./components/WhatsAppButton";
+import UserProfile from "./pages/UserProfile";
 
 const queryClient = new QueryClient();
 
@@ -71,8 +72,16 @@ const App = () => (
                   <Route
                     path="/editar-perfil"
                     element={
-                      <ProtectedRoute hideSidebar>
+                      <ProtectedRoute hideSidebar requireAuth>
                         <EditProfile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/perfil"
+                    element={
+                      <ProtectedRoute hideSidebar requireAuth>
+                        <UserProfile />
                       </ProtectedRoute>
                     }
                   />

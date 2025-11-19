@@ -6,7 +6,8 @@ import {
   User,
   LogOut,
   Settings,
-  Edit2
+  Edit2,
+  LogIn
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/providers/ThemeProvider";
@@ -100,8 +101,8 @@ const Navigation = ({ isMobile }: NavigationProps) => {
             {/* Language Selector */}
             <LanguageSelector />
             
-            {/* Mi Perfil */}
-            {user && (
+            {/* Mi Perfil / Invitado */}
+            {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -145,6 +146,50 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
                     {i18n.language === 'en' ? 'Logout' : 'Cerrar Sesión'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="relative h-9 w-9 rounded-full"
+                    aria-label={i18n.language === 'en' ? 'Anonymous profile' : 'Perfil anónimo'}
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-muted text-foreground">
+                        AN
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  <div className="flex items-center gap-3 p-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-muted text-foreground text-lg">
+                        AN
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <p className="text-sm font-medium">
+                        {i18n.language === 'en' ? 'Guest user' : 'Usuario anónimo'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {i18n.language === 'en'
+                          ? 'Sign in to access your profile'
+                          : 'Inicia sesión para acceder a tu perfil'}
+                      </p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => navigate("/auth")}
+                    className="text-purple-600 focus:text-purple-600"
+                  >
+                    <LogIn className="mr-2 h-4 w-4" />
+                    {i18n.language === 'en' ? 'Log in' : 'Iniciar sesión'}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

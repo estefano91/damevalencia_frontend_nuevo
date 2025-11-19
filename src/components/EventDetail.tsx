@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { dameEventsAPI } from "@/integrations/dame-api/events";
 import type { DameEventDetail } from "@/integrations/dame-api/events";
@@ -23,11 +23,16 @@ import {
   Music,
   Coffee
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { i18n, ready } = useTranslation();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [event, setEvent] = useState<DameEventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -312,6 +317,21 @@ const EventDetail = () => {
       return `https://wa.me/${sanitized}?text=${encodeURIComponent(message)}`;
     }
     return null;
+  };
+
+  const handleReserveClick = (reserveLink: string) => {
+    if (!user) {
+      toast({
+        title: i18n.language === 'en' ? 'Login required' : 'Inicio de sesión requerido',
+        description:
+          i18n.language === 'en'
+            ? 'Please sign in to reserve your spot at this event.'
+            : 'Inicia sesión para reservar tu plaza en este evento.',
+      });
+      navigate("/auth", { state: { from: location.pathname + location.search } });
+      return;
+    }
+    window.open(reserveLink, "_blank");
   };
 
   if (loading) {
@@ -733,7 +753,7 @@ const EventDetail = () => {
                 </span>
                 <Button 
                   className="flex-1 h-16 sm:h-14 rounded-[999px] text-lg font-semibold bg-gray-900 text-white hover:bg-gray-800 transition-colors"
-                  onClick={() => window.open(reserveLink, '_blank')}
+                  onClick={() => handleReserveClick(reserveLink)}
                 >
                   {i18n.language === 'en' ? 'Attend' : 'Asistir'}
                 </Button>

@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -14,14 +13,8 @@ import {
   ArrowLeft, 
   Save, 
   User, 
-  MapPin, 
-  Phone, 
-  Instagram,
-  Mail,
-  FileText,
-  Globe
+  Mail
 } from "lucide-react";
-import type { UpdateProfileData } from "@/integrations/dame-api/types";
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -31,12 +24,9 @@ const EditProfile = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [formData, setFormData] = useState<UpdateProfileData>({
-    full_name: "",
-    bio: "",
-    location: "",
-    phone: "",
-    instagram: "",
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
   });
 
   useEffect(() => {
@@ -47,17 +37,25 @@ const EditProfile = () => {
 
     // Inicializar formulario con datos del usuario actual
     setFormData({
-      full_name: user.full_name || "",
-      bio: user.bio || "",
-      location: user.location || "",
-      phone: user.phone || "",
-      instagram: user.instagram || "",
+      first_name: user.first_name || "",
+      last_name: user.last_name || "",
     });
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    if (!formData.first_name.trim() || !formData.last_name.trim()) {
+      toast({
+        title: i18n.language === 'en' ? 'Required fields' : 'Campos requeridos',
+        description: i18n.language === 'en'
+          ? 'Please complete your first and last name'
+          : 'Por favor completa tu nombre y apellido',
+        variant: "destructive",
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -66,15 +64,22 @@ const EditProfile = () => {
         throw new Error(i18n.language === 'en' ? 'Authentication required' : 'Autenticación requerida');
       }
 
-      // Intentar actualizar usando el endpoint del perfil del usuario actual
-      const endpoint = `${import.meta.env.VITE_DAME_API_URL || 'https://organizaciondame.org/api'}/users/profile/`;
+      const payload = {
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        email: user.email,
+        username: user.username || user.email,
+      };
+
+      // Actualizar usando el endpoint oficial
+      const endpoint = `${import.meta.env.VITE_DAME_API_URL || 'https://organizaciondame.org/api'}/users/profile/update/`;
       const response = await fetch(endpoint, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();
@@ -139,23 +144,23 @@ const EditProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-white dark:from-gray-900 dark:to-gray-900">
+      <div className="mx-auto w-full max-w-3xl px-3 sm:px-5 py-6 sm:py-8 space-y-6">
         {/* Header */}
-        <div className="mb-6 flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
-            className="rounded-full"
+            className="rounded-full h-10 w-10"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold">
+          <div className="flex-1 min-w-[200px]">
+            <h1 className="text-2xl sm:text-3xl font-bold leading-tight">
               {i18n.language === 'en' ? 'Edit Profile' : 'Editar Perfil'}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {i18n.language === 'en' 
                 ? 'Update your personal information and preferences' 
                 : 'Actualiza tu información personal y preferencias'}
@@ -164,18 +169,18 @@ const EditProfile = () => {
         </div>
 
         {/* Avatar Section */}
-        <Card className="mb-6">
+        <Card className="shadow-sm">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-6">
-              <Avatar className="h-24 w-24">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-center sm:text-left">
+              <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
                 <AvatarFallback className="bg-purple-600 text-white text-2xl">
                   {user?.full_name?.split(" ").map(n => n[0]).join("").toUpperCase() || user?.email?.charAt(0).toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h3 className="text-xl font-semibold">{user?.full_name || user?.email}</h3>
-                <p className="text-muted-foreground">{user?.email}</p>
-                <p className="text-sm text-muted-foreground mt-2">
+              <div className="space-y-1">
+                <h3 className="text-lg sm:text-xl font-semibold break-words">{user?.full_name || user?.email}</h3>
+                <p className="text-sm text-muted-foreground break-all">{user?.email}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                   {i18n.language === 'en' 
                     ? 'Avatar updates coming soon' 
                     : 'Actualización de avatar próximamente'}
@@ -187,160 +192,86 @@ const EditProfile = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
-          <div className="space-y-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  {i18n.language === 'en' ? 'Basic Information' : 'Información Básica'}
-                </CardTitle>
-                <CardDescription>
-                  {i18n.language === 'en' 
-                    ? 'Your basic profile information' 
-                    : 'Tu información de perfil básica'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                {i18n.language === 'en' ? 'Personal information' : 'Información personal'}
+              </CardTitle>
+              <CardDescription>
+                {i18n.language === 'en'
+                  ? 'Only fields allowed by the official profile API.'
+                  : 'Únicos campos permitidos por la API oficial.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="full_name" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    {i18n.language === 'en' ? 'Full Name' : 'Nombre Completo'}
-                  </Label>
+                  <Label htmlFor="first_name">{i18n.language === 'en' ? 'First name' : 'Nombre'}</Label>
                   <Input
-                    id="full_name"
-                    placeholder={i18n.language === 'en' ? 'Enter your full name' : 'Ingresa tu nombre completo'}
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    id="first_name"
+                    value={formData.first_name}
+                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                     required
                   />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    {i18n.language === 'en' ? 'Email' : 'Correo Electrónico'}
-                  </Label>
+                  <Label htmlFor="last_name">{i18n.language === 'en' ? 'Last name' : 'Apellido'}</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={user?.email || ""}
-                    disabled
-                    className="bg-muted"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {i18n.language === 'en' 
-                      ? 'Email cannot be changed' 
-                      : 'El correo electrónico no puede ser modificado'}
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bio" className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    {i18n.language === 'en' ? 'Bio' : 'Biografía'}
-                  </Label>
-                  <Textarea
-                    id="bio"
-                    placeholder={i18n.language === 'en' ? 'Tell us about yourself...' : 'Cuéntanos sobre ti...'}
-                    value={formData.bio}
-                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                    rows={4}
-                    maxLength={500}
-                  />
-                  <p className="text-xs text-muted-foreground text-right">
-                    {formData.bio?.length || 0}/500 {i18n.language === 'en' ? 'characters' : 'caracteres'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Contact Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="h-5 w-5" />
-                  {i18n.language === 'en' ? 'Contact Information' : 'Información de Contacto'}
-                </CardTitle>
-                <CardDescription>
-                  {i18n.language === 'en' 
-                    ? 'How others can reach you' 
-                    : 'Cómo pueden contactarte'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    {i18n.language === 'en' ? 'Location' : 'Ubicación'}
-                  </Label>
-                  <Input
-                    id="location"
-                    placeholder={i18n.language === 'en' ? 'City, Country' : 'Ciudad, País'}
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    id="last_name"
+                    value={formData.last_name}
+                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                    required
                   />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    {i18n.language === 'en' ? 'Phone' : 'Teléfono'}
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder={i18n.language === 'en' ? '+34 123 456 789' : '+34 123 456 789'}
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  {i18n.language === 'en' ? 'Email (read only)' : 'Correo (solo lectura)'}
+                </Label>
+                <Input id="email" value={user?.email || ""} readOnly className="bg-muted" />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="instagram" className="flex items-center gap-2">
-                    <Instagram className="h-4 w-4" />
-                    Instagram
-                  </Label>
-                  <Input
-                    id="instagram"
-                    type="text"
-                    placeholder={i18n.language === 'en' ? '@username' : '@usuario'}
-                    value={formData.instagram}
-                    onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {i18n.language === 'en' ? 'Username (read only)' : 'Usuario (solo lectura)'}
+                </Label>
+                <Input value={user?.username || user?.email || ""} readOnly className="bg-muted" />
+              </div>
 
-            {/* Actions */}
-            <div className="flex justify-end gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(-1)}
-                disabled={saving}
-              >
-                {i18n.language === 'en' ? 'Cancel' : 'Cancelar'}
-              </Button>
-              <Button
-                type="submit"
-                disabled={saving}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {i18n.language === 'en' ? 'Saving...' : 'Guardando...'}
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    {i18n.language === 'en' ? 'Save Changes' : 'Guardar Cambios'}
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate(-1)}
+                  disabled={saving}
+                  className="w-full sm:w-auto"
+                >
+                  {i18n.language === 'en' ? 'Cancel' : 'Cancelar'}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {i18n.language === 'en' ? 'Saving...' : 'Guardando...'}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      {i18n.language === 'en' ? 'Save changes' : 'Guardar cambios'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </form>
       </div>
     </div>

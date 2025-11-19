@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string })?.from || "/demo";
   const { toast } = useToast();
   const { user, login, loginWithGoogle, register } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
@@ -22,9 +24,9 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/demo");
+      navigate(from, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, from]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +37,7 @@ const Auth = () => {
         const result = await login(email, password);
         if (result.success) {
           toast({ title: "¡Bienvenido/a de vuelta! 🎉" });
-          navigate("/demo");
+          navigate(from);
         } else {
           throw new Error(result.error);
         }
@@ -52,7 +54,7 @@ const Auth = () => {
         });
         if (result.success) {
           toast({ title: "¡Cuenta creada exitosamente! ✨" });
-          navigate("/demo");
+          navigate(from);
         } else {
           throw new Error(result.error || "Error al registrar usuario");
         }
@@ -79,7 +81,7 @@ const Auth = () => {
         toast({
           title: result.isNewUser ? "¡Cuenta conectada con Google!" : "¡Bienvenido/a con Google! 🎉",
         });
-        navigate("/demo");
+        navigate(from);
       } else {
         throw new Error(result.error || "No se pudo iniciar sesión con Google");
       }

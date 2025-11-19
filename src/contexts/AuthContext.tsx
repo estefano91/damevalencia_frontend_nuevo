@@ -52,6 +52,9 @@ const convertApiUserToProfile = (apiUser?: ApiUser | null): DameProfile | null =
     id: apiUser.id.toString(),
     user_type: "participant", // Default, puede actualizarse desde API si está disponible
     full_name: apiUser.full_name || `${apiUser.first_name} ${apiUser.last_name}`.trim() || apiUser.email,
+    first_name: apiUser.first_name,
+    last_name: apiUser.last_name,
+    username: apiUser.username,
     email: apiUser.email,
     bio: "",
     avatar_url: "",
@@ -68,9 +71,12 @@ const convertApiUserToProfile = (apiUser?: ApiUser | null): DameProfile | null =
     public_profile: true,
     verified: false,
     active: apiUser.status === "ACTIVE",
+    status: apiUser.status,
+    is_blocked: apiUser.is_blocked,
     member_since: apiUser.date_joined.split('T')[0],
     created_at: apiUser.date_joined,
-    updated_at: apiUser.date_joined
+    updated_at: apiUser.date_joined,
+    member: apiUser.member ?? null
   };
 };
 
@@ -169,6 +175,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (profile) {
           setUser(profile);
         }
+        await refreshUser();
 
         return { success: true };
       }
@@ -211,6 +218,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (profile) {
           setUser(profile);
         }
+
+        await refreshUser();
 
         return { success: true, isNewUser: Boolean(response.data.is_new_user) };
       }
@@ -275,6 +284,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUser(profile);
           }
         }
+
+        await refreshUser();
 
         return { success: true };
       }

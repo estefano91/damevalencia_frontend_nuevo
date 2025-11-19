@@ -1,3 +1,5 @@
+import type { ApiMember } from "@types/auth";
+
 // Tipos específicos para la API de la Asociación DAME
 // Reemplaza los tipos de Supabase con tipos adaptados para DAME
 
@@ -32,6 +34,9 @@ export interface DameProfile {
   id: string;
   user_type: DameUserType;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
   email: string;
   bio?: string;
   avatar_url?: string;
@@ -69,10 +74,13 @@ export interface DameProfile {
   // Metadata del sistema
   verified: boolean;
   active: boolean;
+  status?: string;
+  is_blocked?: boolean;
   member_since: string;
   last_activity?: string;
   created_at: string;
   updated_at: string;
+  member?: ApiMember | null;
 }
 
 export interface DameConnection {

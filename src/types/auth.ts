@@ -1,3 +1,16 @@
+export interface ApiMember {
+  id: number;
+  document_type: string;
+  document_number: string;
+  birth_date: string;
+  age: number;
+  is_active: boolean;
+  full_name: string;
+  email: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ApiUser {
   id: number;
   username: string;
@@ -8,7 +21,7 @@ export interface ApiUser {
   is_blocked: boolean;
   is_google_user?: boolean;
   status: string;
-  member?: unknown;
+  member?: ApiMember | null;
   date_joined: string;
 }
 
@@ -34,7 +47,7 @@ export interface AuthErrorPayload {
   [key: string]: unknown;
 }
 
-export interface AuthMeResponse {
+export interface UserProfileResponse {
   success: boolean;
   user?: ApiUser;
   message?: string;
