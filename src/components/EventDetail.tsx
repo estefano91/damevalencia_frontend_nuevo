@@ -689,12 +689,18 @@ const EventDetail = () => {
                           // Google Maps URL
                           let googleMapsUrl = '';
                           if (hasValidCoords) {
-                            googleMapsUrl = `https://www.google.com/maps/@?api=1&map_action=map&center=${latNum},${lngNum}&zoom=15`;
+                            // Formato estándar de Google Maps con coordenadas
+                            googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${latNum},${lngNum}`;
                           } else if (event.place.address) {
-                            const query = `${event.place.name || ''} ${event.place.address} ${event.place.city || ''}`.trim();
-                            googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+                            // Construir dirección completa con ciudad
+                            const fullAddress = `${event.place.name || ''}, ${event.place.address}${event.place.city ? ', ' + event.place.city : ''}, Valencia, España`.trim();
+                            googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
                           } else if (event.place.name) {
-                            googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.place.name)}`;
+                            // Si solo tenemos el nombre, agregar Valencia para mejor búsqueda
+                            const queryWithCity = event.place.city 
+                              ? `${event.place.name}, ${event.place.city}, Valencia, España`
+                              : `${event.place.name}, Valencia, España`;
+                            googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryWithCity)}`;
                           }
 
                           // Waze URL
