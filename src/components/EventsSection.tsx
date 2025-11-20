@@ -282,25 +282,6 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
           <p className="text-muted-foreground">Un momento por favor</p>
         </div>
       )}
-
-      {/* Footer call to action */}
-      <div className="text-center pt-8 border-t">
-        <p className="text-muted-foreground mb-4">
-          {i18n.language === 'en' ? 'Interested in an event? Contact us for more info!' : '¿Te interesa algún evento? ¡Contáctanos para más información!'}
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button asChild>
-            <a href="mailto:admin@organizaciondame.org">
-              📧 admin@organizaciondame.org
-            </a>
-          </Button>
-          <Button variant="outline" asChild className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700">
-            <a href="https://wa.me/34658236665?text=Hola%2C%20me%20gustar%C3%ADa%20informaci%C3%B3n%20sobre%20DAME%20Valencia" target="_blank" rel="noopener noreferrer">
-              💬 WhatsApp
-            </a>
-          </Button>
-        </div>
-      </div>
     </div>
   );
 };
