@@ -479,8 +479,46 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
         {/* Ubicación */}
         {event.place && (
           <div className="flex items-center gap-2 text-sm">
-            <MapPin className="h-4 w-4 text-pink-600" />
-            <span>{event.place.name}</span>
+            <MapPin className="h-4 w-4 text-pink-600 flex-shrink-0" />
+            {(() => {
+              // Generar URL de Google Maps
+              const lat = event.place.latitude;
+              const lng = event.place.longitude;
+              const latNum = typeof lat === 'string' ? parseFloat(lat) : lat;
+              const lngNum = typeof lng === 'string' ? parseFloat(lng) : lng;
+              const hasValidCoords = 
+                latNum != null && 
+                lngNum != null && 
+                isFinite(latNum) && 
+                isFinite(lngNum) &&
+                latNum >= -90 && latNum <= 90 &&
+                lngNum >= -180 && lngNum <= 180;
+
+              let mapsUrl = '';
+              if (hasValidCoords) {
+                mapsUrl = `https://www.google.com/maps/@?api=1&map_action=map&center=${latNum},${lngNum}&zoom=15`;
+              } else if (event.place.address) {
+                const query = `${event.place.name || ''} ${event.place.address}`.trim();
+                mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+              } else if (event.place.name) {
+                mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.place.name)}`;
+              }
+
+              return mapsUrl ? (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 hover:text-pink-700 transition-colors cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="truncate">{event.place.name}</span>
+                  <ExternalLink className="h-3 w-3 flex-shrink-0 opacity-60" />
+                </a>
+              ) : (
+                <span>{event.place.name}</span>
+              );
+            })()}
           </div>
         )}
 

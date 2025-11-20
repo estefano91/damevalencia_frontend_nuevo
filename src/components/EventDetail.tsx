@@ -21,7 +21,8 @@ import {
   Repeat,
   CalendarDays,
   Music,
-  Coffee
+  Coffee,
+  Navigation
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -653,20 +654,68 @@ const EventDetail = () => {
                   {/* Location */}
                   {event.place && (
                     <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <MapPin className="h-5 w-5 text-green-600" />
-                        <div>
-                          <p className="font-medium">{i18n.language === 'en' ? 'Location' : 'Ubicación'}</p>
-                          {event.place.name && (
-                            <p className="text-sm text-muted-foreground">{event.place.name}</p>
-                          )}
-                          {event.place.address && (
-                            <p className="text-sm text-muted-foreground">{event.place.address}</p>
-                          )}
-                          {event.place.city && (
-                            <p className="text-sm text-muted-foreground">{event.place.city}</p>
-                          )}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1">
+                          <MapPin className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="font-medium">{i18n.language === 'en' ? 'Location' : 'Ubicación'}</p>
+                            {event.place.name && (
+                              <p className="text-sm text-muted-foreground">{event.place.name}</p>
+                            )}
+                            {event.place.address && (
+                              <p className="text-sm text-muted-foreground">{event.place.address}</p>
+                            )}
+                            {event.place.city && (
+                              <p className="text-sm text-muted-foreground">{event.place.city}</p>
+                            )}
+                          </div>
                         </div>
+                        {(() => {
+                          // Generar URL de Google Maps
+                          const lat = event.place.latitude;
+                          const lng = event.place.longitude;
+                          const latNum = typeof lat === 'string' ? parseFloat(lat) : lat;
+                          const lngNum = typeof lng === 'string' ? parseFloat(lng) : lng;
+                          const hasValidCoords = 
+                            latNum != null && 
+                            lngNum != null && 
+                            isFinite(latNum) && 
+                            isFinite(lngNum) &&
+                            latNum >= -90 && latNum <= 90 &&
+                            lngNum >= -180 && lngNum <= 180;
+
+                          let mapsUrl = '';
+                          if (hasValidCoords) {
+                            // Usar coordenadas si están disponibles (más preciso)
+                            mapsUrl = `https://www.google.com/maps/@?api=1&map_action=map&center=${latNum},${lngNum}&zoom=15`;
+                          } else if (event.place.address) {
+                            // Usar dirección si no hay coordenadas
+                            const query = `${event.place.name || ''} ${event.place.address} ${event.place.city || ''}`.trim();
+                            mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+                          } else if (event.place.name) {
+                            // Usar solo el nombre del lugar
+                            mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.place.name)}`;
+                          }
+
+                          return mapsUrl ? (
+                            <Button
+                              asChild
+                              variant="outline"
+                              size="sm"
+                              className="flex-shrink-0 gap-2"
+                            >
+                              <a
+                                href={mapsUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2"
+                              >
+                                <Navigation className="h-4 w-4" />
+                                <span>{i18n.language === 'en' ? 'Maps' : 'Mapas'}</span>
+                              </a>
+                            </Button>
+                          ) : null;
+                        })()}
                       </div>
                       {/* Google Maps Interactive Map */}
                       {(() => {
