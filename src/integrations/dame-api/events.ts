@@ -28,6 +28,8 @@ export interface DameEvent {
   event_slug: string;
   title_es: string;
   title_en?: string;
+  short_description_es?: string;
+  short_description_en?: string;
   summary_es?: string;
   summary_en?: string;
   summary?: string; // fallback genérico si la API lo envía sin sufijo de idioma

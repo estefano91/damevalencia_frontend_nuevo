@@ -48,7 +48,6 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { selectedCategoryId, setAvailableCategories } = useCategoryFilter();
-  const [eventSummaries, setEventSummaries] = useState<Record<string, { summary_es?: string; summary_en?: string }>>({});
   
   // Forzar re-render cuando cambie el idioma
   useEffect(() => {
@@ -129,36 +128,6 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
     }
   };
 
-  // Obtener summaries faltantes por slug cuando cambian los eventos filtrados
-  useEffect(() => {
-    const collectSlugs = (): string[] => {
-      const slugs: string[] = [];
-      filteredEventsByCategory.forEach(cat => {
-        cat.events.forEach(ev => {
-          const inList = (ev as any).summary_es || (ev as any).summary_en;
-          if (!inList && !eventSummaries[ev.event_slug]) {
-            slugs.push(ev.event_slug);
-          }
-        });
-      });
-      return Array.from(new Set(slugs));
-    };
-
-    const fetchAll = async (slugs: string[]) => {
-      if (slugs.length === 0) return;
-      const results = await Promise.allSettled(slugs.map(slug => dameEventsAPI.getEventBySlug(slug)));
-      const next = { ...eventSummaries };
-      results.forEach((res, idx) => {
-        if (res.status === 'fulfilled' && res.value.success && res.value.data) {
-          const data: any = res.value.data;
-          next[slugs[idx]] = { summary_es: data.summary_es, summary_en: data.summary_en };
-        }
-      });
-      setEventSummaries(next);
-    };
-
-    fetchAll(collectSlugs());
-  }, [filteredEventsByCategory]);
 
   const getCategoryIcon = (iconName: string, nameEs?: string) => {
     // Primero intentar por icono de la API
@@ -288,7 +257,6 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
             categoryColor={getCategoryColor(categoryData.category.id, categoryData.category.name_es)}
             categoryIcon={getCategoryIcon(categoryData.category.icon, categoryData.category.name_es)}
             maxEvents={maxEventsPerCategory}
-            summariesMap={eventSummaries}
           />
         ))
       ) : selectedCategoryId !== null ? (
@@ -335,10 +303,9 @@ interface CategorySectionProps {
   categoryColor: string;
   categoryIcon: React.ReactNode;
   maxEvents: number;
-  summariesMap: Record<string, { summary_es?: string; summary_en?: string }>;
 }
 
-const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents, summariesMap }: CategorySectionProps) => {
+const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents }: CategorySectionProps) => {
   const { category, events } = categoryData;
   const displayEvents = events.slice(0, maxEvents);
   const hasMoreEvents = events.length > maxEvents;
@@ -375,7 +342,6 @@ const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents,
             key={`${event.event_slug}-${index}`} 
             event={event} 
             categoryColor={categoryColor}
-            summariesMap={summariesMap}
           />
         ))}
       </div>
@@ -397,10 +363,9 @@ const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents,
 interface EventCardProps {
   event: DameEvent;
   categoryColor: string;
-  summariesMap: Record<string, { summary_es?: string; summary_en?: string }>;
 }
 
-const EventCard = ({ event, categoryColor, summariesMap }: EventCardProps) => {
+const EventCard = ({ event, categoryColor }: EventCardProps) => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   
@@ -477,9 +442,9 @@ const EventCard = ({ event, categoryColor, summariesMap }: EventCardProps) => {
       <CardContent className="space-y-3 flex-1 flex flex-col">
         {/* Resumen del evento visible y consistente */}
         {(() => {
-          const fromDetail = summariesMap[event.event_slug];
-          const rawSummary = getLocalizedText(event.summary_es, event.summary_en, (event as any).summary)
-            || getLocalizedText(fromDetail?.summary_es, fromDetail?.summary_en)
+          // Usar directamente la información que viene de by-category
+          const rawSummary = getLocalizedText(event.short_description_es, event.short_description_en)
+            || getLocalizedText(event.summary_es, event.summary_en, (event as any).summary)
             || getLocalizedText(event.description_es, event.description_en, (event as any).description);
           const summary = rawSummary ? String(rawSummary) : '';
           const trimmed = summary.length > 240 ? summary.slice(0, 240) + '…' : summary;
