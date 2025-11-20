@@ -27,8 +27,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import EventMap from "@/components/EventMap";
-import GoogleMapsIcon from "@/components/GoogleMapsIcon";
-import WazeIcon from "@/components/WazeIcon";
+import googleMapsIcon from "@/assets/mapsgoogle.png";
+import wazeIcon from "@/assets/wazeicon.jpg";
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -656,7 +656,7 @@ const EventDetail = () => {
                   {/* Location */}
                   {event.place && (
                     <div className="space-y-3">
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div className="flex items-start gap-3 flex-1">
                           <MapPin className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                           <div className="flex-1">
@@ -710,13 +710,13 @@ const EventDetail = () => {
 
 
                           return (googleMapsUrl || wazeUrl) ? (
-                            <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0 w-full sm:w-auto">
                               {googleMapsUrl && (
                                 <Button
                                   asChild
                                   variant="outline"
                                   size="sm"
-                                  className="gap-2"
+                                  className="gap-2 w-full sm:w-auto justify-center sm:justify-start"
                                 >
                                   <a
                                     href={googleMapsUrl}
@@ -724,8 +724,12 @@ const EventDetail = () => {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2"
                                   >
-                                    <GoogleMapsIcon width={18} height={18} />
-                                    <span className="hidden sm:inline">{i18n.language === 'en' ? 'Maps' : 'Maps'}</span>
+                                    <img 
+                                      src={googleMapsIcon} 
+                                      alt="Google Maps" 
+                                      className="w-5 h-5 object-contain"
+                                    />
+                                    <span>{i18n.language === 'en' ? 'Google Maps' : 'Google Maps'}</span>
                                   </a>
                                 </Button>
                               )}
@@ -734,7 +738,7 @@ const EventDetail = () => {
                                   asChild
                                   variant="outline"
                                   size="sm"
-                                  className="gap-2"
+                                  className="gap-2 w-full sm:w-auto justify-center sm:justify-start"
                                 >
                                   <a
                                     href={wazeUrl}
@@ -742,8 +746,12 @@ const EventDetail = () => {
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2"
                                   >
-                                    <WazeIcon width={18} height={18} />
-                                    <span className="hidden sm:inline">Waze</span>
+                                    <img 
+                                      src={wazeIcon} 
+                                      alt="Waze" 
+                                      className="w-5 h-5 object-contain rounded-full"
+                                    />
+                                    <span>Waze</span>
                                   </a>
                                 </Button>
                               )}

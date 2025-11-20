@@ -35,8 +35,8 @@ import {
   getAvailableSpots,
   isEventSoldOut
 } from '@/integrations/dame-api/events';
-import GoogleMapsIcon from '@/components/GoogleMapsIcon';
-import WazeIcon from '@/components/WazeIcon';
+import googleMapsIcon from '@/assets/mapsgoogle.png';
+import wazeIcon from '@/assets/wazeicon.jpg';
 
 interface EventsSectionProps {
   maxEventsPerCategory?: number;
@@ -480,8 +480,8 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
 
         {/* Ubicación */}
         {event.place && (
-          <div className="flex items-center justify-between gap-2 text-sm">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex flex-col gap-2 text-sm">
+            <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-pink-600 flex-shrink-0" />
               <span className="truncate">{event.place.name}</span>
             </div>
@@ -522,17 +522,22 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
               }
 
               return (googleMapsUrl || wazeUrl) ? (
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   {googleMapsUrl && (
                     <a
                       href={googleMapsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                      className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs sm:text-sm"
                       onClick={(e) => e.stopPropagation()}
                       title={i18n.language === 'en' ? 'Open in Google Maps' : 'Abrir en Google Maps'}
                     >
-                      <GoogleMapsIcon width={16} height={16} />
+                      <img 
+                        src={googleMapsIcon} 
+                        alt="Google Maps" 
+                        className="w-4 h-4 sm:w-5 sm:h-5 object-contain flex-shrink-0"
+                      />
+                      <span className="truncate">{i18n.language === 'en' ? 'Google Maps' : 'Google Maps'}</span>
                     </a>
                   )}
                   {wazeUrl && (
@@ -540,11 +545,16 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
                       href={wazeUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                      className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs sm:text-sm"
                       onClick={(e) => e.stopPropagation()}
                       title={i18n.language === 'en' ? 'Open in Waze' : 'Abrir en Waze'}
                     >
-                      <WazeIcon width={16} height={16} />
+                      <img 
+                        src={wazeIcon} 
+                        alt="Waze" 
+                        className="w-4 h-4 sm:w-5 sm:h-5 object-contain rounded-full flex-shrink-0"
+                      />
+                      <span className="truncate">Waze</span>
                     </a>
                   )}
                 </div>
