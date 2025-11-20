@@ -35,6 +35,8 @@ import {
   getAvailableSpots,
   isEventSoldOut
 } from '@/integrations/dame-api/events';
+import GoogleMapsIcon from '@/components/GoogleMapsIcon';
+import WazeIcon from '@/components/WazeIcon';
 
 interface EventsSectionProps {
   maxEventsPerCategory?: number;
@@ -478,10 +480,13 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
 
         {/* Ubicación */}
         {event.place && (
-          <div className="flex items-center gap-2 text-sm">
-            <MapPin className="h-4 w-4 text-pink-600 flex-shrink-0" />
+          <div className="flex items-center justify-between gap-2 text-sm">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <MapPin className="h-4 w-4 text-pink-600 flex-shrink-0" />
+              <span className="truncate">{event.place.name}</span>
+            </div>
             {(() => {
-              // Generar URL de Google Maps
+              // Generar URLs de Google Maps y Waze
               const lat = event.place.latitude;
               const lng = event.place.longitude;
               const latNum = typeof lat === 'string' ? parseFloat(lat) : lat;
@@ -494,30 +499,56 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
                 latNum >= -90 && latNum <= 90 &&
                 lngNum >= -180 && lngNum <= 180;
 
-              let mapsUrl = '';
+              // Google Maps URL
+              let googleMapsUrl = '';
               if (hasValidCoords) {
-                mapsUrl = `https://www.google.com/maps/@?api=1&map_action=map&center=${latNum},${lngNum}&zoom=15`;
+                googleMapsUrl = `https://www.google.com/maps/@?api=1&map_action=map&center=${latNum},${lngNum}&zoom=15`;
               } else if (event.place.address) {
                 const query = `${event.place.name || ''} ${event.place.address}`.trim();
-                mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+                googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
               } else if (event.place.name) {
-                mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.place.name)}`;
+                googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.place.name)}`;
               }
 
-              return mapsUrl ? (
-                <a
-                  href={mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 hover:text-pink-700 transition-colors cursor-pointer"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <span className="truncate">{event.place.name}</span>
-                  <ExternalLink className="h-3 w-3 flex-shrink-0 opacity-60" />
-                </a>
-              ) : (
-                <span>{event.place.name}</span>
-              );
+              // Waze URL
+              let wazeUrl = '';
+              if (hasValidCoords) {
+                wazeUrl = `https://waze.com/ul?ll=${latNum},${lngNum}&navigate=yes`;
+              } else if (event.place.address) {
+                const query = `${event.place.address}`.trim();
+                wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(query)}&navigate=yes`;
+              } else if (event.place.name) {
+                wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(event.place.name)}&navigate=yes`;
+              }
+
+              return (googleMapsUrl || wazeUrl) ? (
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {googleMapsUrl && (
+                    <a
+                      href={googleMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                      title={i18n.language === 'en' ? 'Open in Google Maps' : 'Abrir en Google Maps'}
+                    >
+                      <GoogleMapsIcon width={16} height={16} />
+                    </a>
+                  )}
+                  {wazeUrl && (
+                    <a
+                      href={wazeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                      title={i18n.language === 'en' ? 'Open in Waze' : 'Abrir en Waze'}
+                    >
+                      <WazeIcon width={16} height={16} />
+                    </a>
+                  )}
+                </div>
+              ) : null;
             })()}
           </div>
         )}

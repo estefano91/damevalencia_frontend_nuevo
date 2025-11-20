@@ -27,6 +27,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import EventMap from "@/components/EventMap";
+import GoogleMapsIcon from "@/components/GoogleMapsIcon";
+import WazeIcon from "@/components/WazeIcon";
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -671,7 +673,7 @@ const EventDetail = () => {
                           </div>
                         </div>
                         {(() => {
-                          // Generar URL de Google Maps
+                          // Generar URLs de Google Maps y Waze
                           const lat = event.place.latitude;
                           const lng = event.place.longitude;
                           const latNum = typeof lat === 'string' ? parseFloat(lat) : lat;
@@ -684,36 +686,68 @@ const EventDetail = () => {
                             latNum >= -90 && latNum <= 90 &&
                             lngNum >= -180 && lngNum <= 180;
 
-                          let mapsUrl = '';
+                          // Google Maps URL
+                          let googleMapsUrl = '';
                           if (hasValidCoords) {
-                            // Usar coordenadas si están disponibles (más preciso)
-                            mapsUrl = `https://www.google.com/maps/@?api=1&map_action=map&center=${latNum},${lngNum}&zoom=15`;
+                            googleMapsUrl = `https://www.google.com/maps/@?api=1&map_action=map&center=${latNum},${lngNum}&zoom=15`;
                           } else if (event.place.address) {
-                            // Usar dirección si no hay coordenadas
                             const query = `${event.place.name || ''} ${event.place.address} ${event.place.city || ''}`.trim();
-                            mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+                            googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
                           } else if (event.place.name) {
-                            // Usar solo el nombre del lugar
-                            mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.place.name)}`;
+                            googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.place.name)}`;
                           }
 
-                          return mapsUrl ? (
-                            <Button
-                              asChild
-                              variant="outline"
-                              size="sm"
-                              className="flex-shrink-0 gap-2"
-                            >
-                              <a
-                                href={mapsUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2"
-                              >
-                                <Navigation className="h-4 w-4" />
-                                <span>{i18n.language === 'en' ? 'Maps' : 'Mapas'}</span>
-                              </a>
-                            </Button>
+                          // Waze URL
+                          let wazeUrl = '';
+                          if (hasValidCoords) {
+                            wazeUrl = `https://waze.com/ul?ll=${latNum},${lngNum}&navigate=yes`;
+                          } else if (event.place.address) {
+                            const query = `${event.place.address} ${event.place.city || ''}`.trim();
+                            wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(query)}&navigate=yes`;
+                          } else if (event.place.name) {
+                            wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(event.place.name)}&navigate=yes`;
+                          }
+
+
+                          return (googleMapsUrl || wazeUrl) ? (
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {googleMapsUrl && (
+                                <Button
+                                  asChild
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-2"
+                                >
+                                  <a
+                                    href={googleMapsUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2"
+                                  >
+                                    <GoogleMapsIcon width={18} height={18} />
+                                    <span className="hidden sm:inline">{i18n.language === 'en' ? 'Maps' : 'Maps'}</span>
+                                  </a>
+                                </Button>
+                              )}
+                              {wazeUrl && (
+                                <Button
+                                  asChild
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-2"
+                                >
+                                  <a
+                                    href={wazeUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2"
+                                  >
+                                    <WazeIcon width={18} height={18} />
+                                    <span className="hidden sm:inline">Waze</span>
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
                           ) : null;
                         })()}
                       </div>
