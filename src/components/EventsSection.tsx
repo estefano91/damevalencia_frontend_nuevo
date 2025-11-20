@@ -36,7 +36,7 @@ import {
   isEventSoldOut
 } from '@/integrations/dame-api/events';
 import googleMapsIcon from '@/assets/mapsgoogle.png';
-import wazeIcon from '@/assets/wazeicon.jpg';
+import wazeIcon from '@/assets/wazeicon.png';
 
 interface EventsSectionProps {
   maxEventsPerCategory?: number;

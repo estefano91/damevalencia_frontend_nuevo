@@ -28,7 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import EventMap from "@/components/EventMap";
 import googleMapsIcon from "@/assets/mapsgoogle.png";
-import wazeIcon from "@/assets/wazeicon.jpg";
+import wazeIcon from "@/assets/wazeicon.png";
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
