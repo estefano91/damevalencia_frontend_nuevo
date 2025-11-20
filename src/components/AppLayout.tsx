@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Navigation from "./Navigation";
 import Sidebar from "./Sidebar";
+import Footer from "./Footer";
 
 // Context para el filtro de categorías
 interface CategoryFilterContextType {
@@ -125,16 +126,17 @@ const AppLayout = ({ children, hideSidebar = false }: AppLayoutProps) => {
         )}
 
         {/* Main content con margin automático */}
-        <main className={`flex-1 pt-20 sm:pt-24 md:pt-28 min-h-screen transition-all duration-300 ${
+        <main className={`flex-1 pt-20 sm:pt-24 md:pt-28 min-h-screen transition-all duration-300 flex flex-col ${
           hideSidebar
             ? 'ml-0'
             : isMobile
               ? (sidebarOpen ? 'ml-0' : 'ml-12')
               : (sidebarOpen ? 'ml-64' : 'ml-12')
         }`}>
-            <div className="container mx-auto px-4 py-6">
+            <div className="container mx-auto px-4 py-6 flex-1">
               {children}
             </div>
+            <Footer />
           </main>
         </div>
       </div>
