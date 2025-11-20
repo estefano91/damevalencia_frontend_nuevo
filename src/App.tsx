@@ -17,6 +17,7 @@ import EditProfile from "./pages/EditProfile";
 import CookieBanner from "./components/CookieBanner";
 import CookiePolicy from "./pages/CookiePolicy";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import AboutUs from "./pages/AboutUs";
 import WhatsAppButton from "./components/WhatsAppButton";
 import UserProfile from "./pages/UserProfile";
@@ -134,7 +135,7 @@ const App = () => (
                   />
                   <Route path="/disclaimer" element={<Disclaimer />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
-                  <Route path="/terms" element={<Disclaimer />} />
+                  <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/cookies" element={<CookiePolicy />} />
                   <Route path="/sobre-nosotros" element={<AboutUs />} />
                   <Route path="/about" element={<AboutUs />} />

@@ -1,7 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Lock, Eye, User, Mail, MessageCircle, Users, Calendar, MapPin } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const PrivacyPolicy = () => {
+  const { i18n } = useTranslation();
+  const isEnglish = i18n.language === 'en';
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900">
       <div className="container mx-auto px-4 py-12 max-w-4xl">
@@ -16,7 +20,9 @@ const PrivacyPolicy = () => {
             DAME Valencia - Asociación de Diversidad e Integración Cultural
           </p>
           <p className="text-sm text-muted-foreground mt-2">
-            Última actualización: {new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+            {isEnglish
+              ? `Last updated: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
+              : `Última actualización: ${new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}`}
           </p>
         </div>
 
@@ -489,6 +495,9 @@ const PrivacyPolicy = () => {
 };
 
 export default PrivacyPolicy;
+
+
+
 
 
 
