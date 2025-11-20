@@ -80,6 +80,11 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
     }
   }, [selectedCategoryId, eventsByCategory]);
 
+  // Scroll al principio de la página cuando cambia la categoría
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [selectedCategoryId]);
+
   const loadEvents = async () => {
     setLoading(true);
     setError(null);
