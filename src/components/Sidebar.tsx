@@ -130,26 +130,80 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
     return dameColors[(categoryId - 1) % dameColors.length];
   };
 
-  // Determina colores por nombre de categoría (más fiable que el id)
+  // Determina colores por nombre de categoría (más fiable que el id) - Versión mejorada con gradientes
   const getColorsForCategoryName = (nameEs?: string) => {
     const name = (nameEs || '').toLowerCase();
     if (name.includes('música') || name.includes('musica') || name.includes('music')) {
-      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-purple-700', bgColorInactive: 'bg-purple-200', borderColor: 'border-purple-600', hoverColor: 'hover:bg-purple-800', ringColor: 'ring-purple-200' };
+      return { 
+        color: 'text-white', 
+        iconColor: 'text-white', 
+        bgColor: 'bg-gradient-to-br from-purple-600 to-purple-800', 
+        bgColorInactive: 'bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30', 
+        borderColor: 'border-purple-500', 
+        hoverColor: 'hover:from-purple-700 hover:to-purple-900', 
+        ringColor: 'ring-purple-300',
+        shadowColor: 'shadow-purple-500/50'
+      };
     }
     if (name.includes('baile') || name.includes('dance')) {
-      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-pink-700', bgColorInactive: 'bg-pink-200', borderColor: 'border-pink-600', hoverColor: 'hover:bg-pink-800', ringColor: 'ring-pink-200' };
+      return { 
+        color: 'text-white', 
+        iconColor: 'text-white', 
+        bgColor: 'bg-gradient-to-br from-pink-600 to-rose-700', 
+        bgColorInactive: 'bg-gradient-to-br from-pink-100 to-rose-200 dark:from-pink-900/30 dark:to-rose-800/30', 
+        borderColor: 'border-pink-500', 
+        hoverColor: 'hover:from-pink-700 hover:to-rose-800', 
+        ringColor: 'ring-pink-300',
+        shadowColor: 'shadow-pink-500/50'
+      };
     }
     if (name.includes('arte') || name.includes('cultura') || name.includes('art')) {
-      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-indigo-700', bgColorInactive: 'bg-indigo-200', borderColor: 'border-indigo-600', hoverColor: 'hover:bg-indigo-800', ringColor: 'ring-indigo-200' };
+      return { 
+        color: 'text-white', 
+        iconColor: 'text-white', 
+        bgColor: 'bg-gradient-to-br from-indigo-600 to-indigo-800', 
+        bgColorInactive: 'bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/30 dark:to-indigo-800/30', 
+        borderColor: 'border-indigo-500', 
+        hoverColor: 'hover:from-indigo-700 hover:to-indigo-900', 
+        ringColor: 'ring-indigo-300',
+        shadowColor: 'shadow-indigo-500/50'
+      };
     }
     if (name.includes('fit') || name.includes('deporte') || name.includes('fitness')) {
-      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-green-700', bgColorInactive: 'bg-green-200', borderColor: 'border-green-600', hoverColor: 'hover:bg-green-800', ringColor: 'ring-green-200' };
+      return { 
+        color: 'text-white', 
+        iconColor: 'text-white', 
+        bgColor: 'bg-gradient-to-br from-emerald-600 to-green-700', 
+        bgColorInactive: 'bg-gradient-to-br from-emerald-100 to-green-200 dark:from-emerald-900/30 dark:to-green-800/30', 
+        borderColor: 'border-emerald-500', 
+        hoverColor: 'hover:from-emerald-700 hover:to-green-800', 
+        ringColor: 'ring-emerald-300',
+        shadowColor: 'shadow-emerald-500/50'
+      };
     }
     if (name.includes('zen') || name.includes('yoga') || name.includes('mindfulness')) {
-      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-sky-500', bgColorInactive: 'bg-sky-200', borderColor: 'border-sky-400', hoverColor: 'hover:bg-sky-600', ringColor: 'ring-sky-200' };
+      return { 
+        color: 'text-white', 
+        iconColor: 'text-white', 
+        bgColor: 'bg-gradient-to-br from-cyan-500 to-sky-600', 
+        bgColorInactive: 'bg-gradient-to-br from-cyan-100 to-sky-200 dark:from-cyan-900/30 dark:to-sky-800/30', 
+        borderColor: 'border-cyan-400', 
+        hoverColor: 'hover:from-cyan-600 hover:to-sky-700', 
+        ringColor: 'ring-cyan-300',
+        shadowColor: 'shadow-cyan-500/50'
+      };
     }
     if (name.includes('apoyo') || name.includes('comunidad') || name.includes('support') || name.includes('community')) {
-      return { color: 'text-white', iconColor: 'text-white', bgColor: 'bg-blue-700', bgColorInactive: 'bg-blue-200', borderColor: 'border-blue-600', hoverColor: 'hover:bg-blue-800', ringColor: 'ring-blue-200' };
+      return { 
+        color: 'text-white', 
+        iconColor: 'text-white', 
+        bgColor: 'bg-gradient-to-br from-blue-600 to-blue-800', 
+        bgColorInactive: 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30', 
+        borderColor: 'border-blue-500', 
+        hoverColor: 'hover:from-blue-700 hover:to-blue-900', 
+        ringColor: 'ring-blue-300',
+        shadowColor: 'shadow-blue-500/50'
+      };
     }
     // Fallback al mapping por id
     return getCategoryColors((nameEs?.length || 0) % 5 + 1);
@@ -200,22 +254,27 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
               {/* Botón "Todos los eventos" */}
               <Button
                 variant="ghost"
-                className={`w-full justify-start h-auto py-3 px-3 rounded-lg transition-all duration-200 ${
+                className={`w-full justify-start h-auto py-4 px-4 rounded-xl transition-all duration-300 transform ${
                   selectedCategoryId === null
-                    ? 'bg-purple-700 border-purple-600 text-white shadow-lg border-4 ring-2 ring-white/70'
-                    : 'bg-purple-700 border-purple-600 text-white border-2 hover:bg-purple-800 hover:border-purple-700'
+                    ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 border-2 border-purple-400 text-white shadow-xl shadow-purple-500/50 ring-2 ring-purple-300 scale-105'
+                    : 'bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 border-2 border-purple-300 text-purple-700 dark:text-purple-300 hover:from-purple-200 hover:to-purple-300 dark:hover:from-purple-800/50 dark:hover:to-purple-700/50 hover:shadow-lg hover:scale-[1.02]'
                 }`}
                 onClick={() => handleCategoryFilter(null)}
               >
-                <List className={`mr-3 h-5 w-5 text-white`} />
-                <div className="text-left">
-                  <div className={`font-bold text-sm ${selectedCategoryId === null ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                <div className={`mr-3 p-2 rounded-lg ${selectedCategoryId === null ? 'bg-white/20' : 'bg-purple-500/20'}`}>
+                  <List className={`h-5 w-5 ${selectedCategoryId === null ? 'text-white' : 'text-purple-700 dark:text-purple-300'}`} />
+                </div>
+                <div className="text-left flex-1">
+                  <div className={`font-bold text-sm ${selectedCategoryId === null ? 'text-white' : 'text-purple-700 dark:text-purple-300'}`}>
                     {i18n.language === 'en' ? 'All events' : 'Todos los eventos'}
                   </div>
-                  <div className={`text-xs ${selectedCategoryId === null ? 'text-purple-100' : 'text-gray-500'}`}>
+                  <div className={`text-xs mt-0.5 ${selectedCategoryId === null ? 'text-purple-100' : 'text-purple-600/80 dark:text-purple-400/80'}`}>
                     {i18n.language === 'en' ? 'View all categories' : 'Ver todas las categorías'}
                   </div>
                 </div>
+                {selectedCategoryId === null && (
+                  <div className="ml-2 text-white text-lg font-bold">✓</div>
+                )}
               </Button>
 
               {/* Botones de Categorías */}
@@ -229,24 +288,30 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
                     <Button
                       key={category.id}
                       variant="ghost"
-                className={`w-full justify-start h-auto py-3 px-3 rounded-lg transition-all duration-200 ${
-                  isSelected
-                    ? `${colors.bgColor} ${colors.borderColor} text-white shadow-lg border-4 ring-2 ${colors.ringColor}`
-                    : `${colors.bgColor} ${colors.borderColor} text-white border-2 ${colors.hoverColor} hover:shadow-md`
-                }`}
+                      className={`w-full justify-start h-auto py-4 px-4 rounded-xl transition-all duration-300 transform ${
+                        isSelected
+                          ? `${colors.bgColor} border-2 ${colors.borderColor} text-white shadow-xl ${colors.shadowColor} ring-2 ${colors.ringColor} scale-105`
+                          : `${colors.bgColorInactive} border-2 ${colors.borderColor} text-gray-700 dark:text-gray-300 ${colors.hoverColor} hover:shadow-lg hover:scale-[1.02]`
+                      }`}
                       onClick={() => handleCategoryFilter(category.id)}
                     >
-                      <CategoryIcon 
-                        className={`mr-3 h-5 w-5 text-white`} 
-                      />
-                      <div className="text-left flex-1">
-                        <div className={`font-bold text-sm ${
-                          isSelected ? 'text-white' : 'text-white'
+                      <div className={`mr-3 p-2 rounded-lg transition-colors duration-300 ${
+                        isSelected ? 'bg-white/20' : 'bg-white/60 dark:bg-gray-700/60'
+                      }`}>
+                        <CategoryIcon 
+                          className={`h-5 w-5 ${
+                            isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                          }`} 
+                        />
+                      </div>
+                      <div className="text-left flex-1 min-w-0">
+                        <div className={`font-bold text-sm truncate ${
+                          isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
                         }`}>
                           {i18n.language === 'en' ? (category.name_en || category.name_es) : category.name_es}
                         </div>
-                        <div className={`text-xs ${
-                          isSelected ? 'text-white/90' : 'text-white/80'
+                        <div className={`text-xs mt-0.5 ${
+                          isSelected ? 'text-white/90' : 'text-gray-600/80 dark:text-gray-400/80'
                         }`}>
                           {i18n.language === 'en' 
                             ? `${category.total_events || 0} events`
@@ -254,7 +319,7 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
                         </div>
                       </div>
                       {isSelected && (
-                        <div className="ml-2 text-white">
+                        <div className="ml-2 text-white text-lg font-bold animate-in fade-in duration-300">
                           ✓
                         </div>
                       )}
@@ -275,15 +340,15 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
           <Button
             variant="ghost"
             size="sm"
-            className={`h-10 w-10 p-0 rounded-lg border-2 transition-all duration-200 ${
+            className={`h-12 w-12 p-0 rounded-xl border-2 transition-all duration-300 transform ${
               selectedCategoryId === null
-                ? 'bg-purple-700 border-purple-600 text-white shadow-lg'
-                : 'bg-purple-200 dark:bg-purple-900/40 border-purple-600 hover:border-purple-700 hover:bg-purple-300 dark:hover:bg-purple-800/60'
+                ? 'bg-gradient-to-br from-purple-600 to-purple-800 border-purple-400 text-white shadow-lg shadow-purple-500/50 ring-2 ring-purple-300 scale-110'
+                : 'bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 border-purple-400 text-purple-600 dark:text-purple-400 hover:from-purple-200 hover:to-purple-300 dark:hover:from-purple-800/60 dark:hover:to-purple-700/60 hover:shadow-md hover:scale-105'
             }`}
             onClick={() => handleCategoryFilter(null)}
             title={i18n.language === 'en' ? 'All events' : 'Todos los eventos'}
           >
-            <List className={`h-5 w-5 ${selectedCategoryId === null ? 'text-white' : 'text-purple-600'}`} />
+            <List className={`h-5 w-5 ${selectedCategoryId === null ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`} />
           </Button>
 
           {/* Iconos de Categorías verticales */}
@@ -297,16 +362,18 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
                 key={category.id}
                 variant="ghost"
                 size="sm"
-                className={`h-10 w-10 p-0 rounded-lg transition-all duration-200 ${
+                className={`h-12 w-12 p-0 rounded-xl border-2 transition-all duration-300 transform ${
                   isSelected
-                    ? `${colors.bgColor} ${colors.borderColor} text-white shadow-lg border-4 ring-2 ${colors.ringColor}`
-                    : `${colors.bgColor} ${colors.borderColor} text-white border-2 ${colors.hoverColor} hover:shadow-md`
+                    ? `${colors.bgColor} ${colors.borderColor} text-white shadow-lg ${colors.shadowColor} ring-2 ${colors.ringColor} scale-110`
+                    : `${colors.bgColorInactive} ${colors.borderColor} text-gray-700 dark:text-gray-300 ${colors.hoverColor} hover:shadow-md hover:scale-105`
                 }`}
                 onClick={() => handleCategoryFilter(category.id)}
                 title={category.name_es}
               >
                 <CategoryIcon 
-                  className={`h-5 w-5 text-white`} 
+                  className={`h-5 w-5 ${
+                    isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                  }`} 
                 />
               </Button>
             );
