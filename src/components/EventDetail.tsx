@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { dameEventsAPI } from "@/integrations/dame-api/events";
@@ -22,11 +22,14 @@ import {
   CalendarDays,
   Music,
   Coffee,
-  Navigation
+  Navigation,
+  Share2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import EventMap from "@/components/EventMap";
+import { EventTickets } from "@/components/EventTickets";
+import { dameTicketsAPI } from "@/integrations/dame-api/tickets";
 import googleMapsIcon from "@/assets/mapsgoogle.png";
 import wazeIcon from "@/assets/wazeicon.png";
 
@@ -43,6 +46,8 @@ const EventDetail = () => {
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [, forceUpdate] = useState({});
+  const [hasTickets, setHasTickets] = useState<boolean | null>(null); // null = checking, true = has tickets, false = no tickets
+  const [minTicketPrice, setMinTicketPrice] = useState<string | null>(null); // Precio mínimo de los tickets
   
   // Forzar re-render cuando cambie el idioma
   useEffect(() => {
@@ -91,6 +96,20 @@ const EventDetail = () => {
 
     fetchEventDetail();
   }, [slug]);
+
+  // Callback para recibir notificación del componente EventTickets sobre si hay tickets
+  const handleTicketsLoaded = (hasTickets: boolean, minPrice?: string | null) => {
+    setHasTickets(hasTickets);
+    setMinTicketPrice(minPrice || null);
+  };
+
+  // Función para abrir modal EN_PUERTA directamente
+  const openAtDoorModalFnRef = useRef<(() => void) | null>(null);
+  
+  const handleOpenAtDoorModal = (openFn: () => void) => {
+    console.log('📞 EventDetail: handleOpenAtDoorModal llamado');
+    openAtDoorModalFnRef.current = openFn;
+  };
 
   // Scroll al inicio al abrir la página de detalle o cambiar de evento
   useEffect(() => {
@@ -311,7 +330,12 @@ const EventDetail = () => {
   };
 
   const getReserveLink = () => {
-    if (event?.tickets_webview) return event.tickets_webview;
+    // Si hay tickets configurados en el sistema, no usar tickets_webview
+    // Si no hay tickets, usar tickets_webview si existe
+    if (hasTickets === false && event?.tickets_webview) {
+      return event.tickets_webview;
+    }
+    
     const whatsappLink = event?.whatsapp_contact;
     if (whatsappLink) {
       const sanitized = whatsappLink.replace(/\+/, '').replace(/\s/g, '');
@@ -323,19 +347,44 @@ const EventDetail = () => {
     return null;
   };
 
-  const handleReserveClick = (reserveLink: string) => {
-    if (!user) {
-      toast({
-        title: i18n.language === 'en' ? 'Login required' : 'Inicio de sesión requerido',
-        description:
-          i18n.language === 'en'
-            ? 'Please sign in to reserve your spot at this event.'
-            : 'Inicia sesión para reservar tu plaza en este evento.',
-      });
-      navigate("/auth", { state: { from: location.pathname + location.search } });
+  const handleReserveClick = (reserveLink?: string) => {
+    console.log('🔘 EventDetail: Botón Asistir clickeado', {
+      hasOpenAtDoorModalFn: !!openAtDoorModalFnRef.current,
+      hasTickets: hasTickets,
+      hasReserveLink: !!reserveLink
+    });
+    
+    // Si hay una función para abrir modal EN_PUERTA, abrirlo directamente
+    if (openAtDoorModalFnRef.current) {
+      console.log('🎯 EventDetail: Abriendo modal EN_PUERTA');
+      try {
+        openAtDoorModalFnRef.current();
+      } catch (error) {
+        console.error('❌ EventDetail: Error al abrir modal:', error);
+      }
       return;
     }
-    window.open(reserveLink, "_blank");
+
+    // Si hay tickets configurados, hacer scroll a la sección de tickets
+    if (hasTickets === true) {
+      console.log('📜 EventDetail: Haciendo scroll a sección de tickets');
+      const ticketsSection = document.getElementById('event-tickets-section');
+      if (ticketsSection) {
+        ticketsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Agregar un pequeño offset para que no quede pegado al header
+        setTimeout(() => {
+          window.scrollBy(0, -80);
+        }, 100);
+        return;
+      }
+    }
+
+    // Si no hay tickets, usar el comportamiento anterior (WhatsApp)
+    // WhatsApp no requiere login, solo abrir directamente
+    if (reserveLink) {
+      console.log('📱 EventDetail: Abriendo WhatsApp');
+      window.open(reserveLink, "_blank");
+    }
   };
 
   if (loading) {
@@ -814,6 +863,17 @@ const EventDetail = () => {
                 </CardContent>
               </Card>
 
+              {/* Tickets Section */}
+              {event.id && (
+                <div id="event-tickets-section">
+                  <EventTickets 
+                    eventId={event.id} 
+                    onTicketsLoaded={handleTicketsLoaded}
+                    onOpenAtDoorModal={handleOpenAtDoorModal}
+                  />
+                </div>
+              )}
+
               {/* FAQs */}
               {event.faqs && event.faqs.length > 0 && (
                 <Card>
@@ -855,23 +915,106 @@ const EventDetail = () => {
       </div>
       {/* Floating reserve button */}
       {(() => {
+        // Esperar a que termine la verificación de tickets
+        if (hasTickets === null || !event) return null;
+
+        // Mostrar el botón si hay tickets O si hay un link de reserva (WhatsApp)
         const reserveLink = getReserveLink();
-        if (!reserveLink) return null;
+        const shouldShowButton = hasTickets === true || (hasTickets === false && reserveLink);
+        
+        if (!shouldShowButton) return null;
+
+        // Determinar el precio a mostrar
+        let priceDisplay = '';
+        if (hasTickets === true) {
+          // Si hay tickets, mostrar el precio mínimo de los tickets
+          if (minTicketPrice) {
+            priceDisplay = minTicketPrice;
+          } else {
+            // Fallback si no hay precio disponible
+            priceDisplay = i18n.language === 'en' ? 'Tickets' : 'Entradas';
+          }
+        } else {
+          // Si no hay tickets, mostrar el precio del evento
+          priceDisplay = parseFloat(event?.price_amount || '0') === 0
+            ? (i18n.language === 'en' ? 'FREE' : 'GRATIS')
+            : formatPrice(event?.price_amount, event?.price_currency);
+        }
+
+        const handleShare = async () => {
+          const eventUrl = window.location.href;
+          const eventTitle = getLocalizedText(event.title_es, event.title_en);
+          const shareText = i18n.language === 'en' 
+            ? `Check out this event: ${eventTitle}`
+            : `Echa un vistazo a este evento: ${eventTitle}`;
+
+          // Intentar usar la Web Share API si está disponible
+          if (navigator.share) {
+            try {
+              await navigator.share({
+                title: eventTitle,
+                text: shareText,
+                url: eventUrl,
+              });
+            } catch (err) {
+              // El usuario canceló el share o hubo un error
+              if ((err as Error).name !== 'AbortError') {
+                console.error('Error sharing:', err);
+                // Fallback a copiar al portapapeles
+                await navigator.clipboard.writeText(eventUrl);
+                toast({
+                  title: i18n.language === 'en' ? 'Link copied!' : '¡Enlace copiado!',
+                  description: i18n.language === 'en' 
+                    ? 'The event link has been copied to your clipboard'
+                    : 'El enlace del evento se ha copiado al portapapeles',
+                });
+              }
+            }
+          } else {
+            // Fallback: copiar al portapapeles
+            try {
+              await navigator.clipboard.writeText(eventUrl);
+              toast({
+                title: i18n.language === 'en' ? 'Link copied!' : '¡Enlace copiado!',
+                description: i18n.language === 'en' 
+                  ? 'The event link has been copied to your clipboard'
+                  : 'El enlace del evento se ha copiado al portapapeles',
+              });
+            } catch (err) {
+              console.error('Error copying to clipboard:', err);
+              toast({
+                title: i18n.language === 'en' ? 'Error' : 'Error',
+                description: i18n.language === 'en' 
+                  ? 'Could not copy link'
+                  : 'No se pudo copiar el enlace',
+                variant: 'destructive',
+              });
+            }
+          }
+        };
+
         return (
           <div className="fixed bottom-4 left-0 right-0 px-4 z-40">
             <div className="relative max-w-4xl mx-auto">
               <div className="absolute inset-0 rounded-full bg-black/40 blur-xl opacity-70" />
-              <div className="relative flex flex-row items-center gap-3 bg-white rounded-full p-2 sm:p-3 shadow-[0_25px_50px_rgba(0,0,0,0.25)]">
-                <span className="px-4 py-2 rounded-full border text-sm font-semibold text-gray-800 bg-white text-center min-w-[110px] flex items-center justify-center">
-                  {parseFloat(event?.price_amount || '0') === 0
-                    ? (i18n.language === 'en' ? 'FREE' : 'GRATIS')
-                    : formatPrice(event?.price_amount, event?.price_currency)}
+              <div className="relative flex flex-row items-center gap-2 sm:gap-3 bg-white rounded-full p-2 sm:p-3 shadow-[0_25px_50px_rgba(0,0,0,0.25)]">
+                <span className="px-3 sm:px-4 py-2 rounded-full border text-sm font-semibold text-gray-800 bg-white text-center min-w-[90px] sm:min-w-[110px] flex items-center justify-center">
+                  {priceDisplay}
                 </span>
                 <Button 
                   className="flex-1 h-16 sm:h-14 rounded-[999px] text-lg font-semibold bg-gray-900 text-white hover:bg-gray-800 transition-colors"
                   onClick={() => handleReserveClick(reserveLink)}
                 >
                   {i18n.language === 'en' ? 'Attend' : 'Asistir'}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-16 sm:h-14 w-16 sm:w-14 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+                  onClick={handleShare}
+                  title={i18n.language === 'en' ? 'Share event' : 'Compartir evento'}
+                >
+                  <Share2 className="h-5 w-5 sm:h-6 sm:w-6 text-gray-700" />
                 </Button>
               </div>
             </div>
