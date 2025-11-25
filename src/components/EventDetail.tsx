@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { dameEventsAPI } from "@/integrations/dame-api/events";
 import type { DameEventDetail } from "@/integrations/dame-api/events";
@@ -677,19 +677,19 @@ const EventDetail = () => {
                 {getLocalizedText(event.title_es, event.title_en)}
               </h1>
               {!event.is_recurring_weekly && (
-                <div className="flex flex-wrap items-center gap-3 text-sm sm:text-base text-gray-600 mb-4">
+                <div className="flex flex-wrap items-center gap-3 mb-4">
                   {event.start_datetime && (
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm border border-gray-100">
-                      <Calendar className="h-4 w-4 text-purple-600" />
-                      <span className="font-semibold text-gray-900">
+                    <div className="inline-flex items-center gap-2.5 rounded-lg bg-muted/40 px-4 py-2 border border-border/60 hover:border-border transition-colors duration-200">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium text-foreground text-sm">
                         {formatOnlyDate(event.start_datetime)}
                       </span>
                     </div>
                   )}
                   {(event.start_datetime || event.end_datetime) && (
-                    <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm border border-gray-100">
-                      <Clock className="h-4 w-4 text-blue-600" />
-                      <span className="font-medium text-gray-900">
+                    <div className="inline-flex items-center gap-2.5 rounded-lg bg-muted/40 px-4 py-2 border border-border/60 hover:border-border transition-colors duration-200">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium text-foreground text-sm">
                         {formatTimeRange(event.start_datetime, event.end_datetime)}
                       </span>
                     </div>
@@ -731,6 +731,33 @@ const EventDetail = () => {
               </div>
 
             </div>
+
+            {/* User Tickets Info */}
+            {userHasTicket && userTicketCount > 0 && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <p className="text-base text-green-600 font-medium">
+                        {i18n.language === 'en' 
+                          ? `You have reserved ${userTicketCount} ${userTicketCount === 1 ? 'ticket' : 'tickets'}`
+                          : `Has reservado ${userTicketCount} ${userTicketCount === 1 ? 'entrada' : 'entradas'}`}
+                      </p>
+                    </div>
+                    <Button
+                      asChild
+                      variant="ghost"
+                      className="h-auto py-2 px-3 text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      <Link to="/mis-entradas">
+                        {i18n.language === 'en' ? 'My Tickets' : 'Mis Entradas'}
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Description */}
             {getLocalizedText(event.description_es, event.description_en) && (
@@ -1216,20 +1243,19 @@ const EventDetail = () => {
                   <span className="text-sm font-bold text-gray-900 leading-tight">
                     {priceDisplay}
                   </span>
-                  {userHasTicket && userTicketCount > 0 && (
-                    <span className="text-[10px] sm:text-xs text-green-600 font-semibold mt-0.5 leading-tight">
-                      {userTicketCount} {i18n.language === 'en' 
-                        ? (userTicketCount === 1 ? 'reserved' : 'reserved')
-                        : (userTicketCount === 1 ? 'reservada' : 'reservadas')}
-                    </span>
-                  )}
                 </div>
                 <Button 
-                  className="flex-1 h-16 sm:h-14 rounded-[999px] text-base sm:text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-800 text-white hover:from-gray-800 hover:to-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="flex-1 h-16 sm:h-14 rounded-[999px] text-base sm:text-lg font-bold bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-orange-500/50 hover:scale-105 active:scale-100 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-lg relative overflow-hidden group"
                   onClick={() => handleReserveClick(reserveLink)}
                   disabled={checkingUserTicket}
                 >
-                  {attendLabel}
+                  <span className="relative z-10">{attendLabel}</span>
+                  {!checkingUserTicket && (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-400/0 via-orange-300/30 to-orange-400/0 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </>
+                  )}
                 </Button>
                 <Button
                   variant="ghost"
