@@ -48,6 +48,8 @@ const EventDetail = () => {
   const [, forceUpdate] = useState({});
   const [hasTickets, setHasTickets] = useState<boolean | null>(null); // null = checking, true = has tickets, false = no tickets
   const [minTicketPrice, setMinTicketPrice] = useState<string | null>(null); // Precio mínimo de los tickets
+  const [shouldResumeAttend, setShouldResumeAttend] = useState(false);
+  const pendingAttendKey = 'dame_pending_attend';
   
   // Forzar re-render cuando cambie el idioma
   useEffect(() => {
@@ -348,6 +350,26 @@ const EventDetail = () => {
   };
 
   const handleReserveClick = (reserveLink?: string) => {
+    if (!user) {
+      try {
+        sessionStorage.setItem(
+          pendingAttendKey,
+          JSON.stringify({
+            slug,
+            timestamp: Date.now(),
+          })
+        );
+      } catch (error) {
+        console.error('⚠️ EventDetail: No se pudo guardar la acción pendiente', error);
+      }
+      
+      const returnPath = `${location.pathname}${location.search}`;
+      navigate('/auth', {
+        state: { from: returnPath },
+      });
+      return;
+    }
+
     console.log('🔘 EventDetail: Botón Asistir clickeado', {
       hasOpenAtDoorModalFn: !!openAtDoorModalFnRef.current,
       hasTickets: hasTickets,
@@ -386,6 +408,36 @@ const EventDetail = () => {
       window.open(reserveLink, "_blank");
     }
   };
+
+  useEffect(() => {
+    if (!user) return;
+
+    const pendingActionRaw = sessionStorage.getItem(pendingAttendKey);
+    if (!pendingActionRaw) return;
+
+    try {
+      const pendingAction = JSON.parse(pendingActionRaw) as { slug?: string; timestamp?: number };
+      const isExpired = pendingAction.timestamp ? (Date.now() - pendingAction.timestamp) > 15 * 60 * 1000 : false;
+      const slugMatches = !pendingAction.slug || pendingAction.slug === slug;
+
+      if (!isExpired && slugMatches) {
+        setShouldResumeAttend(true);
+      }
+    } catch (error) {
+      console.error('⚠️ EventDetail: Error leyendo acción pendiente', error);
+    } finally {
+      sessionStorage.removeItem(pendingAttendKey);
+    }
+  }, [user, slug]);
+
+  useEffect(() => {
+    if (!shouldResumeAttend) return;
+    if (hasTickets === null) return;
+
+    const reserveLink = getReserveLink();
+    handleReserveClick(reserveLink || undefined);
+    setShouldResumeAttend(false);
+  }, [shouldResumeAttend, hasTickets, event]);
 
   if (loading) {
     return (

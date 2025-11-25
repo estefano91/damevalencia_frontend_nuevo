@@ -24,6 +24,7 @@ import UserProfile from "./pages/UserProfile";
 import Membership from "./pages/Membership";
 import EditMember from "./pages/EditMember";
 import MyTickets from "./pages/MyTickets";
+import TicketHashLookup from "./pages/TicketHashLookup";
 
 const queryClient = new QueryClient();
 
@@ -150,6 +151,8 @@ const App = () => (
                   <Route path="/cookies" element={<CookiePolicy />} />
                   <Route path="/sobre-nosotros" element={<AboutUs />} />
                   <Route path="/about" element={<AboutUs />} />
+                  <Route path="/tickets/hash/:hash" element={<TicketHashLookup />} />
+                  <Route path="/ticket-hash" element={<TicketHashLookup />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

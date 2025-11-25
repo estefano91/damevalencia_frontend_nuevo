@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import jsPDF from 'jspdf';
+import QRCode from 'qrcode';
 import dameLogoWhite from '@/assets/damelogo blanco.png';
 
 const MyTickets = () => {
@@ -167,10 +168,25 @@ const MyTickets = () => {
 
   const generateTicketPDF = async (ticket: Ticket, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     try {
-      // Cargar la imagen del logo como base64
-      const loadImageAsBase64 = (src: string): Promise<{dataUrl: string, width: number, height: number}> => {
+      const ticketHash =
+        ticket.hash ||
+        ticket.ticket_hash ||
+        ticket.ticket_metadata?.hash ||
+        ticket.ticket_metadata?.ticket_hash;
+
+      const qrDataUrl = ticketHash
+        ? await QRCode.toDataURL(ticketHash, {
+            width: 400,
+            margin: 0,
+            errorCorrectionLevel: 'H',
+          })
+        : null;
+
+      const loadImageAsBase64 = (
+        src: string
+      ): Promise<{ dataUrl: string; width: number; height: number }> => {
         return new Promise((resolve, reject) => {
           const img = new Image();
           img.onload = () => {
@@ -184,291 +200,213 @@ const MyTickets = () => {
               canvas.width = img.width;
               canvas.height = img.height;
               ctx.drawImage(img, 0, 0);
-              const dataUrl = canvas.toDataURL('image/png');
               resolve({
-                dataUrl,
+                dataUrl: canvas.toDataURL('image/png'),
                 width: img.width,
-                height: img.height
+                height: img.height,
               });
             } catch (error) {
-              console.error('❌ MyTickets: Error converting image to base64:', error);
               reject(error);
             }
           };
-          img.onerror = (error) => {
-            console.error('❌ MyTickets: Error loading image:', error);
-            reject(new Error(`Failed to load image from ${src}`));
-          };
+          img.onerror = (error) => reject(error);
           img.src = src;
         });
       };
 
       const logoData = await loadImageAsBase64(dameLogoWhite);
-      const logoBase64 = logoData.dataUrl;
-
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: 'a4',
       });
 
       const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
-      const boxWidth = pageWidth - (margin * 2);
-      let yPosition = margin;
+      const margin = 18;
+      const purple = [98, 47, 141];
+      const dark = [18, 18, 18];
+      const gray = [80, 80, 80];
 
-      // Colores DAME mejorados - paleta elegante
-      const purpleColor = [128, 0, 128]; // Morado DAME principal
-      const darkGrayColor = [30, 30, 30]; // Negro suave para texto
-      const lightGrayColor = [250, 250, 250]; // Gris muy claro para fondos
-      const accentColor = [160, 120, 220]; // Morado claro elegante
-      const borderColor = [230, 230, 230]; // Gris suave para bordes
-
-      // Header elegante con fondo negro
-      const headerHeight = 60;
+      // Header
+      const headerHeight = 20;
       doc.setFillColor(0, 0, 0);
       doc.rect(0, 0, pageWidth, headerHeight, 'F');
-      
-      // Agregar el logo DAME - manteniendo proporción original
-      // Convertir píxeles a mm (1px ≈ 0.264583mm a 96dpi)
-      const pxToMm = 0.264583;
-      const logoWidthMm = logoData.width * pxToMm;
-      const logoHeightMm = logoData.height * pxToMm;
-      
-      // Ajustar si es muy grande, pero mantener proporción
-      const maxLogoWidth = pageWidth - (margin * 2);
-      let finalLogoWidth = logoWidthMm;
-      let finalLogoHeight = logoHeightMm;
-      
-      if (logoWidthMm > maxLogoWidth) {
-        const scale = maxLogoWidth / logoWidthMm;
-        finalLogoWidth = logoWidthMm * scale;
-        finalLogoHeight = logoHeightMm * scale;
-      }
-      
-      const logoX = (pageWidth - finalLogoWidth) / 2;
-      const logoY = (headerHeight - finalLogoHeight) / 2;
-      doc.addImage(logoBase64, 'PNG', logoX, logoY, finalLogoWidth, finalLogoHeight);
-      
-      // Subtítulo elegante debajo del logo
+      const logoHeight = headerHeight - 6;
+      const ratio = logoData.width / logoData.height;
+      const logoWidth = logoHeight * ratio;
+      doc.addImage(logoData.dataUrl, 'PNG', margin, (headerHeight - logoHeight) / 2, logoWidth, logoHeight);
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      const subtitleY = logoY + finalLogoHeight + 6;
-      doc.text(i18n.language === 'en' ? 'EVENT TICKET' : 'ENTRADA DE EVENTO', pageWidth / 2, subtitleY, { align: 'center' });
-
-      yPosition = headerHeight + 15;
-
-      // Caja principal del ticket - diseño elegante y profesional
-      // Calcular altura dinámica basada en el contenido
-      const boxStartY = yPosition;
-      const boxPadding = 20;
-      const boxContentHeight = 140; // Altura aumentada para que quepa todo
-      
-      // Sombra suave debajo
-      doc.setFillColor(220, 220, 220);
-      doc.rect(margin + 1, boxStartY + 1, boxWidth, boxContentHeight, 'F');
-      
-      // Caja principal con borde fino y elegante
-      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setLineWidth(0.3);
-      doc.setFillColor(255, 255, 255);
-      doc.rect(margin, boxStartY, boxWidth, boxContentHeight, 'FD');
-      
-      yPosition = boxStartY + boxPadding;
-
-      // Título del evento - tamaño ajustado para que quepa
-      doc.setTextColor(darkGrayColor[0], darkGrayColor[1], darkGrayColor[2]);
-      doc.setFontSize(18); // Reducido de 22 a 18
-      doc.setFont('helvetica', 'bold');
-      const titleLines = doc.splitTextToSize(ticket.event_title, boxWidth - 30);
-      const titleStartY = yPosition;
-      doc.text(titleLines, pageWidth / 2, titleStartY, { align: 'center' });
-      yPosition += titleLines.length * 7 + 5; // Espaciado reducido
-
-      // Tipo de ticket - estilo elegante
-      doc.setFontSize(9); // Reducido de 10 a 9
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(120, 120, 120);
-      doc.text(ticket.ticket_type_title.toUpperCase(), pageWidth / 2, yPosition, { align: 'center' });
-
-      yPosition += 10; // Reducido de 15 a 10
-
-      // Línea separadora elegante
-      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setLineWidth(0.2);
-      doc.line(margin + 15, yPosition, pageWidth - margin - 15, yPosition);
-      
-      // Línea decorativa morada fina
-      doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
-      doc.setLineWidth(0.5);
-      doc.line(margin + 15, yPosition + 0.5, pageWidth - margin - 15, yPosition + 0.5);
-      
-      yPosition += 8; // Reducido de 12 a 8
-
-      // Código del ticket - diseño premium más compacto
-      const codeBoxY = yPosition;
-      const codeBoxHeight = 12; // Reducido de 14 a 12
-      
-      // Fondo elegante con borde
-      doc.setFillColor(lightGrayColor[0], lightGrayColor[1], lightGrayColor[2]);
-      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setLineWidth(0.2);
-      doc.rect(margin + 15, codeBoxY - 3, boxWidth - 30, codeBoxHeight, 'FD');
-      
-      // Etiqueta del código
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7); // Reducido de 8 a 7
-      doc.setTextColor(140, 140, 140);
-      const codeLabel = i18n.language === 'en' ? 'TICKET CODE' : 'CÓDIGO DE ENTRADA';
-      doc.text(codeLabel, margin + 18, codeBoxY + 1);
-      
-      // Código destacado
-      doc.setFont('courier', 'bold');
-      doc.setFontSize(16); // Reducido de 18 a 16
-      doc.setTextColor(purpleColor[0], purpleColor[1], purpleColor[2]);
-      doc.text(ticket.ticket_code, margin + 18, codeBoxY + 6);
-      
-      yPosition += 16; // Reducido de 20 a 16
-
-      // Información del asistente - diseño compacto en dos columnas
-      const infoStartXLeft = margin + 15;
-      const infoStartXRight = pageWidth / 2 + 5; // Columna derecha
-      const infoSpacing = 5; // Reducido de 7 a 5
-      const labelColor = [130, 130, 130];
-      const lineHeight = 9; // Reducido de 13 a 9
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7); // Reducido de 8 a 7
-      doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
-      
-      // Columna izquierda
-      // Nombre
-      const nameLabel = i18n.language === 'en' ? 'NAME' : 'NOMBRE';
-      doc.setFont('helvetica', 'bold');
-      doc.text(nameLabel, infoStartXLeft, yPosition);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9); // Reducido de 10 a 9
-      doc.setTextColor(darkGrayColor[0], darkGrayColor[1], darkGrayColor[2]);
-      const nameLines = doc.splitTextToSize(ticket.full_name, (boxWidth / 2) - 20);
-      doc.text(nameLines, infoStartXLeft, yPosition + infoSpacing);
-      let nameHeight = nameLines.length * 4;
-      
-      // Email
-      const emailY = yPosition + nameHeight + 6;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
-      doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
-      doc.text('EMAIL', infoStartXLeft, emailY);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8); // Reducido para emails largos
-      doc.setTextColor(darkGrayColor[0], darkGrayColor[1], darkGrayColor[2]);
-      const emailLines = doc.splitTextToSize(ticket.email, (boxWidth / 2) - 20);
-      doc.text(emailLines, infoStartXLeft, emailY + infoSpacing);
-      const emailHeight = emailLines.length * 4;
-      
-      // Columna derecha
-      // Fecha del evento
-      const eventDateLabel = i18n.language === 'en' ? 'EVENT DATE' : 'FECHA DEL EVENTO';
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
-      doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
-      doc.text(eventDateLabel, infoStartXRight, yPosition);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.setTextColor(darkGrayColor[0], darkGrayColor[1], darkGrayColor[2]);
-      const dateText = formatDate(ticket.event_date);
-      const dateLines = doc.splitTextToSize(dateText, (boxWidth / 2) - 20);
-      doc.text(dateLines, infoStartXRight, yPosition + infoSpacing);
-      let dateHeight = dateLines.length * 4;
-      
-      // Precio - destacado
-      const priceY = yPosition + dateHeight + 6;
+      doc.text(
+        i18n.language === 'en' ? 'Digital Access Ticket' : 'Entrada digital de acceso',
+        pageWidth - margin,
+        headerHeight / 2 + 3,
+        { align: 'right' }
+      );
+
+      let cursorY = headerHeight + 15;
+      const cardWidth = pageWidth - margin * 2;
+
+      // Hero card
+      const heroHeight = 65;
+      doc.setFillColor(dark[0], dark[1], dark[2]);
+      doc.roundedRect(margin, cursorY, cardWidth, heroHeight, 4, 4, 'F');
+      doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
-      doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
-      const priceLabel = i18n.language === 'en' ? 'PRICE' : 'PRECIO';
-      doc.text(priceLabel, infoStartXRight, priceY);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11); // Reducido de 12 a 11
-      doc.setTextColor(purpleColor[0], purpleColor[1], purpleColor[2]);
-      doc.text(formatPrice(ticket.purchase_price, ticket.purchase_currency), infoStartXRight, priceY + infoSpacing);
-      
-      // Estado - en la misma línea que el precio o debajo si no cabe
-      const maxY = Math.max(emailY + emailHeight, priceY + 10);
-      const statusY = maxY + 8;
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7);
-      doc.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
-      const statusLabel = i18n.language === 'en' ? 'STATUS' : 'ESTADO';
-      doc.text(statusLabel, infoStartXLeft, statusY);
-      
-      let statusText: string = ticket.status;
-      let statusColor = [100, 100, 100];
-      if (ticket.status === 'PURCHASED') {
-        statusText = i18n.language === 'en' ? 'CONFIRMED' : 'CONFIRMADO';
-        statusColor = [34, 197, 94]; // Verde elegante
-      } else if (ticket.status === 'CANCELLED') {
-        statusText = i18n.language === 'en' ? 'CANCELLED' : 'CANCELADO';
-        statusColor = [239, 68, 68]; // Rojo
-      } else if (ticket.status === 'RESERVED') {
-        statusText = i18n.language === 'en' ? 'RESERVED' : 'RESERVADO';
-        statusColor = [251, 191, 36]; // Amarillo
-      } else if (ticket.status === 'REDEEMED') {
-        statusText = i18n.language === 'en' ? 'REDEEMED' : 'CANJEADO';
-        statusColor = [59, 130, 246]; // Azul
+      doc.setFontSize(18);
+      doc.text(ticket.event_title, margin + 12, cursorY + 16, { maxWidth: cardWidth - 70 });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const eventPlace =
+        ticket.ticket_metadata?.event_place ||
+        (i18n.language === 'en' ? 'Location to be confirmed' : 'Ubicación por confirmar');
+      doc.text(eventPlace, margin + 12, cursorY + 32);
+
+      const eventDate = formatDate(ticket.event_date);
+      doc.text(eventDate, margin + 12, cursorY + 42);
+
+      // Decorative panel
+      const accentPanelWidth = 58;
+      const accentPanelHeight = heroHeight - 20;
+      const accentPanelX = margin + cardWidth - accentPanelWidth - 12;
+      const accentPanelY = cursorY + 10;
+      doc.setFillColor(purple[0], purple[1], purple[2]);
+      doc.roundedRect(accentPanelX, accentPanelY, accentPanelWidth, accentPanelHeight, 4, 4, 'F');
+      const accentPadding = 4;
+      const accentLogoWidth = accentPanelWidth - accentPadding * 2;
+      const accentLogoHeight = accentPanelHeight - accentPadding * 2;
+      const accentLogoRatio = logoData.width / logoData.height;
+      let drawLogoWidth = accentLogoWidth;
+      let drawLogoHeight = accentLogoWidth / accentLogoRatio;
+      if (drawLogoHeight > accentLogoHeight) {
+        drawLogoHeight = accentLogoHeight;
+        drawLogoWidth = accentLogoHeight * accentLogoRatio;
       }
-      
+      const accentLogoX = accentPanelX + (accentPanelWidth - drawLogoWidth) / 2;
+      const accentLogoY = accentPanelY + (accentPanelHeight - drawLogoHeight) / 2;
+      doc.addImage(logoData.dataUrl, 'PNG', accentLogoX, accentLogoY, drawLogoWidth, drawLogoHeight);
+
+      cursorY += heroHeight + 12;
+
+      // Ticket info block
+      const infoHeight = 70;
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(margin, cursorY, cardWidth, infoHeight, 4, 4, 'FD');
+
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9); // Reducido de 10 a 9
-      doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-      doc.text(statusText, infoStartXLeft, statusY + infoSpacing);
+      doc.setFontSize(12);
+      doc.setTextColor(dark[0], dark[1], dark[2]);
+      doc.text(i18n.language === 'en' ? 'Ticket' : 'Entrada', margin + 12, cursorY + 16);
+      doc.setFontSize(10);
+      doc.text(ticket.ticket_type_title, margin + 12, cursorY + 28);
 
-      // Footer elegante y profesional
-      yPosition = pageHeight - 22;
-      
-      // Línea decorativa superior del footer - doble línea elegante
-      doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-      doc.setLineWidth(0.2);
-      doc.line(margin, yPosition, pageWidth - margin, yPosition);
-      
-      // Línea morada decorativa
-      doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
-      doc.setLineWidth(0.3);
-      doc.line(margin, yPosition + 0.3, pageWidth - margin, yPosition + 0.3);
-      
-      yPosition += 10;
-      doc.setFontSize(7);
-      doc.setTextColor(140, 140, 140);
       doc.setFont('helvetica', 'normal');
-      doc.setFont('helvetica', 'normal');
-      const footerText = i18n.language === 'en' 
-        ? 'Present this ticket at the event entrance. Valid only for the specified event and date.'
-        : 'Presenta esta entrada en la entrada del evento. Válida solo para el evento y fecha especificados.';
-      const footerLines = doc.splitTextToSize(footerText, pageWidth - (margin * 2));
-      doc.text(footerLines, pageWidth / 2, yPosition, { align: 'center' });
+      doc.setFontSize(9);
+      doc.setTextColor(gray[0], gray[1], gray[2]);
+      doc.text(
+        i18n.language === 'en' ? `Attendee: ${ticket.full_name}` : `Asistente: ${ticket.full_name}`,
+        margin + 12,
+        cursorY + 40
+      );
+      doc.text(i18n.language === 'en' ? `Email: ${ticket.email}` : `Correo: ${ticket.email}`, margin + 12, cursorY + 48);
 
-      // Generar nombre del archivo
-      const fileName = `ticket-${ticket.ticket_code}-${ticket.event_title.substring(0, 20).replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
-      
-      // Guardar el PDF
+      if (qrDataUrl) {
+        const qrSize = 38;
+        doc.addImage(qrDataUrl, 'PNG', margin + cardWidth - qrSize - 14, cursorY + 10, qrSize, qrSize);
+      }
+
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(purple[0], purple[1], purple[2]);
+      doc.text(ticket.ticket_code, margin + 12, cursorY + infoHeight - 12);
+
+      cursorY += infoHeight + 10;
+
+      // Ticket metadata row
+      const detailHeight = 24;
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(margin, cursorY, cardWidth, detailHeight, 3, 3, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(gray[0], gray[1], gray[2]);
+      const detailY = cursorY + 7;
+      const detailValuesY = cursorY + 16;
+      doc.text('Ticket ID', margin + 10, detailY);
+      doc.text(
+        i18n.language === 'en' ? 'Purchase Date' : 'Fecha de compra',
+        margin + cardWidth / 3 + 5,
+        detailY
+      );
+      doc.text(i18n.language === 'en' ? 'Price' : 'Precio', margin + (cardWidth / 3) * 2 + 5, detailY);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(dark[0], dark[1], dark[2]);
+      doc.text(`#${ticket.id}`, margin + 10, detailValuesY);
+      doc.text(formatDate(ticket.purchase_date), margin + cardWidth / 3 + 5, detailValuesY);
+      doc.text(formatPrice(ticket.purchase_price, ticket.purchase_currency), margin + (cardWidth / 3) * 2 + 5, detailValuesY);
+
+      cursorY += detailHeight + 12;
+
+      // Important info box
+      const infoBoxHeight = 60;
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(margin, cursorY, cardWidth, infoBoxHeight, 4, 4, 'FD');
+
+      doc.setTextColor(purple[0], purple[1], purple[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(
+        i18n.language === 'en' ? 'Important information' : 'Información importante',
+        margin + 12,
+        cursorY + 15
+      );
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(dark[0], dark[1], dark[2]);
+      const infoText =
+        i18n.language === 'en'
+          ? 'Present this ticket and QR code at the venue entrance. Arrive early to guarantee access and follow the team instructions at all times.'
+          : 'Presenta esta entrada y el código QR en la entrada del evento. Llega con tiempo para garantizar el acceso y sigue las indicaciones del equipo en todo momento.';
+      const infoLines = doc.splitTextToSize(infoText, cardWidth - 24);
+      doc.text(infoLines, margin + 12, cursorY + 28);
+
+      cursorY += infoBoxHeight + 12;
+
+      // Footer note
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(gray[0], gray[1], gray[2]);
+      doc.text(
+        i18n.language === 'en'
+          ? 'Valid only for the specified event and date. Non-transferable.'
+          : 'Válida solo para el evento y fecha indicados. Personal e intransferible.',
+        pageWidth / 2,
+        cursorY,
+        { align: 'center' }
+      );
+
+      const fileName = `ticket-${ticket.ticket_code}-${ticket.event_title
+        .substring(0, 20)
+        .replace(/[^a-z0-9]/gi, '_')
+        .toLowerCase()}.pdf`;
       doc.save(fileName);
-      
+
       toast({
         title: i18n.language === 'en' ? 'PDF downloaded!' : '¡PDF descargado!',
-        description: i18n.language === 'en' 
-          ? 'Your ticket has been downloaded'
-          : 'Tu entrada ha sido descargada',
+        description:
+          i18n.language === 'en' ? 'Your ticket has been downloaded' : 'Tu entrada ha sido descargada',
       });
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
         title: i18n.language === 'en' ? 'Error' : 'Error',
-        description: i18n.language === 'en' 
-          ? 'Could not generate PDF'
-          : 'No se pudo generar el PDF',
+        description:
+          i18n.language === 'en' ? 'Could not generate PDF' : 'No se pudo generar el PDF',
         variant: 'destructive',
       });
     }

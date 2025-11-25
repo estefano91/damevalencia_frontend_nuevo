@@ -196,3 +196,4 @@ Visual: Botón "Baile" activo (rosa), icono Heart destacado
 
 
 
+

@@ -283,3 +283,4 @@ getAvailableSpots(capacity, registered): number
 
 
 
+

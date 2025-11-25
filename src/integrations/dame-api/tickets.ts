@@ -13,6 +13,7 @@ import type {
   TicketsResponse,
   TicketDetailResponse,
   TicketStatusResponse,
+  TicketHashLookupResponse,
 } from '@/types/tickets';
 
 const API_BASE_URL = import.meta.env.VITE_DAME_API_URL || 'https://organizaciondame.org/api';
@@ -257,6 +258,14 @@ export class DameTicketsAPI {
    */
   async getTicketStatus(ticketCode: string): Promise<ApiResponse<TicketStatusResponse>> {
     return this.makePublicRequest<TicketStatusResponse>(`/tickets/status/${ticketCode}/`);
+  }
+
+  /**
+   * Consultar ticket público por hash (público, no requiere autenticación)
+   * Endpoint: GET /api/tickets/hash/{hash}/
+   */
+  async getTicketByHash(hash: string): Promise<ApiResponse<TicketHashLookupResponse>> {
+    return this.makePublicRequest<TicketHashLookupResponse>(`/tickets/hash/${hash}/`);
   }
 }
 

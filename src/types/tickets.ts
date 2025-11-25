@@ -117,6 +117,8 @@ export interface TicketMetadata {
   event_place?: string;
   pricing_type: PricingType;
   base_price: string;
+  hash?: string;
+  ticket_hash?: string;
 }
 
 export interface Ticket {
@@ -140,6 +142,8 @@ export interface Ticket {
   purchase_currency: string;
   purchase_date: string;
   ticket_code: string;
+  hash?: string;
+  ticket_hash?: string;
   ticket_metadata?: TicketMetadata;
   is_manual: boolean;
   referral_code?: string;
@@ -158,6 +162,12 @@ export interface TicketsResponse {
 export interface TicketDetailResponse {
   success: boolean;
   ticket?: Ticket;
+  error?: string;
+}
+
+export interface TicketHashLookupResponse {
+  success: boolean;
+  ticket?: Ticket & { hash?: string };
   error?: string;
 }
 
