@@ -23,6 +23,7 @@ import WhatsAppButton from "./components/WhatsAppButton";
 import UserProfile from "./pages/UserProfile";
 import Membership from "./pages/Membership";
 import EditMember from "./pages/EditMember";
+import MyTickets from "./pages/MyTickets";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,16 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar requireAuth>
                         <UserProfile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  
+                  {/* Mis entradas */}
+                  <Route
+                    path="/mis-entradas"
+                    element={
+                      <ProtectedRoute hideSidebar requireAuth>
+                        <MyTickets />
                       </ProtectedRoute>
                     }
                   />

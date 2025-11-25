@@ -9,7 +9,8 @@ import {
   Edit2,
   LogIn,
   Plus,
-  IdCard
+  IdCard,
+  Ticket
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/providers/ThemeProvider";
@@ -135,6 +136,10 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                   <DropdownMenuItem onClick={() => navigate("/perfil")}>
                     <User className="mr-2 h-4 w-4" />
                     {i18n.language === 'en' ? 'Profile' : 'Mi Perfil'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/mis-entradas")}>
+                    <Ticket className="mr-2 h-4 w-4" />
+                    {i18n.language === 'en' ? 'My Tickets' : 'Mis Entradas'}
                   </DropdownMenuItem>
                   {!user.member && (
                     <DropdownMenuItem 

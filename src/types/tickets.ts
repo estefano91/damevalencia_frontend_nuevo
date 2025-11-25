@@ -125,6 +125,8 @@ export interface Ticket {
   ticket_type_title: string;
   event_title: string;
   event_date: string;
+  event_slug?: string; // Slug del evento para poder obtener su imagen
+  event_id?: number; // ID del evento como alternativa
   status: TicketStatus;
   full_name: string;
   email: string;
