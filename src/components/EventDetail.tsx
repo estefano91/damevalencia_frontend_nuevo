@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { dameEventsAPI } from "@/integrations/dame-api/events";
 import type { DameEventDetail } from "@/integrations/dame-api/events";
-import type { Ticket } from "@/types/tickets";
+import type { Ticket, TicketTypeDetail } from "@/types/tickets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,20 +26,14 @@ import {
   Navigation,
   Share2,
   CheckCircle,
-  Pencil,
-  Copy
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import EventMap from "@/components/EventMap";
-import { EventTickets } from "@/components/EventTickets";
+import { TicketAtDoorModal } from "@/components/TicketAtDoorModal";
 import { dameTicketsAPI } from "@/integrations/dame-api/tickets";
 import googleMapsIcon from "@/assets/mapsgoogle.png";
 import wazeIcon from "@/assets/wazeicon.png";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import type { Ticket } from "@/types/tickets";
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -60,12 +54,10 @@ const EventDetail = () => {
   const [checkingUserTicket, setCheckingUserTicket] = useState(false);
   const [shouldResumeAttend, setShouldResumeAttend] = useState(false);
   const [userTicketCount, setUserTicketCount] = useState(0);
-  const [attendanceStatus, setAttendanceStatus] = useState<{ going: boolean; plusOnes: number } | null>(null);
-  const [attendanceModalOpen, setAttendanceModalOpen] = useState(false);
-  const [attendanceDraft, setAttendanceDraft] = useState<{ going: boolean; plusOnes: number } | null>(null);
-  const [attendancePrefLoaded, setAttendancePrefLoaded] = useState(false);
-  const [attendanceRefreshToken, setAttendanceRefreshToken] = useState(0);
+  const [atDoorTicketType, setAtDoorTicketType] = useState<TicketTypeDetail | null>(null);
+  const [atDoorModalOpen, setAtDoorModalOpen] = useState(false);
   const pendingAttendKey = 'dame_pending_attend';
+  const locale = i18n.language === 'en' ? 'en-US' : 'es-ES';
   
   // Forzar re-render cuando cambie el idioma
   useEffect(() => {
@@ -86,26 +78,6 @@ const EventDetail = () => {
     return textEs || textEn || '';
   };
 
-  const attendanceStorageKey = event?.id ? `dame_attendance_${event.id}` : null;
-
-  useEffect(() => {
-    if (!attendanceStorageKey) return;
-    setAttendancePrefLoaded(false);
-    const stored = localStorage.getItem(attendanceStorageKey);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (typeof parsed.going === 'boolean' && typeof parsed.plusOnes === 'number') {
-          setAttendanceStatus(parsed);
-        }
-      } catch (error) {
-        console.error('Error parsing attendance preference:', error);
-      }
-    } else {
-      setAttendanceStatus(null);
-    }
-    setAttendancePrefLoaded(true);
-  }, [attendanceStorageKey]);
 
   useEffect(() => {
     const fetchEventDetail = async () => {
@@ -136,79 +108,51 @@ const EventDetail = () => {
     fetchEventDetail();
   }, [slug]);
 
-  // Callback para recibir notificación del componente EventTickets sobre si hay tickets
-  const handleTicketsLoaded = (hasTickets: boolean, minPrice?: string | null) => {
-    setHasTickets(hasTickets);
-    setMinTicketPrice(minPrice || null);
-  };
+  const loadAtDoorTicket = useCallback(async () => {
+    if (!event?.id) return;
 
-  // Función para abrir modal EN_PUERTA directamente
-  const openAtDoorModalFnRef = useRef<(() => void) | null>(null);
-  
-  const handleOpenAtDoorModal = (openFn: () => void) => {
-    console.log('📞 EventDetail: handleOpenAtDoorModal llamado');
-    openAtDoorModalFnRef.current = openFn;
-  };
-
-  const handleUserTicketChange = (hasTicket: boolean) => {
-    setUserHasTicket(hasTicket);
-    setAttendanceRefreshToken(prev => prev + 1);
-  };
-
-  const displayPlusOnes = attendanceStatus
-    ? Math.max(attendanceStatus.plusOnes, Math.max(userTicketCount - 1, 0))
-    : Math.max(userTicketCount - 1, 0);
-  const displayGoing = attendanceStatus ? attendanceStatus.going : userHasTicket;
-
-  const openAttendanceModal = () => {
-    const baseStatus = attendanceStatus || {
-      going: true,
-      plusOnes: Math.max(userTicketCount - 1, 0),
-    };
-    setAttendanceDraft(baseStatus);
-    setAttendanceModalOpen(true);
-  };
-
-  const handleAttendanceSave = () => {
-    if (!attendanceDraft || !attendanceStorageKey) return;
-    setAttendanceStatus(attendanceDraft);
-    localStorage.setItem(attendanceStorageKey, JSON.stringify(attendanceDraft));
-    setAttendanceModalOpen(false);
-    toast({
-      title: i18n.language === 'en' ? 'Attendance updated' : 'Asistencia actualizada',
-      description: attendanceDraft.going
-        ? i18n.language === 'en'
-          ? 'We have saved your RSVP preference.'
-          : 'Hemos guardado tu preferencia de asistencia.'
-        : i18n.language === 'en'
-          ? 'Remember to manage or cancel your tickets from My Tickets.'
-          : 'Recuerda gestionar o cancelar tus entradas desde Mis Entradas.',
-    });
-    if (!attendanceDraft.going) {
-      navigate('/mis-entradas');
-    }
-  };
-
-  const handleCopyShareLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: i18n.language === 'en' ? 'Link copied!' : '¡Enlace copiado!',
-        description: i18n.language === 'en'
-          ? 'Share it with your guests to confirm attendance.'
-          : 'Compártelo con tus invitados para confirmar asistencia.',
-      });
-    } catch (error) {
-      console.error('Error copying link:', error);
-      toast({
-        title: i18n.language === 'en' ? 'Error' : 'Error',
-        description: i18n.language === 'en'
-          ? 'Could not copy the link'
-          : 'No se pudo copiar el enlace',
-        variant: 'destructive',
-      });
+      const response = await dameTicketsAPI.getTicketTypes(event.id);
+      if (response.success && response.data) {
+        const tickets = response.data.results || [];
+        const atDoorTicket = tickets.find((t) => t.ticket_type === 'EN_PUERTA') || null;
+
+        setAtDoorTicketType(atDoorTicket);
+
+        if (atDoorTicket) {
+          const priceValue = parseFloat(
+            atDoorTicket.current_price || atDoorTicket.base_price || '0'
+          );
+
+          setHasTickets(true);
+          setMinTicketPrice(
+            priceValue > 0
+              ? `${priceValue.toFixed(2)}€`
+              : i18n.language === 'en'
+                ? 'FREE'
+                : 'GRATIS'
+          );
+        } else {
+          setHasTickets(false);
+          setMinTicketPrice(null);
+        }
+      } else {
+        setAtDoorTicketType(null);
+        setHasTickets(false);
+        setMinTicketPrice(null);
+      }
+    } catch (err) {
+      console.error('Error fetching ticket info:', err);
+      setAtDoorTicketType(null);
+      setHasTickets(false);
+      setMinTicketPrice(null);
     }
-  };
+  }, [event?.id, i18n.language]);
+
+  useEffect(() => {
+    loadAtDoorTicket();
+  }, [loadAtDoorTicket]);
+
 
   // Verificar si el usuario ya tiene tickets para este evento
   useEffect(() => {
@@ -275,13 +219,6 @@ const EventDetail = () => {
 
         setUserHasTicket(matchingTickets.length > 0);
         setUserTicketCount(matchingTickets.length);
-
-        if (attendancePrefLoaded && !attendanceStatus && matchingTickets.length > 0) {
-          setAttendanceStatus({
-            going: true,
-            plusOnes: Math.max(matchingTickets.length - 1, 0),
-          });
-        }
       } catch (err) {
         console.error('Error checking user tickets:', err);
         if (isMounted) {
@@ -300,7 +237,7 @@ const EventDetail = () => {
     return () => {
       isMounted = false;
     };
-  }, [user, event?.id, event?.slug, attendancePrefLoaded, attendanceRefreshToken]);
+  }, [user, event?.id, event?.slug]);
 
   // Scroll al inicio al abrir la página de detalle o cambiar de evento
   useEffect(() => {
@@ -348,11 +285,13 @@ const EventDetail = () => {
   };
 
   const formatOnlyDate = (dateString?: string): string => {
-    if (!dateString) return 'Fecha por determinar';
+    if (!dateString) return i18n.language === 'en' ? 'Date TBD' : 'Fecha por determinar';
     try {
       const date = new Date(dateString);
-      if (isNaN(date.getTime()) || date.getFullYear() < 2000) return 'Fecha inválida';
-      return date.toLocaleDateString('es-ES', {
+      if (isNaN(date.getTime()) || date.getFullYear() < 2000) {
+        return i18n.language === 'en' ? 'Invalid date' : 'Fecha inválida';
+      }
+      return date.toLocaleDateString(locale, {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -360,7 +299,7 @@ const EventDetail = () => {
         timeZone: MADRID_TZ
       });
     } catch {
-      return 'Fecha por determinar';
+      return i18n.language === 'en' ? 'Date TBD' : 'Fecha por determinar';
     }
   };
 
@@ -369,7 +308,12 @@ const EventDetail = () => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime()) || date.getFullYear() < 2000) return '';
-      return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: MADRID_TZ });
+      return date.toLocaleTimeString(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: MADRID_TZ,
+      });
     } catch {
       return '';
     }
@@ -378,9 +322,13 @@ const EventDetail = () => {
   const formatTimeRange = (start?: string, end?: string): string => {
     const from = formatOnlyTime(start);
     const to = formatOnlyTime(end);
-    if (from && to) return `De ${from} a ${to}`;
-    if (from) return `A las ${from}`;
-    return '';
+    if (from && to) {
+      return i18n.language === 'en' ? `From ${from} to ${to}` : `De ${from} a ${to}`;
+    }
+    if (from) {
+      return i18n.language === 'en' ? `At ${from}` : `A las ${from}`;
+    }
+    return i18n.language === 'en' ? 'Time TBD' : 'Horario por determinar';
   };
 
   const formatTimeFromHHmmss = (timeString?: string): string => {
@@ -559,46 +507,37 @@ const EventDetail = () => {
       return;
     }
 
-    if (userHasTicket) {
-      toast({
-        title: i18n.language === 'en' ? 'Already registered' : 'Ya estás registrado',
-        description: i18n.language === 'en'
-          ? 'You already have a ticket for this event'
-          : 'Ya cuentas con una entrada para este evento',
-      });
-      navigate('/mis-entradas');
-      return;
-    }
-
-    console.log('🔘 EventDetail: Botón Asistir clickeado', {
-      hasOpenAtDoorModalFn: !!openAtDoorModalFnRef.current,
-      hasTickets: hasTickets,
-      hasReserveLink: !!reserveLink
-    });
-    
-    // Si hay una función para abrir modal EN_PUERTA, abrirlo directamente
-    if (openAtDoorModalFnRef.current) {
-      console.log('🎯 EventDetail: Abriendo modal EN_PUERTA');
-      try {
-        openAtDoorModalFnRef.current();
-      } catch (error) {
-        console.error('❌ EventDetail: Error al abrir modal:', error);
-      }
-      return;
-    }
-
-    // Si hay tickets configurados, hacer scroll a la sección de tickets
+    // Si hay tickets configurados, abrir el modal de registro en puerta
     if (hasTickets === true) {
-      console.log('📜 EventDetail: Haciendo scroll a sección de tickets');
-      const ticketsSection = document.getElementById('event-tickets-section');
-      if (ticketsSection) {
-        ticketsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Agregar un pequeño offset para que no quede pegado al header
-        setTimeout(() => {
-          window.scrollBy(0, -80);
-        }, 100);
+      if (!atDoorTicketType) {
+        toast({
+          title: i18n.language === 'en' ? 'Registration unavailable' : 'Registro no disponible',
+          description: i18n.language === 'en'
+            ? 'At-door tickets are not available right now.'
+            : 'No hay entradas en puerta disponibles en este momento.',
+          variant: 'destructive',
+        });
         return;
       }
+
+      const isSoldOut =
+        atDoorTicketType.available_stock !== null &&
+        atDoorTicketType.available_stock !== undefined &&
+        atDoorTicketType.available_stock <= 0;
+
+      if (isSoldOut) {
+        toast({
+          title: i18n.language === 'en' ? 'Sold out' : 'Agotado',
+          description: i18n.language === 'en'
+            ? 'No at-door spots available right now.'
+            : 'No hay plazas en puerta disponibles en este momento.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setAtDoorModalOpen(true);
+      return;
     }
 
     // Si no hay tickets, usar el comportamiento anterior (WhatsApp)
@@ -638,6 +577,13 @@ const EventDetail = () => {
     handleReserveClick(reserveLink || undefined);
     setShouldResumeAttend(false);
   }, [shouldResumeAttend, hasTickets, event]);
+
+  const handleReserveSuccess = () => {
+    setAtDoorModalOpen(false);
+    setUserHasTicket(true);
+    setUserTicketCount((prev) => prev + 1);
+    loadAtDoorTicket();
+  };
 
   if (loading) {
     return (
@@ -730,6 +676,26 @@ const EventDetail = () => {
               <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 dark:text-white">
                 {getLocalizedText(event.title_es, event.title_en)}
               </h1>
+              {!event.is_recurring_weekly && (
+                <div className="flex flex-wrap items-center gap-3 text-sm sm:text-base text-gray-600 mb-4">
+                  {event.start_datetime && (
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm border border-gray-100">
+                      <Calendar className="h-4 w-4 text-purple-600" />
+                      <span className="font-semibold text-gray-900">
+                        {formatOnlyDate(event.start_datetime)}
+                      </span>
+                    </div>
+                  )}
+                  {(event.start_datetime || event.end_datetime) && (
+                    <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm border border-gray-100">
+                      <Clock className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium text-gray-900">
+                        {formatTimeRange(event.start_datetime, event.end_datetime)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
               {event.is_recurring_weekly && (() => {
                 const nextOccurrences = generateNextWeeklyOccurrences(event, 8);
                 if (nextOccurrences.length === 0) return null;
@@ -764,56 +730,6 @@ const EventDetail = () => {
                 ))}
               </div>
 
-              {userHasTicket && (
-                <Alert className="border-green-200 bg-green-50 text-green-900">
-                  <AlertTitle className="flex items-center gap-2 font-semibold">
-                    <CheckCircle className="h-4 w-4" />
-                    {i18n.language === 'en' ? 'You are already registered' : 'Ya estás apuntado'}
-                  </AlertTitle>
-              <AlertDescription className="mt-2 space-y-3">
-                <span>
-                  {i18n.language === 'en'
-                    ? 'Show your ticket from the My Tickets section when you arrive at the venue.'
-                    : 'Presenta tu entrada desde Mis Entradas cuando llegues al evento.'}
-                </span>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Badge
-                    className={`px-3 py-1 text-sm ${
-                      displayGoing ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-900'
-                    }`}
-                  >
-                    {displayGoing
-                      ? (displayPlusOnes > 0
-                        ? (i18n.language === 'en'
-                            ? `You + ${displayPlusOnes} going!`
-                            : `Tú + ${displayPlusOnes} asistirán`)
-                        : (i18n.language === 'en'
-                            ? 'You are going!'
-                            : '¡Vas a asistir!'))
-                      : (i18n.language === 'en'
-                          ? 'You marked as not going'
-                          : 'Marcaste que no asistirás')}
-                  </Badge>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-green-300 text-green-900 hover:bg-green-100"
-                    onClick={openAttendanceModal}
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    {i18n.language === 'en' ? 'Edit attendance' : 'Editar asistencia'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => navigate('/mis-entradas')}
-                  >
-                    {i18n.language === 'en' ? 'Open My Tickets' : 'Ver mis entradas'}
-                  </Button>
-                </div>
-              </AlertDescription>
-                </Alert>
-              )}
             </div>
 
             {/* Description */}
@@ -1167,17 +1083,6 @@ const EventDetail = () => {
                 </CardContent>
               </Card>
 
-              {/* Tickets Section */}
-              {event.id && (
-                <div id="event-tickets-section">
-                  <EventTickets 
-                    eventId={event.id} 
-                    onTicketsLoaded={handleTicketsLoaded}
-                    onOpenAtDoorModal={handleOpenAtDoorModal}
-                    onUserTicketChange={handleUserTicketChange}
-                  />
-                </div>
-              )}
 
               {/* FAQs */}
               {event.faqs && event.faqs.length > 0 && (
@@ -1298,31 +1203,38 @@ const EventDetail = () => {
           }
         };
 
-        const attendLabel = userHasTicket
-          ? (i18n.language === 'en' ? 'You are already registered' : 'Ya estás apuntado')
-          : checkingUserTicket
-            ? (i18n.language === 'en' ? 'Checking availability...' : 'Verificando disponibilidad...')
-            : (i18n.language === 'en' ? 'Attend' : 'Asistir');
+        const attendLabel = checkingUserTicket
+          ? (i18n.language === 'en' ? 'Checking availability...' : 'Verificando disponibilidad...')
+          : (i18n.language === 'en' ? 'Reserve Tickets' : 'Reservar Tickets');
 
         return (
           <div className="fixed bottom-4 left-0 right-0 px-4 z-40">
             <div className="relative max-w-4xl mx-auto">
               <div className="absolute inset-0 rounded-full bg-black/40 blur-xl opacity-70" />
-              <div className="relative flex flex-row items-center gap-2 sm:gap-3 bg-white rounded-full p-2 sm:p-3 shadow-[0_25px_50px_rgba(0,0,0,0.25)]">
-                <span className="px-3 sm:px-4 py-2 rounded-full border text-sm font-semibold text-gray-800 bg-white text-center min-w-[90px] sm:min-w-[110px] flex items-center justify-center">
-                  {priceDisplay}
-                </span>
+              <div className="relative flex flex-row items-center gap-2 sm:gap-3 bg-white rounded-full p-2 sm:p-3 shadow-[0_25px_50px_rgba(0,0,0,0.25)] border border-gray-100">
+                <div className="flex flex-col items-center justify-center px-3 sm:px-4 py-2 rounded-full border border-gray-200 bg-gradient-to-br from-white to-gray-50 min-w-[90px] sm:min-w-[110px]">
+                  <span className="text-sm font-bold text-gray-900 leading-tight">
+                    {priceDisplay}
+                  </span>
+                  {userHasTicket && userTicketCount > 0 && (
+                    <span className="text-[10px] sm:text-xs text-green-600 font-semibold mt-0.5 leading-tight">
+                      {userTicketCount} {i18n.language === 'en' 
+                        ? (userTicketCount === 1 ? 'reserved' : 'reserved')
+                        : (userTicketCount === 1 ? 'reservada' : 'reservadas')}
+                    </span>
+                  )}
+                </div>
                 <Button 
-                  className="flex-1 h-16 sm:h-14 rounded-[999px] text-lg font-semibold bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="flex-1 h-16 sm:h-14 rounded-[999px] text-base sm:text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-800 text-white hover:from-gray-800 hover:to-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
                   onClick={() => handleReserveClick(reserveLink)}
-                  disabled={userHasTicket || checkingUserTicket}
+                  disabled={checkingUserTicket}
                 >
                   {attendLabel}
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-16 sm:h-14 w-16 sm:w-14 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+                  className="h-16 sm:h-14 w-16 sm:w-14 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0 border border-gray-200"
                   onClick={handleShare}
                   title={i18n.language === 'en' ? 'Share event' : 'Compartir evento'}
                 >
@@ -1355,120 +1267,15 @@ const EventDetail = () => {
       </div>
     )}
     </div>
-    <Dialog open={attendanceModalOpen} onOpenChange={setAttendanceModalOpen}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{i18n.language === 'en' ? 'Update your RSVP' : 'Actualiza tu asistencia'}</DialogTitle>
-          <DialogDescription>
-            {i18n.language === 'en'
-              ? 'Tell us if you are still going and how many guests you will bring.'
-              : 'Cuéntanos si sigues asistiendo y cuántos invitados llevarás.'}
-          </DialogDescription>
-        </DialogHeader>
-        {attendanceDraft && (
-          <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <Label>{i18n.language === 'en' ? 'Attendance status' : 'Estado de asistencia'}</Label>
-              <RadioGroup
-                value={attendanceDraft.going ? 'going' : 'not-going'}
-                onValueChange={(value) =>
-                  setAttendanceDraft({
-                    ...attendanceDraft,
-                    going: value === 'going',
-                  })
-                }
-                className="grid grid-cols-2 gap-3"
-              >
-                <Label
-                  className={`border rounded-xl px-4 py-3 cursor-pointer flex flex-col gap-1 text-sm ${
-                    attendanceDraft.going ? 'border-purple-500 bg-purple-50' : 'border'
-                  }`}
-                >
-                  <RadioGroupItem value="going" className="sr-only" />
-                  <span className="font-semibold">{i18n.language === 'en' ? 'Going' : 'Asistiré'}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {i18n.language === 'en' ? 'Keep my reservation' : 'Mantener mi reserva'}
-                  </span>
-                </Label>
-                <Label
-                  className={`border rounded-xl px-4 py-3 cursor-pointer flex flex-col gap-1 text-sm ${
-                    !attendanceDraft.going ? 'border-purple-500 bg-purple-50' : 'border'
-                  }`}
-                >
-                  <RadioGroupItem value="not-going" className="sr-only" />
-                  <span className="font-semibold">{i18n.language === 'en' ? 'Not going' : 'No asistiré'}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {i18n.language === 'en' ? 'I will cancel later' : 'Cancelaré más tarde'}
-                  </span>
-                </Label>
-              </RadioGroup>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{i18n.language === 'en' ? 'Are you bringing anyone?' : '¿Llevas acompañantes?'}</Label>
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() =>
-                    setAttendanceDraft({
-                      ...attendanceDraft,
-                      plusOnes: Math.max(0, attendanceDraft.plusOnes - 1),
-                    })
-                  }
-                  disabled={attendanceDraft.plusOnes <= 0}
-                >
-                  -
-                </Button>
-                <div className="text-2xl font-semibold w-16 text-center">{attendanceDraft.plusOnes}</div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() =>
-                    setAttendanceDraft({
-                      ...attendanceDraft,
-                      plusOnes: Math.min(99, attendanceDraft.plusOnes + 1),
-                    })
-                  }
-                >
-                  +
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {i18n.language === 'en'
-                  ? 'Let us know how many guests will use your tickets.'
-                  : 'Indica cuántos acompañantes usarán tus entradas.'}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-purple-100 bg-purple-50 p-4 space-y-2">
-              <p className="text-sm font-medium text-purple-900">
-                {i18n.language === 'en' ? 'Share the event with your guests' : 'Comparte el evento con tus invitados'}
-              </p>
-              <p className="text-xs text-purple-800">
-                {i18n.language === 'en'
-                  ? 'Sending the link helps them confirm their attendance.'
-                  : 'Enviar el enlace les ayuda a confirmar su asistencia.'}
-              </p>
-              <Button variant="ghost" size="sm" className="w-full" onClick={handleCopyShareLink}>
-                <Copy className="h-4 w-4 mr-2" />
-                {i18n.language === 'en' ? 'Copy link now' : 'Copiar enlace ahora'}
-              </Button>
-            </div>
-          </div>
-        )}
-        <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2">
-          <Button variant="outline" onClick={() => setAttendanceModalOpen(false)}>
-            {i18n.language === 'en' ? 'Close' : 'Cerrar'}
-          </Button>
-          <Button onClick={handleAttendanceSave} disabled={!attendanceDraft}>
-            {i18n.language === 'en' ? 'Update' : 'Actualizar'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    
+    {atDoorTicketType && (
+      <TicketAtDoorModal
+        ticketType={atDoorTicketType}
+        open={atDoorModalOpen}
+        onOpenChange={setAtDoorModalOpen}
+        onSuccess={handleReserveSuccess}
+      />
+    )}
     </>
   );
 };
