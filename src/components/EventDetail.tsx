@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { dameEventsAPI } from "@/integrations/dame-api/events";
 import type { DameEventDetail } from "@/integrations/dame-api/events";
+import type { Ticket } from "@/types/tickets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +24,10 @@ import {
   Music,
   Coffee,
   Navigation,
-  Share2
+  Share2,
+  CheckCircle,
+  Pencil,
+  Copy
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +36,10 @@ import { EventTickets } from "@/components/EventTickets";
 import { dameTicketsAPI } from "@/integrations/dame-api/tickets";
 import googleMapsIcon from "@/assets/mapsgoogle.png";
 import wazeIcon from "@/assets/wazeicon.png";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import type { Ticket } from "@/types/tickets";
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -48,7 +56,15 @@ const EventDetail = () => {
   const [, forceUpdate] = useState({});
   const [hasTickets, setHasTickets] = useState<boolean | null>(null); // null = checking, true = has tickets, false = no tickets
   const [minTicketPrice, setMinTicketPrice] = useState<string | null>(null); // Precio mínimo de los tickets
+  const [userHasTicket, setUserHasTicket] = useState(false);
+  const [checkingUserTicket, setCheckingUserTicket] = useState(false);
   const [shouldResumeAttend, setShouldResumeAttend] = useState(false);
+  const [userTicketCount, setUserTicketCount] = useState(0);
+  const [attendanceStatus, setAttendanceStatus] = useState<{ going: boolean; plusOnes: number } | null>(null);
+  const [attendanceModalOpen, setAttendanceModalOpen] = useState(false);
+  const [attendanceDraft, setAttendanceDraft] = useState<{ going: boolean; plusOnes: number } | null>(null);
+  const [attendancePrefLoaded, setAttendancePrefLoaded] = useState(false);
+  const [attendanceRefreshToken, setAttendanceRefreshToken] = useState(0);
   const pendingAttendKey = 'dame_pending_attend';
   
   // Forzar re-render cuando cambie el idioma
@@ -69,6 +85,27 @@ const EventDetail = () => {
     if (i18n.language === 'en' && textEn) return textEn;
     return textEs || textEn || '';
   };
+
+  const attendanceStorageKey = event?.id ? `dame_attendance_${event.id}` : null;
+
+  useEffect(() => {
+    if (!attendanceStorageKey) return;
+    setAttendancePrefLoaded(false);
+    const stored = localStorage.getItem(attendanceStorageKey);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (typeof parsed.going === 'boolean' && typeof parsed.plusOnes === 'number') {
+          setAttendanceStatus(parsed);
+        }
+      } catch (error) {
+        console.error('Error parsing attendance preference:', error);
+      }
+    } else {
+      setAttendanceStatus(null);
+    }
+    setAttendancePrefLoaded(true);
+  }, [attendanceStorageKey]);
 
   useEffect(() => {
     const fetchEventDetail = async () => {
@@ -112,6 +149,158 @@ const EventDetail = () => {
     console.log('📞 EventDetail: handleOpenAtDoorModal llamado');
     openAtDoorModalFnRef.current = openFn;
   };
+
+  const handleUserTicketChange = (hasTicket: boolean) => {
+    setUserHasTicket(hasTicket);
+    setAttendanceRefreshToken(prev => prev + 1);
+  };
+
+  const displayPlusOnes = attendanceStatus
+    ? Math.max(attendanceStatus.plusOnes, Math.max(userTicketCount - 1, 0))
+    : Math.max(userTicketCount - 1, 0);
+  const displayGoing = attendanceStatus ? attendanceStatus.going : userHasTicket;
+
+  const openAttendanceModal = () => {
+    const baseStatus = attendanceStatus || {
+      going: true,
+      plusOnes: Math.max(userTicketCount - 1, 0),
+    };
+    setAttendanceDraft(baseStatus);
+    setAttendanceModalOpen(true);
+  };
+
+  const handleAttendanceSave = () => {
+    if (!attendanceDraft || !attendanceStorageKey) return;
+    setAttendanceStatus(attendanceDraft);
+    localStorage.setItem(attendanceStorageKey, JSON.stringify(attendanceDraft));
+    setAttendanceModalOpen(false);
+    toast({
+      title: i18n.language === 'en' ? 'Attendance updated' : 'Asistencia actualizada',
+      description: attendanceDraft.going
+        ? i18n.language === 'en'
+          ? 'We have saved your RSVP preference.'
+          : 'Hemos guardado tu preferencia de asistencia.'
+        : i18n.language === 'en'
+          ? 'Remember to manage or cancel your tickets from My Tickets.'
+          : 'Recuerda gestionar o cancelar tus entradas desde Mis Entradas.',
+    });
+    if (!attendanceDraft.going) {
+      navigate('/mis-entradas');
+    }
+  };
+
+  const handleCopyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: i18n.language === 'en' ? 'Link copied!' : '¡Enlace copiado!',
+        description: i18n.language === 'en'
+          ? 'Share it with your guests to confirm attendance.'
+          : 'Compártelo con tus invitados para confirmar asistencia.',
+      });
+    } catch (error) {
+      console.error('Error copying link:', error);
+      toast({
+        title: i18n.language === 'en' ? 'Error' : 'Error',
+        description: i18n.language === 'en'
+          ? 'Could not copy the link'
+          : 'No se pudo copiar el enlace',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Verificar si el usuario ya tiene tickets para este evento
+  useEffect(() => {
+    if (!user || !event?.id) {
+      setUserHasTicket(false);
+      setUserTicketCount(0);
+      return;
+    }
+
+    let isMounted = true;
+    let currentPage = 1;
+    const collectedTickets: Ticket[] = [];
+
+    const fetchPage = async (page: number): Promise<boolean> => {
+      const response = await dameTicketsAPI.getMyCurrentTickets(page);
+      if (!isMounted) return false;
+
+      if (response.success && response.data?.results) {
+        collectedTickets.push(...response.data.results);
+        if (response.data.next) {
+          currentPage += 1;
+          return fetchPage(currentPage);
+        }
+        return true;
+      }
+
+      return false;
+    };
+
+    const normalize = (value?: string | null) =>
+      value ? value.trim().toLowerCase().replace(/\s+/g, ' ') : '';
+
+    const checkTickets = async () => {
+      setCheckingUserTicket(true);
+      try {
+        const ok = await fetchPage(1);
+        if (!isMounted || !ok) {
+          setUserHasTicket(false);
+          setUserTicketCount(0);
+          return;
+        }
+
+        const eventTitleCandidates = [
+          normalize(event.title_es),
+          normalize(event.title_en),
+          normalize(event.title),
+          normalize(getLocalizedText(event.title_es, event.title_en)),
+        ].filter(Boolean);
+
+        const matchingTickets = collectedTickets.filter((ticket) => {
+          if (ticket.event_id && ticket.event_id === event.id) return true;
+          if (ticket.event_slug && event.slug && ticket.event_slug === event.slug) return true;
+          const ticketTitles = [
+            normalize(ticket.event_title),
+            normalize(ticket.ticket_metadata?.event_title),
+          ].filter(Boolean);
+          if (ticketTitles.length && eventTitleCandidates.length) {
+            return ticketTitles.some((ticketTitle) =>
+              eventTitleCandidates.includes(ticketTitle)
+            );
+          }
+          return false;
+        });
+
+        setUserHasTicket(matchingTickets.length > 0);
+        setUserTicketCount(matchingTickets.length);
+
+        if (attendancePrefLoaded && !attendanceStatus && matchingTickets.length > 0) {
+          setAttendanceStatus({
+            going: true,
+            plusOnes: Math.max(matchingTickets.length - 1, 0),
+          });
+        }
+      } catch (err) {
+        console.error('Error checking user tickets:', err);
+        if (isMounted) {
+          setUserHasTicket(false);
+          setUserTicketCount(0);
+        }
+      } finally {
+        if (isMounted) {
+          setCheckingUserTicket(false);
+        }
+      }
+    };
+
+    checkTickets();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user, event?.id, event?.slug, attendancePrefLoaded, attendanceRefreshToken]);
 
   // Scroll al inicio al abrir la página de detalle o cambiar de evento
   useEffect(() => {
@@ -370,6 +559,17 @@ const EventDetail = () => {
       return;
     }
 
+    if (userHasTicket) {
+      toast({
+        title: i18n.language === 'en' ? 'Already registered' : 'Ya estás registrado',
+        description: i18n.language === 'en'
+          ? 'You already have a ticket for this event'
+          : 'Ya cuentas con una entrada para este evento',
+      });
+      navigate('/mis-entradas');
+      return;
+    }
+
     console.log('🔘 EventDetail: Botón Asistir clickeado', {
       hasOpenAtDoorModalFn: !!openAtDoorModalFnRef.current,
       hasTickets: hasTickets,
@@ -478,6 +678,7 @@ const EventDetail = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900">
       <div className="container mx-auto px-4 pt-8 pb-28">
         {/* Back Button */}
@@ -562,6 +763,57 @@ const EventDetail = () => {
                   </Badge>
                 ))}
               </div>
+
+              {userHasTicket && (
+                <Alert className="border-green-200 bg-green-50 text-green-900">
+                  <AlertTitle className="flex items-center gap-2 font-semibold">
+                    <CheckCircle className="h-4 w-4" />
+                    {i18n.language === 'en' ? 'You are already registered' : 'Ya estás apuntado'}
+                  </AlertTitle>
+              <AlertDescription className="mt-2 space-y-3">
+                <span>
+                  {i18n.language === 'en'
+                    ? 'Show your ticket from the My Tickets section when you arrive at the venue.'
+                    : 'Presenta tu entrada desde Mis Entradas cuando llegues al evento.'}
+                </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge
+                    className={`px-3 py-1 text-sm ${
+                      displayGoing ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-900'
+                    }`}
+                  >
+                    {displayGoing
+                      ? (displayPlusOnes > 0
+                        ? (i18n.language === 'en'
+                            ? `You + ${displayPlusOnes} going!`
+                            : `Tú + ${displayPlusOnes} asistirán`)
+                        : (i18n.language === 'en'
+                            ? 'You are going!'
+                            : '¡Vas a asistir!'))
+                      : (i18n.language === 'en'
+                          ? 'You marked as not going'
+                          : 'Marcaste que no asistirás')}
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-green-300 text-green-900 hover:bg-green-100"
+                    onClick={openAttendanceModal}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    {i18n.language === 'en' ? 'Edit attendance' : 'Editar asistencia'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate('/mis-entradas')}
+                  >
+                    {i18n.language === 'en' ? 'Open My Tickets' : 'Ver mis entradas'}
+                  </Button>
+                </div>
+              </AlertDescription>
+                </Alert>
+              )}
             </div>
 
             {/* Description */}
@@ -922,6 +1174,7 @@ const EventDetail = () => {
                     eventId={event.id} 
                     onTicketsLoaded={handleTicketsLoaded}
                     onOpenAtDoorModal={handleOpenAtDoorModal}
+                    onUserTicketChange={handleUserTicketChange}
                   />
                 </div>
               )}
@@ -1045,6 +1298,12 @@ const EventDetail = () => {
           }
         };
 
+        const attendLabel = userHasTicket
+          ? (i18n.language === 'en' ? 'You are already registered' : 'Ya estás apuntado')
+          : checkingUserTicket
+            ? (i18n.language === 'en' ? 'Checking availability...' : 'Verificando disponibilidad...')
+            : (i18n.language === 'en' ? 'Attend' : 'Asistir');
+
         return (
           <div className="fixed bottom-4 left-0 right-0 px-4 z-40">
             <div className="relative max-w-4xl mx-auto">
@@ -1054,10 +1313,11 @@ const EventDetail = () => {
                   {priceDisplay}
                 </span>
                 <Button 
-                  className="flex-1 h-16 sm:h-14 rounded-[999px] text-lg font-semibold bg-gray-900 text-white hover:bg-gray-800 transition-colors"
+                  className="flex-1 h-16 sm:h-14 rounded-[999px] text-lg font-semibold bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                   onClick={() => handleReserveClick(reserveLink)}
+                  disabled={userHasTicket || checkingUserTicket}
                 >
-                  {i18n.language === 'en' ? 'Attend' : 'Asistir'}
+                  {attendLabel}
                 </Button>
                 <Button
                   variant="ghost"
@@ -1095,6 +1355,121 @@ const EventDetail = () => {
       </div>
     )}
     </div>
+    <Dialog open={attendanceModalOpen} onOpenChange={setAttendanceModalOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{i18n.language === 'en' ? 'Update your RSVP' : 'Actualiza tu asistencia'}</DialogTitle>
+          <DialogDescription>
+            {i18n.language === 'en'
+              ? 'Tell us if you are still going and how many guests you will bring.'
+              : 'Cuéntanos si sigues asistiendo y cuántos invitados llevarás.'}
+          </DialogDescription>
+        </DialogHeader>
+        {attendanceDraft && (
+          <div className="space-y-6 py-4">
+            <div className="space-y-2">
+              <Label>{i18n.language === 'en' ? 'Attendance status' : 'Estado de asistencia'}</Label>
+              <RadioGroup
+                value={attendanceDraft.going ? 'going' : 'not-going'}
+                onValueChange={(value) =>
+                  setAttendanceDraft({
+                    ...attendanceDraft,
+                    going: value === 'going',
+                  })
+                }
+                className="grid grid-cols-2 gap-3"
+              >
+                <Label
+                  className={`border rounded-xl px-4 py-3 cursor-pointer flex flex-col gap-1 text-sm ${
+                    attendanceDraft.going ? 'border-purple-500 bg-purple-50' : 'border'
+                  }`}
+                >
+                  <RadioGroupItem value="going" className="sr-only" />
+                  <span className="font-semibold">{i18n.language === 'en' ? 'Going' : 'Asistiré'}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {i18n.language === 'en' ? 'Keep my reservation' : 'Mantener mi reserva'}
+                  </span>
+                </Label>
+                <Label
+                  className={`border rounded-xl px-4 py-3 cursor-pointer flex flex-col gap-1 text-sm ${
+                    !attendanceDraft.going ? 'border-purple-500 bg-purple-50' : 'border'
+                  }`}
+                >
+                  <RadioGroupItem value="not-going" className="sr-only" />
+                  <span className="font-semibold">{i18n.language === 'en' ? 'Not going' : 'No asistiré'}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {i18n.language === 'en' ? 'I will cancel later' : 'Cancelaré más tarde'}
+                  </span>
+                </Label>
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{i18n.language === 'en' ? 'Are you bringing anyone?' : '¿Llevas acompañantes?'}</Label>
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() =>
+                    setAttendanceDraft({
+                      ...attendanceDraft,
+                      plusOnes: Math.max(0, attendanceDraft.plusOnes - 1),
+                    })
+                  }
+                  disabled={attendanceDraft.plusOnes <= 0}
+                >
+                  -
+                </Button>
+                <div className="text-2xl font-semibold w-16 text-center">{attendanceDraft.plusOnes}</div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() =>
+                    setAttendanceDraft({
+                      ...attendanceDraft,
+                      plusOnes: Math.min(99, attendanceDraft.plusOnes + 1),
+                    })
+                  }
+                >
+                  +
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {i18n.language === 'en'
+                  ? 'Let us know how many guests will use your tickets.'
+                  : 'Indica cuántos acompañantes usarán tus entradas.'}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-purple-100 bg-purple-50 p-4 space-y-2">
+              <p className="text-sm font-medium text-purple-900">
+                {i18n.language === 'en' ? 'Share the event with your guests' : 'Comparte el evento con tus invitados'}
+              </p>
+              <p className="text-xs text-purple-800">
+                {i18n.language === 'en'
+                  ? 'Sending the link helps them confirm their attendance.'
+                  : 'Enviar el enlace les ayuda a confirmar su asistencia.'}
+              </p>
+              <Button variant="ghost" size="sm" className="w-full" onClick={handleCopyShareLink}>
+                <Copy className="h-4 w-4 mr-2" />
+                {i18n.language === 'en' ? 'Copy link now' : 'Copiar enlace ahora'}
+              </Button>
+            </div>
+          </div>
+        )}
+        <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2">
+          <Button variant="outline" onClick={() => setAttendanceModalOpen(false)}>
+            {i18n.language === 'en' ? 'Close' : 'Cerrar'}
+          </Button>
+          <Button onClick={handleAttendanceSave} disabled={!attendanceDraft}>
+            {i18n.language === 'en' ? 'Update' : 'Actualizar'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 

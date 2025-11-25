@@ -16,15 +16,17 @@ import { TicketAtDoorModal } from '@/components/TicketAtDoorModal';
 
 interface EventTicketsProps {
   eventId: number;
-}
-
-interface EventTicketsProps {
-  eventId: number;
   onTicketsLoaded?: (hasTickets: boolean, minPrice?: string | null) => void; // Callback para notificar si hay tickets y precio mínimo
   onOpenAtDoorModal?: (openAtDoor: () => void) => void; // Callback para exponer función de abrir modal
+  onUserTicketChange?: (hasTicket: boolean) => void;
 }
 
-export const EventTickets = ({ eventId, onTicketsLoaded, onOpenAtDoorModal }: EventTicketsProps) => {
+export const EventTickets = ({
+  eventId,
+  onTicketsLoaded,
+  onOpenAtDoorModal,
+  onUserTicketChange,
+}: EventTicketsProps) => {
   const { i18n } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -275,7 +277,14 @@ export const EventTickets = ({ eventId, onTicketsLoaded, onOpenAtDoorModal }: Ev
     setAtDoorModalOpen(true);
   };
 
+  const notifyUserTicket = () => {
+    if (onUserTicketChange) {
+      onUserTicketChange(true);
+    }
+  };
+
   const handlePurchaseSuccess = async () => {
+    notifyUserTicket();
     // Recargar los tickets para actualizar el stock
     setPurchaseModalOpen(false);
     setSelectedTicketType(null);
@@ -298,6 +307,7 @@ export const EventTickets = ({ eventId, onTicketsLoaded, onOpenAtDoorModal }: Ev
   };
 
   const handleReserveSuccess = async () => {
+    notifyUserTicket();
     // Recargar los tickets para actualizar el stock
     setReserveModalOpen(false);
     setSelectedTicketType(null);
@@ -320,6 +330,7 @@ export const EventTickets = ({ eventId, onTicketsLoaded, onOpenAtDoorModal }: Ev
   };
 
   const handleAtDoorSuccess = async () => {
+    notifyUserTicket();
     // Recargar los tickets para actualizar el stock
     setAtDoorModalOpen(false);
     setSelectedTicketType(null);

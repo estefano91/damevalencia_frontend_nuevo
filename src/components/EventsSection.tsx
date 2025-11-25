@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCategoryFilter } from './AppLayout';
@@ -24,7 +24,8 @@ import {
   Flower2,
   User,
   RefreshCw,
-  Repeat
+  Repeat,
+  CheckCircle
 } from 'lucide-react';
 import { 
   dameEventsAPI, 
@@ -37,6 +38,8 @@ import {
 } from '@/integrations/dame-api/events';
 import googleMapsIcon from '@/assets/mapsgoogle.png';
 import wazeIcon from '@/assets/wazeicon.png';
+import { useAuth } from '@/contexts/AuthContext';
+import { dameTicketsAPI } from '@/integrations/dame-api/tickets';
 
 interface EventsSectionProps {
   maxEventsPerCategory?: number;
@@ -353,10 +356,69 @@ interface EventCardProps {
   categoryColor: string;
 }
 
+interface UserAttendance {
+  event_slug?: string;
+  event_id?: number;
+}
+
+const hasUserTicket = (event: DameEvent, attendedEvents: UserAttendance[]): boolean => {
+  if (!attendedEvents.length) return false;
+  return attendedEvents.some((ticket) => {
+    if (ticket.event_slug && event.event_slug && ticket.event_slug === event.event_slug) return true;
+    if (ticket.event_id && event.id && ticket.event_id === event.id) return true;
+    return false;
+  });
+};
+
 const EventCard = ({ event, categoryColor }: EventCardProps) => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
+  const { user } = useAuth();
+  const [userTickets, setUserTickets] = useState<UserAttendance[]>([]);
+  const [checkingTickets, setCheckingTickets] = useState(false);
   
+  useEffect(() => {
+    if (!user) {
+      setUserTickets([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchTickets = async () => {
+      setCheckingTickets(true);
+      try {
+        const response = await dameTicketsAPI.getMyCurrentTickets(1);
+        if (isMounted) {
+          if (response.success && response.data?.results) {
+            const data = response.data.results.map((ticket) => ({
+              event_slug: ticket.event_slug,
+              event_id: ticket.event_id,
+            }));
+            setUserTickets(data);
+          } else {
+            setUserTickets([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user tickets:', error);
+        if (isMounted) {
+          setUserTickets([]);
+        }
+      } finally {
+        if (isMounted) {
+          setCheckingTickets(false);
+        }
+      }
+    };
+
+    fetchTickets();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
   if (!event) return null;
 
   const availableSpots = getAvailableSpots(event);
@@ -400,9 +462,8 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
             </div>
           </div>
         )}
-        
         {/* Badge de precio sobre la imagen */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2">
+        <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
           {isFree ? (
             <Badge className="bg-green-600 hover:bg-green-700 text-white backdrop-blur-sm font-bold">
               {i18n.language === 'en' ? 'Free' : 'Gratuito'}
@@ -416,6 +477,12 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
             <Badge className="bg-blue-600 text-white">
               <Repeat className="mr-1 h-3 w-3" />
               {i18n.language === 'en' ? 'Weekly' : 'Semanal'}
+            </Badge>
+          )}
+          {!checkingTickets && hasUserTicket(event, userTickets) && (
+            <Badge className="bg-white/90 text-green-700 border-green-200 backdrop-blur flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              {i18n.language === 'en' ? 'Going' : 'Asistirás'}
             </Badge>
           )}
         </div>

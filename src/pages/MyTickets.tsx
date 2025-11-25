@@ -517,14 +517,21 @@ const MyTickets = () => {
         </Button>
 
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">
-            {i18n.language === 'en' ? 'My Tickets' : 'Mis Entradas'}
-          </h1>
-          <p className="text-muted-foreground">
-            {i18n.language === 'en' 
-              ? 'View and manage your event tickets'
-              : 'Visualiza y gestiona tus entradas de eventos'}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">
+                {i18n.language === 'en' ? 'My Tickets' : 'Mis Entradas'}
+              </h1>
+              <p className="text-muted-foreground">
+                {i18n.language === 'en' 
+                  ? 'View and manage your event tickets'
+                  : 'Visualiza y gestiona tus entradas de eventos'}
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => navigate('/mis-eventos')}>
+              {i18n.language === 'en' ? 'My events' : 'Mis eventos'}
+            </Button>
+          </div>
         </div>
 
         {error && (

@@ -24,6 +24,7 @@ import UserProfile from "./pages/UserProfile";
 import Membership from "./pages/Membership";
 import EditMember from "./pages/EditMember";
 import MyTickets from "./pages/MyTickets";
+import MyUpcomingEvents from "./pages/MyUpcomingEvents";
 import TicketHashLookup from "./pages/TicketHashLookup";
 
 const queryClient = new QueryClient();
@@ -97,6 +98,14 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar requireAuth>
                         <MyTickets />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/mis-eventos"
+                    element={
+                      <ProtectedRoute hideSidebar requireAuth>
+                        <MyUpcomingEvents />
                       </ProtectedRoute>
                     }
                   />
