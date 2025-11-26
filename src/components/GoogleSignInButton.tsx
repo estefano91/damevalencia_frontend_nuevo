@@ -40,24 +40,31 @@ interface GoogleSignInButtonProps {
 const GOOGLE_SCRIPT_ID = "google-identity-services-sdk";
 
 const GoogleSignInButton = ({ disabled, onToken, onError, className }: GoogleSignInButtonProps) => {
-  const [scriptReady, setScriptReady] = useState<boolean>(Boolean(window.google));
+  // Solo consideramos "ready" cuando realmente existe google.accounts.id,
+  // no simplemente cuando window.google está definido (p.ej. por Google Maps)
+  const [scriptReady, setScriptReady] = useState<boolean>(
+    typeof window !== "undefined" && Boolean(window.google?.accounts?.id)
+  );
   const [buttonRendered, setButtonRendered] = useState(false);
   const buttonRef = useRef<HTMLDivElement>(null);
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   useEffect(() => {
-    if (scriptReady || typeof window === "undefined") {
+    if (typeof window === "undefined") {
       return;
     }
 
     const handleLoaded = () => {
-      setScriptReady(true);
+      // Solo marcamos como listo si google.accounts.id existe realmente
+      if (window.google?.accounts?.id) {
+        setScriptReady(true);
+      }
     };
 
     const existingScript = document.getElementById(GOOGLE_SCRIPT_ID) as HTMLScriptElement | null;
 
     if (existingScript) {
-      if (existingScript.dataset.loaded === "true") {
+      if (existingScript.dataset.loaded === "true" && window.google?.accounts?.id) {
         setScriptReady(true);
       } else {
         existingScript.addEventListener("load", handleLoaded);
@@ -72,7 +79,9 @@ const GoogleSignInButton = ({ disabled, onToken, onError, className }: GoogleSig
     script.defer = true;
     script.onload = () => {
       script.dataset.loaded = "true";
-      setScriptReady(true);
+      if (window.google?.accounts?.id) {
+        setScriptReady(true);
+      }
     };
     script.onerror = () => {
       onError?.("No se pudo cargar Google Sign-In. Revisa tu conexión.");
@@ -86,11 +95,13 @@ const GoogleSignInButton = ({ disabled, onToken, onError, className }: GoogleSig
   }, [onError, scriptReady]);
 
   useEffect(() => {
-    if (!scriptReady || !window.google || !buttonRef.current || !clientId || buttonRendered) {
+    const googleAccounts = window.google?.accounts;
+
+    if (!scriptReady || !googleAccounts?.id || !buttonRef.current || !clientId || buttonRendered) {
       return;
     }
 
-    window.google.accounts.id.initialize({
+    googleAccounts.id.initialize({
       client_id: clientId,
       callback: (response) => {
         if (response.credential) {
@@ -101,7 +112,7 @@ const GoogleSignInButton = ({ disabled, onToken, onError, className }: GoogleSig
       },
     });
 
-    window.google.accounts.id.renderButton(buttonRef.current, {
+    googleAccounts.id.renderButton(buttonRef.current, {
       type: "standard",
       theme: "filled_blue",
       size: "large",
