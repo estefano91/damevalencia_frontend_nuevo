@@ -46,7 +46,11 @@ export const useAuth = () => {
 
 // Helper para convertir user de API a DameProfile
 const convertApiUserToProfile = (apiUser?: ApiUser | null): DameProfile | null => {
-  if (!apiUser) return null;
+  // Protegernos contra respuestas incompletas o inesperadas
+  if (!apiUser || apiUser.id === undefined || apiUser.id === null) {
+    console.warn("⚠️ convertApiUserToProfile: apiUser sin id válido. Payload recibido:", apiUser);
+    return null;
+  }
   
   return {
     id: apiUser.id.toString(),
