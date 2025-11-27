@@ -481,6 +481,7 @@ const EventDetail = () => {
       return event.tickets_webview;
     }
     
+    // Primero intentar usar el contacto de WhatsApp del evento
     const whatsappLink = event?.whatsapp_contact;
     if (whatsappLink) {
       const sanitized = whatsappLink.replace(/\+/, '').replace(/\s/g, '');
@@ -489,6 +490,12 @@ const EventDetail = () => {
         : `Hola, me gustaría reservar para el evento "${getLocalizedText(event.title_es, event.title_en)}"`;
       return `https://wa.me/${sanitized}?text=${encodeURIComponent(message)}`;
     }
+    
+    // Si no hay contacto de WhatsApp del evento, usar el grupo de WhatsApp del primer organizador
+    if (event?.organizers && event.organizers.length > 0 && event.organizers[0]?.whatsapp_group) {
+      return event.organizers[0].whatsapp_group;
+    }
+    
     return null;
   };
 
