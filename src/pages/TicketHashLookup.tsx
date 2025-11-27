@@ -6,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, ArrowLeft, MapPin, Download, Share2, Copy, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Calendar, ArrowLeft, MapPin, Share2, Copy, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { dameTicketsAPI } from '@/integrations/dame-api/tickets';
 import type { Ticket, TicketStatus } from '@/types/tickets';
 import { useToast } from '@/hooks/use-toast';
@@ -333,19 +333,6 @@ const TicketHashLookup = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    className="flex-1 sm:flex-none"
-                    variant="outline"
-                    onClick={() => navigate('/mis-entradas')}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    {i18n.language === 'en'
-                      ? 'Manage my tickets'
-                      : 'Gestionar mis entradas'}
-                  </Button>
-                </div>
-
                 {qrDataUrl && (
                   <div className="pt-4 border-t flex flex-col items-center gap-3">
                     <img
@@ -360,6 +347,18 @@ const TicketHashLookup = () => {
                     </p>
                   </div>
                 )}
+
+                <div className="flex flex-wrap gap-3 pt-4">
+                  <Button
+                    className="flex-1 sm:flex-none"
+                    variant="outline"
+                    onClick={() => navigate('/mis-entradas')}
+                  >
+                    {i18n.language === 'en'
+                      ? 'Manage my tickets'
+                      : 'Gestionar mis entradas'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}

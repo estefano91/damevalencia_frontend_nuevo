@@ -487,6 +487,7 @@ const EventDetail = () => {
   };
 
   const handleReserveClick = (reserveLink?: string) => {
+    // En ambos casos (con tickets o sin tickets) se requiere login
     if (!user) {
       try {
         sessionStorage.setItem(
@@ -540,11 +541,21 @@ const EventDetail = () => {
       return;
     }
 
-    // Si no hay tickets, usar el comportamiento anterior (WhatsApp)
-    // WhatsApp no requiere login, solo abrir directamente
-    if (reserveLink) {
-      console.log('📱 EventDetail: Abriendo WhatsApp');
-      window.open(reserveLink, "_blank");
+    // Si NO hay tickets, abrir WhatsApp (después de login)
+    if (hasTickets === false) {
+      if (reserveLink) {
+        console.log('📱 EventDetail: Abriendo WhatsApp');
+        window.open(reserveLink, "_blank");
+      } else {
+        toast({
+          title: i18n.language === 'en' ? 'Contact unavailable' : 'Contacto no disponible',
+          description: i18n.language === 'en'
+            ? 'WhatsApp contact is not configured for this event.'
+            : 'El contacto de WhatsApp no está configurado para este evento.',
+          variant: 'destructive',
+        });
+      }
+      return;
     }
   };
 
@@ -1155,11 +1166,8 @@ const EventDetail = () => {
         // Esperar a que termine la verificación de tickets
         if (hasTickets === null || !event) return null;
 
-        // Mostrar el botón si hay tickets O si hay un link de reserva (WhatsApp)
+        // Todos los eventos deben tener alguna opción, siempre mostrar el botón
         const reserveLink = getReserveLink();
-        const shouldShowButton = hasTickets === true || (hasTickets === false && reserveLink);
-        
-        if (!shouldShowButton) return null;
 
         // Determinar el precio a mostrar
         let priceDisplay = '';
@@ -1230,9 +1238,12 @@ const EventDetail = () => {
           }
         };
 
+        // Determinar el label del botón según si hay tickets o no
         const attendLabel = checkingUserTicket
           ? (i18n.language === 'en' ? 'Checking availability...' : 'Verificando disponibilidad...')
-          : (i18n.language === 'en' ? 'Reserve Tickets' : 'Reservar Tickets');
+          : hasTickets === true
+          ? (i18n.language === 'en' ? 'Reserve Tickets' : 'Reservar Tickets')
+          : (i18n.language === 'en' ? 'Attend Event' : 'Asistir al Evento');
 
         return (
           <div className="fixed bottom-4 left-0 right-0 px-4 z-40">
