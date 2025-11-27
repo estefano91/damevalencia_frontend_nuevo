@@ -25,6 +25,7 @@ export interface EventPlace {
 
 // Evento básico para listados
 export interface DameEvent {
+  id?: number; // ID del evento (puede venir de la API aunque no esté siempre presente)
   event_slug: string;
   title_es: string;
   title_en?: string;
@@ -65,6 +66,12 @@ export interface EventOrganizer {
   id: number;
   name: string;
   email: string;
+  logo_url?: string;
+  instagram?: string;
+  facebook?: string;
+  youtube?: string;
+  website?: string;
+  whatsapp_group?: string;
 }
 
 export interface EventPhoto {

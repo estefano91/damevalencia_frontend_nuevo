@@ -26,6 +26,11 @@ import {
   Navigation,
   Share2,
   CheckCircle,
+  User,
+  Instagram,
+  Facebook,
+  Youtube,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +39,7 @@ import { TicketAtDoorModal } from "@/components/TicketAtDoorModal";
 import { dameTicketsAPI } from "@/integrations/dame-api/tickets";
 import googleMapsIcon from "@/assets/mapsgoogle.png";
 import wazeIcon from "@/assets/wazeicon.png";
+import WhatsAppIcon from "@/assets/WhatsApp.svg.webp";
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -88,6 +94,7 @@ const EventDetail = () => {
         const response = await dameEventsAPI.getEventBySlug(slug);
         console.log('RESPUESTA DE LA API TOTAL', response);
         if (response.success && response.data) {
+          console.log('📋 Organizadores del evento:', response.data.organizers);
           if (response.data.is_recurring_weekly) {
             console.log('RECURRENCE_START_TIME', response.data.recurrence_start_time);
             console.log('RECURRENCE_END_TIME', response.data.recurrence_end_time);
@@ -198,7 +205,6 @@ const EventDetail = () => {
         const eventTitleCandidates = [
           normalize(event.title_es),
           normalize(event.title_en),
-          normalize(event.title),
           normalize(getLocalizedText(event.title_es, event.title_en)),
         ].filter(Boolean);
 
@@ -687,6 +693,162 @@ const EventDetail = () => {
               <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 dark:text-white">
                 {getLocalizedText(event.title_es, event.title_en)}
               </h1>
+              {event.organizers && event.organizers.length > 0 && (
+                <div className="flex items-center gap-2 mb-3 text-sm flex-wrap">
+                  <div className="flex items-center" style={{ marginLeft: event.organizers.length > 1 ? `${(event.organizers.length - 1) * 12}px` : '0' }}>
+                    {event.organizers.map((organizer, index) => {
+                      // Intentar diferentes nombres de campos posibles para el logo
+                      const logoUrl = (organizer as any).logo_url || 
+                                     (organizer as any).image_url || 
+                                     (organizer as any).avatar_url || 
+                                     (organizer as any).logo ||
+                                     (organizer as any).image;
+                      
+                      const overlapStyle = index > 0 ? { marginLeft: '-12px' } : {};
+                      
+                      if (logoUrl) {
+                        return (
+                          <img 
+                            key={organizer.id}
+                            src={logoUrl} 
+                            alt={organizer.name}
+                            className="h-9 w-9 rounded-full object-cover border-2 border-background"
+                            style={{ ...overlapStyle, zIndex: event.organizers.length - index }}
+                            onError={(e) => {
+                              // Si falla la carga, mostrar icono por defecto
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                e.currentTarget.style.display = 'none';
+                                const icon = document.createElement('div');
+                                icon.className = 'h-9 w-9 rounded-full bg-muted flex items-center justify-center border-2 border-background';
+                                icon.style.cssText = `${Object.entries(overlapStyle).map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${v}`).join('; ')}; z-index: ${event.organizers.length - index};`;
+                                icon.innerHTML = '<svg class="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>';
+                                parent.insertBefore(icon, e.currentTarget);
+                              }
+                            }}
+                          />
+                        );
+                      }
+                      // Si no hay logo, mostrar icono por defecto
+                      return (
+                        <div 
+                          key={organizer.id} 
+                          className="h-9 w-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0 border-2 border-background"
+                          style={{ ...overlapStyle, zIndex: event.organizers.length - index }}
+                        >
+                          <User className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-muted-foreground">
+                    {i18n.language === 'en' ? 'Hosted by' : 'Organizado por'}{' '}
+                    <span className="font-medium text-foreground">
+                      {event.organizers.map(org => org.name).join(', ')}
+                    </span>
+                  </p>
+                  {/* Redes sociales solo del primer organizador */}
+                  {event.organizers[0] && (() => {
+                    const firstOrganizer = event.organizers[0];
+                    const socialLinks = [];
+                    
+                    if (firstOrganizer.instagram) {
+                      socialLinks.push(
+                        <a
+                          key={`${firstOrganizer.id}-instagram`}
+                          href={firstOrganizer.instagram}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:opacity-80 transition-opacity"
+                          aria-label={`Instagram de ${firstOrganizer.name}`}
+                        >
+                          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                              <linearGradient id={`instagram-gradient-${firstOrganizer.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#f09433" />
+                                <stop offset="25%" stopColor="#e6683c" />
+                                <stop offset="50%" stopColor="#dc2743" />
+                                <stop offset="75%" stopColor="#cc2366" />
+                                <stop offset="100%" stopColor="#bc1888" />
+                              </linearGradient>
+                            </defs>
+                            <path
+                              d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
+                              fill={`url(#instagram-gradient-${firstOrganizer.id})`}
+                            />
+                          </svg>
+                        </a>
+                      );
+                    }
+                    if (firstOrganizer.facebook) {
+                      socialLinks.push(
+                        <a
+                          key={`${firstOrganizer.id}-facebook`}
+                          href={firstOrganizer.facebook}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-blue-600 transition-colors"
+                          aria-label={`Facebook de ${firstOrganizer.name}`}
+                        >
+                          <Facebook className="h-5 w-5" />
+                        </a>
+                      );
+                    }
+                    if (firstOrganizer.youtube) {
+                      socialLinks.push(
+                        <a
+                          key={`${firstOrganizer.id}-youtube`}
+                          href={firstOrganizer.youtube}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-red-600 transition-colors"
+                          aria-label={`YouTube de ${firstOrganizer.name}`}
+                        >
+                          <Youtube className="h-5 w-5" />
+                        </a>
+                      );
+                    }
+                    if (firstOrganizer.website) {
+                      socialLinks.push(
+                        <a
+                          key={`${firstOrganizer.id}-website`}
+                          href={firstOrganizer.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={`Website de ${firstOrganizer.name}`}
+                        >
+                          <Globe className="h-5 w-5" />
+                        </a>
+                      );
+                    }
+                    if (firstOrganizer.whatsapp_group) {
+                      socialLinks.push(
+                        <a
+                          key={`${firstOrganizer.id}-whatsapp-group`}
+                          href={firstOrganizer.whatsapp_group}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-green-600 transition-colors"
+                          aria-label={`Grupo de WhatsApp de ${firstOrganizer.name}`}
+                        >
+                          <img 
+                            src={WhatsAppIcon} 
+                            alt="Grupo de WhatsApp" 
+                            className="h-5 w-5"
+                          />
+                        </a>
+                      );
+                    }
+                    
+                    return socialLinks.length > 0 ? (
+                      <div className="flex items-center gap-2 ml-1">
+                        {socialLinks}
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              )}
               {!event.is_recurring_weekly && (
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   {event.start_datetime && (
