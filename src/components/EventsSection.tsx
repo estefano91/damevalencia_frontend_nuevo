@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCategoryFilter } from './AppLayout';
@@ -36,10 +36,13 @@ import {
   getAvailableSpots,
   isEventSoldOut
 } from '@/integrations/dame-api/events';
-import googleMapsIcon from '@/assets/mapsgoogle.png';
-import wazeIcon from '@/assets/wazeicon.png';
 import { useAuth } from '@/contexts/AuthContext';
 import { dameTicketsAPI } from '@/integrations/dame-api/tickets';
+
+interface UserAttendance {
+  event_slug?: string;
+  event_id?: number;
+}
 
 interface EventsSectionProps {
   maxEventsPerCategory?: number;
@@ -47,12 +50,15 @@ interface EventsSectionProps {
 
 const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const { i18n } = useTranslation();
+  const { user } = useAuth();
   const [, forceUpdate] = useState({});
   const [eventsByCategory, setEventsByCategory] = useState<EventsByCategory[]>([]);
   const [filteredEventsByCategory, setFilteredEventsByCategory] = useState<EventsByCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { selectedCategoryId, setAvailableCategories } = useCategoryFilter();
+  const [userTickets, setUserTickets] = useState<UserAttendance[]>([]);
+  const [userTicketsLoaded, setUserTicketsLoaded] = useState(false);
   
   // Forzar re-render cuando cambie el idioma
   useEffect(() => {
@@ -90,6 +96,40 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [selectedCategoryId]);
 
+  useEffect(() => {
+    const fetchUserTickets = async () => {
+      if (!user) {
+        setUserTickets([]);
+        setUserTicketsLoaded(true);
+        return;
+      }
+
+      setUserTicketsLoaded(false);
+      try {
+        const response = await dameTicketsAPI.getMyCurrentTickets(1);
+        if (response.success && response.data?.results) {
+          const tickets = response.data.results.map((ticket) => ({
+            event_slug: ticket.event_slug,
+            event_id: ticket.event_id,
+          }));
+          console.log('🎫 EventsSection: User tickets loaded:', tickets);
+          console.log('🎫 EventsSection: Full ticket data sample:', response.data.results[0]);
+          setUserTickets(tickets);
+        } else {
+          console.log('🎫 EventsSection: No tickets found');
+          setUserTickets([]);
+        }
+      } catch (error) {
+        console.error('Error fetching user tickets:', error);
+        setUserTickets([]);
+      } finally {
+        setUserTicketsLoaded(true);
+      }
+    };
+
+    fetchUserTickets();
+  }, [user]);
+
   const loadEvents = async () => {
     setLoading(true);
     setError(null);
@@ -114,7 +154,8 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
             events: uniqueEvents,
             total_events: uniqueEvents.length
           };
-        }).filter(categoryData => categoryData.events.length > 0); // Solo categorías con eventos
+        }).filter(categoryData => categoryData.events.length > 0) // Solo categorías con eventos
+          .sort((a, b) => b.events.length - a.events.length); // Ordenar por cantidad de eventos (mayor a menor)
 
         console.log(`✅ Eventos únicos cargados: ${seenEventSlugs.size} eventos en ${uniqueCategories.length} categorías`);
         setEventsByCategory(uniqueCategories);
@@ -267,6 +308,8 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
             categoryColor={getCategoryColor(categoryData.category.id, categoryData.category.name_es)}
             categoryIcon={getCategoryIcon(categoryData.category.icon, categoryData.category.name_es)}
             maxEvents={maxEventsPerCategory}
+            attendedEvents={userTickets}
+            userTicketsLoaded={userTicketsLoaded}
           />
         ))
       ) : selectedCategoryId !== null ? (
@@ -294,9 +337,18 @@ interface CategorySectionProps {
   categoryColor: string;
   categoryIcon: React.ReactNode;
   maxEvents: number;
+  attendedEvents: UserAttendance[];
+  userTicketsLoaded: boolean;
 }
 
-const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents }: CategorySectionProps) => {
+const CategorySection = ({
+  categoryData,
+  categoryColor,
+  categoryIcon,
+  maxEvents,
+  attendedEvents,
+  userTicketsLoaded,
+}: CategorySectionProps) => {
   const { category, events } = categoryData;
   const displayEvents = events.slice(0, maxEvents);
   const hasMoreEvents = events.length > maxEvents;
@@ -333,6 +385,8 @@ const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents 
             key={`${event.event_slug}-${index}`} 
             event={event} 
             categoryColor={categoryColor}
+            attendedEvents={attendedEvents}
+            userTicketsLoaded={userTicketsLoaded}
           />
         ))}
       </div>
@@ -354,70 +408,58 @@ const CategorySection = ({ categoryData, categoryColor, categoryIcon, maxEvents 
 interface EventCardProps {
   event: DameEvent;
   categoryColor: string;
-}
-
-interface UserAttendance {
-  event_slug?: string;
-  event_id?: number;
+  attendedEvents: UserAttendance[];
+  userTicketsLoaded: boolean;
 }
 
 const hasUserTicket = (event: DameEvent, attendedEvents: UserAttendance[]): boolean => {
-  if (!attendedEvents.length) return false;
-  return attendedEvents.some((ticket) => {
-    if (ticket.event_slug && event.event_slug && ticket.event_slug === event.event_slug) return true;
-    if (ticket.event_id && event.id && ticket.event_id === event.id) return true;
+  if (!attendedEvents.length) {
+    return false;
+  }
+  
+  // Normalizar slug para comparación (lowercase, trim)
+  const normalizeSlug = (slug: string | undefined | null): string | null => {
+    if (!slug) return null;
+    return slug.toLowerCase().trim();
+  };
+  
+  const eventSlugNormalized = normalizeSlug(event.event_slug);
+  
+  const hasMatch = attendedEvents.some((ticket) => {
+    // Comparar por slug (normalizado)
+    const ticketSlugNormalized = normalizeSlug(ticket.event_slug);
+    if (ticketSlugNormalized && eventSlugNormalized && ticketSlugNormalized === eventSlugNormalized) {
+      console.log('✅ Match found by slug:', ticket.event_slug, '===', event.event_slug);
+      return true;
+    }
+    // Comparar por ID
+    if (ticket.event_id && event.id && ticket.event_id === event.id) {
+      console.log('✅ Match found by ID:', ticket.event_id, '===', event.id);
+      return true;
+    }
     return false;
   });
+  
+  if (!hasMatch && eventSlugNormalized) {
+    console.log('❌ No match for event:', {
+      event_slug: event.event_slug,
+      event_slug_normalized: eventSlugNormalized,
+      event_id: event.id,
+      event_title: event.title_es,
+      tickets_sample: attendedEvents.slice(0, 3).map(t => ({ 
+        event_slug: t.event_slug, 
+        event_slug_normalized: normalizeSlug(t.event_slug),
+        event_id: t.event_id 
+      }))
+    });
+  }
+  
+  return hasMatch;
 };
 
-const EventCard = ({ event, categoryColor }: EventCardProps) => {
+const EventCard = ({ event, categoryColor, attendedEvents, userTicketsLoaded }: EventCardProps) => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const { user } = useAuth();
-  const [userTickets, setUserTickets] = useState<UserAttendance[]>([]);
-  const [checkingTickets, setCheckingTickets] = useState(false);
-  
-  useEffect(() => {
-    if (!user) {
-      setUserTickets([]);
-      return;
-    }
-
-    let isMounted = true;
-
-    const fetchTickets = async () => {
-      setCheckingTickets(true);
-      try {
-        const response = await dameTicketsAPI.getMyCurrentTickets(1);
-        if (isMounted) {
-          if (response.success && response.data?.results) {
-            const data = response.data.results.map((ticket) => ({
-              event_slug: ticket.event_slug,
-              event_id: ticket.event_id,
-            }));
-            setUserTickets(data);
-          } else {
-            setUserTickets([]);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching user tickets:', error);
-        if (isMounted) {
-          setUserTickets([]);
-        }
-      } finally {
-        if (isMounted) {
-          setCheckingTickets(false);
-        }
-      }
-    };
-
-    fetchTickets();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
 
   if (!event) return null;
 
@@ -479,12 +521,24 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
               {i18n.language === 'en' ? 'Weekly' : 'Semanal'}
             </Badge>
           )}
-          {!checkingTickets && hasUserTicket(event, userTickets) && (
-            <Badge className="bg-white/90 text-green-700 border-green-200 backdrop-blur flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" />
-              {i18n.language === 'en' ? 'Going' : 'Asistirás'}
-            </Badge>
-          )}
+          {(() => {
+            const shouldShow = userTicketsLoaded && hasUserTicket(event, attendedEvents);
+            if (userTicketsLoaded) {
+              console.log('🎟️ EventCard badge check:', {
+                event_slug: event.event_slug,
+                event_id: event.id,
+                shouldShow,
+                attendedEvents,
+                userTicketsLoaded
+              });
+            }
+            return shouldShow ? (
+              <Badge className="bg-white/90 text-green-700 border-green-200 backdrop-blur flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" />
+                {i18n.language === 'en' ? 'Going' : 'Asistirás'}
+              </Badge>
+            ) : null;
+          })()}
         </div>
       </div>
       
@@ -533,87 +587,19 @@ const EventCard = ({ event, categoryColor }: EventCardProps) => {
               <MapPin className="h-4 w-4 text-pink-600 flex-shrink-0" />
               <span className="truncate">{event.place.name}</span>
             </div>
-            {(() => {
-              // Generar URLs de Google Maps y Waze
-              const lat = event.place.latitude;
-              const lng = event.place.longitude;
-              const latNum = typeof lat === 'string' ? parseFloat(lat) : lat;
-              const lngNum = typeof lng === 'string' ? parseFloat(lng) : lng;
-              const hasValidCoords = 
-                latNum != null && 
-                lngNum != null && 
-                isFinite(latNum) && 
-                isFinite(lngNum) &&
-                latNum >= -90 && latNum <= 90 &&
-                lngNum >= -180 && lngNum <= 180;
+          </div>
+        )}
 
-              // Google Maps URL
-              let googleMapsUrl = '';
-              if (hasValidCoords) {
-                // Formato estándar de Google Maps con coordenadas
-                googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${latNum},${lngNum}`;
-              } else if (event.place.address) {
-                // Construir dirección completa con ciudad
-                const fullAddress = `${event.place.name || ''}, ${event.place.address}${event.place.city ? ', ' + event.place.city : ''}, Valencia, España`.trim();
-                googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
-              } else if (event.place.name) {
-                // Si solo tenemos el nombre, agregar Valencia para mejor búsqueda
-                const queryWithCity = event.place.city 
-                  ? `${event.place.name}, ${event.place.city}, Valencia, España`
-                  : `${event.place.name}, Valencia, España`;
-                googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryWithCity)}`;
-              }
-
-              // Waze URL
-              let wazeUrl = '';
-              if (hasValidCoords) {
-                wazeUrl = `https://waze.com/ul?ll=${latNum},${lngNum}&navigate=yes`;
-              } else if (event.place.address) {
-                const query = `${event.place.address}`.trim();
-                wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(query)}&navigate=yes`;
-              } else if (event.place.name) {
-                wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(event.place.name)}&navigate=yes`;
-              }
-
-              return (googleMapsUrl || wazeUrl) ? (
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  {googleMapsUrl && (
-                    <a
-                      href={googleMapsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs sm:text-sm"
-                      onClick={(e) => e.stopPropagation()}
-                      title={i18n.language === 'en' ? 'Open in Google Maps' : 'Abrir en Google Maps'}
-                    >
-                      <img 
-                        src={googleMapsIcon} 
-                        alt="Google Maps" 
-                        className="w-4 h-4 sm:w-5 sm:h-5 object-contain flex-shrink-0"
-                      />
-                      <span className="truncate">{i18n.language === 'en' ? 'Google Maps' : 'Google Maps'}</span>
-                    </a>
-                  )}
-                  {wazeUrl && (
-                    <a
-                      href={wazeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs sm:text-sm"
-                      onClick={(e) => e.stopPropagation()}
-                      title={i18n.language === 'en' ? 'Open in Waze' : 'Abrir en Waze'}
-                    >
-                      <img 
-                        src={wazeIcon} 
-                        alt="Waze" 
-                        className="w-4 h-4 sm:w-5 sm:h-5 object-contain rounded-full flex-shrink-0"
-                      />
-                      <span className="truncate">Waze</span>
-                    </a>
-                  )}
-                </div>
-              ) : null;
-            })()}
+        {/* Organizador */}
+        {(event as any).organizers && (event as any).organizers.length > 0 && (
+          <div className="flex items-center gap-2 text-sm">
+            <User className="h-4 w-4 text-purple-600 flex-shrink-0" />
+            <span className="text-muted-foreground truncate">
+              {i18n.language === 'en' ? 'Organized by' : 'Organizado por'}{' '}
+              <span className="font-medium text-foreground">
+                {(event as any).organizers.map((org: any) => org.name).join(', ')}
+              </span>
+            </span>
           </div>
         )}
 

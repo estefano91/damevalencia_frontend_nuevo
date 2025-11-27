@@ -45,6 +45,7 @@ export interface DameEvent {
   capacity?: number;
   registered_count?: number;
   is_recurring_weekly?: boolean; // Indica si el evento se repite semanalmente
+  organizers?: EventOrganizer[]; // Organizadores del evento
 }
 
 // Tipos para el evento detallado (/api/events/{slug}/)
@@ -241,7 +242,10 @@ export class DameEventsAPI {
               description_es: "Una noche mágica con los mejores músicos de jazz valencianos",
               main_photo_url: "https://organizaciondame.org/storage/events/concierto-jazz-valencia.jpg", // Imagen principal desde API
               capacity: 200,
-              registered_count: 45
+              registered_count: 45,
+              organizers: [
+                { id: 1, name: "DAME Valencia Música", email: "musica@organizaciondame.org", logo_url: "https://organizaciondame.org/storage/organizers/dame-musica.png" }
+              ]
             },
             {
               event_slug: "recital-piano-dame",
