@@ -23,8 +23,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Calendar } from 'lucide-react';
+import { TicketReserveTerms } from '@/components/TicketReserveTerms';
 
 interface TicketReserveModalProps {
   ticketType: TicketTypeDetail;
@@ -56,6 +58,8 @@ export const TicketReserveModal = ({
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
 
   const validateForm = (): boolean => {
     if (!fullName.trim()) {
@@ -125,6 +129,17 @@ export const TicketReserveModal = ({
       toast({
         title: i18n.language === 'en' ? 'Validation error' : 'Error de validación',
         description: i18n.language === 'en' ? 'City is required' : 'La ciudad es requerida',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    if (!termsAccepted) {
+      toast({
+        title: i18n.language === 'en' ? 'Validation error' : 'Error de validación',
+        description: i18n.language === 'en' 
+          ? 'You must accept the terms and conditions to proceed' 
+          : 'Debes aceptar los términos y condiciones para continuar',
         variant: 'destructive',
       });
       return false;
@@ -370,6 +385,37 @@ export const TicketReserveModal = ({
               rows={3}
             />
           </div>
+
+          {/* Terms and Conditions */}
+          <div className="flex items-start space-x-2 pt-2">
+            <Checkbox
+              id="terms"
+              checked={termsAccepted}
+              onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+              className="mt-1"
+            />
+            <div className="flex-1 space-y-1">
+              <Label
+                htmlFor="terms"
+                className="text-sm font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {i18n.language === 'en' 
+                  ? 'I accept the ' 
+                  : 'Acepto los '}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setTermsModalOpen(true);
+                  }}
+                  className="text-primary underline hover:text-primary/80"
+                >
+                  {i18n.language === 'en' ? 'terms and conditions' : 'términos y condiciones'}
+                </button>
+                {i18n.language === 'en' ? ' *' : ' *'}
+              </Label>
+            </div>
+          </div>
         </div>
 
         <DialogFooter>
@@ -384,7 +430,7 @@ export const TicketReserveModal = ({
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || !termsAccepted}
             className="min-w-[120px]"
           >
             {loading ? (
@@ -401,6 +447,9 @@ export const TicketReserveModal = ({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Terms Modal */}
+      <TicketReserveTerms open={termsModalOpen} onOpenChange={setTermsModalOpen} />
     </Dialog>
   );
 };

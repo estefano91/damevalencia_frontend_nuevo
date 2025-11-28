@@ -23,9 +23,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { TicketReserveTerms } from '@/components/TicketReserveTerms';
 
 interface TicketAtDoorModalProps {
   ticketType: TicketTypeDetail;
@@ -57,6 +59,8 @@ export const TicketAtDoorModal = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
   // Número de invitados = número de tickets generados
   const [numberOfAttendees, setNumberOfAttendees] = useState(1);
   
@@ -81,6 +85,7 @@ export const TicketAtDoorModal = ({
         full_name: '',
         email: '',
       }]);
+      setTermsAccepted(false);
       setLoading(false);
     }
     prevOpenRef.current = open;
@@ -244,6 +249,18 @@ export const TicketAtDoorModal = ({
         return false;
       }
     }
+
+    if (!termsAccepted) {
+      toast({
+        title: i18n.language === 'en' ? 'Validation error' : 'Error de validación',
+        description: i18n.language === 'en' 
+          ? 'You must accept the terms and conditions to proceed' 
+          : 'Debes aceptar los términos y condiciones para continuar',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -646,6 +663,37 @@ export const TicketAtDoorModal = ({
               </div>
             </Card>
           ))}
+
+          {/* Terms and Conditions */}
+          <div className="flex items-start space-x-2 pt-2">
+            <Checkbox
+              id="terms"
+              checked={termsAccepted}
+              onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+              className="mt-1"
+            />
+            <div className="flex-1 space-y-1">
+              <Label
+                htmlFor="terms"
+                className="text-sm font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {i18n.language === 'en' 
+                  ? 'I accept the ' 
+                  : 'Acepto los '}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setTermsModalOpen(true);
+                  }}
+                  className="text-primary underline hover:text-primary/80"
+                >
+                  {i18n.language === 'en' ? 'terms and conditions' : 'términos y condiciones'}
+                </button>
+                {i18n.language === 'en' ? ' *' : ' *'}
+              </Label>
+            </div>
+          </div>
         </div>
 
         <DialogFooter>
@@ -660,7 +708,7 @@ export const TicketAtDoorModal = ({
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || !termsAccepted}
             className="min-w-[120px]"
           >
             {loading ? (
@@ -677,6 +725,9 @@ export const TicketAtDoorModal = ({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Terms Modal */}
+      <TicketReserveTerms open={termsModalOpen} onOpenChange={setTermsModalOpen} />
     </Dialog>
   );
 };
