@@ -25,7 +25,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Users } from 'lucide-react';
+import { Loader2, Users, User, Mail, Phone, CreditCard, MapPin, FileText, Euro, Ticket, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { TicketReserveTerms } from '@/components/TicketReserveTerms';
 
@@ -396,137 +396,151 @@ export const TicketAtDoorModal = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+        <DialogHeader className="pb-4 border-b">
+          <DialogTitle className="flex items-center gap-2 text-2xl">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+              <Users className="h-5 w-5" />
+            </div>
             {i18n.language === 'en' ? 'Register for Event' : 'Registrarse en el Evento'}
           </DialogTitle>
-          <DialogDescription>
-            {getLocalizedText(ticketType.title_es, ticketType.title_en)}
-            {ticketType.description_es && (
-              <span className="block mt-1 text-xs">
-                {getLocalizedText(ticketType.description_es, ticketType.description_en)}
-              </span>
-            )}
-            <span className="block mt-2 text-sm">
-              {i18n.language === 'en'
-                ? `Each attendee will receive one ticket`
-                : `Cada asistente recibirá una entrada`}
-            </span>
+          <DialogDescription className="pt-2">
+            <div className="space-y-1">
+              <p className="font-medium text-foreground">
+                {getLocalizedText(ticketType.title_es, ticketType.title_en)}
+              </p>
+              {ticketType.description_es && (
+                <p className="text-sm text-muted-foreground">
+                  {getLocalizedText(ticketType.description_es, ticketType.description_en)}
+                </p>
+              )}
+            </div>
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Ticket Info */}
-          <div className="p-4 bg-muted rounded-lg">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">{i18n.language === 'en' ? 'Price per ticket' : 'Precio por entrada'}</span>
-              <span className="text-lg font-bold">{formatPrice(ticketType.base_price || '0')}</span>
-            </div>
-            {ticketType.available_stock !== null && (
-              <div className="flex justify-between items-center mt-2 text-sm text-muted-foreground">
-                <span>{i18n.language === 'en' ? 'Available' : 'Disponibles'}</span>
-                <span>{ticketType.available_stock}</span>
+          {/* Ticket Info - Mejorado */}
+          <div className="p-5 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-xl border border-purple-200 dark:border-purple-800">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Euro className="h-4 w-4" />
+                  <span>{i18n.language === 'en' ? 'Price per ticket' : 'Precio por entrada'}</span>
+                </div>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  {formatPrice(ticketType.base_price || '0')}
+                </p>
               </div>
-            )}
+              {ticketType.available_stock !== null && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Ticket className="h-4 w-4" />
+                    <span>{i18n.language === 'en' ? 'Available' : 'Disponibles'}</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">
+                    {ticketType.available_stock}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Number of Attendees */}
-          <div className="space-y-2">
-            <Label htmlFor="attendees">
+          {/* Number of Attendees - Mejorado */}
+          <div className="space-y-3">
+            <Label htmlFor="attendees" className="text-base font-semibold">
               {i18n.language === 'en' ? 'Number of Attendees' : 'Número de Asistentes'} *
             </Label>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => handleAttendeesChange(Math.max(1, numberOfAttendees - 1))}
-                disabled={numberOfAttendees <= 1}
-              >
-                -
-              </Button>
-              <Input
-                id="attendees"
-                type="number"
-                min="1"
-                max={ticketType.available_stock !== null && ticketType.available_stock !== undefined 
-                  ? ticketType.available_stock 
-                  : undefined}
-                value={numberOfAttendees.toString()}
-                onChange={(e) => {
-                  const rawValue = e.target.value;
-                  console.log('✏️ Input onChange - valor raw:', rawValue, 'número actual:', numberOfAttendees);
-                  
-                  // Permitir que el usuario borre y escriba libremente
-                  if (rawValue === '' || rawValue === '0') {
-                    // No hacer nada si está vacío o es 0
-                    console.log('⚠️ Input: Valor vacío o 0, ignorando');
-                    return;
+            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleAttendeesChange(Math.max(1, numberOfAttendees - 1))}
+                  disabled={numberOfAttendees <= 1}
+                  className="h-10 w-10"
+                >
+                  -
+                </Button>
+                <Input
+                  id="attendees"
+                  type="number"
+                  min="1"
+                  max={ticketType.available_stock !== null && ticketType.available_stock !== undefined 
+                    ? ticketType.available_stock 
+                    : undefined}
+                  value={numberOfAttendees.toString()}
+                  onChange={(e) => {
+                    const rawValue = e.target.value;
+                    if (rawValue === '' || rawValue === '0') {
+                      return;
+                    }
+                    const value = parseInt(rawValue, 10);
+                    if (isNaN(value) || value < 1) {
+                      return;
+                    }
+                    handleAttendeesChange(value);
+                  }}
+                  onBlur={(e) => {
+                    const rawValue = e.target.value;
+                    if (rawValue === '' || rawValue === '0') {
+                      handleAttendeesChange(1);
+                    }
+                  }}
+                  className="w-24 text-center text-lg font-semibold"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    const newNumber = numberOfAttendees + 1;
+                    handleAttendeesChange(newNumber);
+                  }}
+                  disabled={
+                    ticketType.available_stock !== null && 
+                    ticketType.available_stock !== undefined && 
+                    numberOfAttendees >= ticketType.available_stock
                   }
-                  
-                  const value = parseInt(rawValue, 10);
-                  console.log('✏️ Input onChange - valor parseado:', value);
-                  
-                  // Validar que sea un número válido y mayor a 0
-                  if (isNaN(value) || value < 1) {
-                    console.log('⚠️ Input: Valor inválido, ignorando');
-                    return;
-                  }
-                  
-                  // Llamar a handleAttendeesChange para validar y actualizar
-                  console.log('✅ Input: Llamando handleAttendeesChange con valor:', value);
-                  handleAttendeesChange(value);
-                }}
-                onBlur={(e) => {
-                  // Si el valor está vacío al perder el foco, restaurar a 1
-                  const rawValue = e.target.value;
-                  if (rawValue === '' || rawValue === '0') {
-                    console.log('🔄 Input onBlur: Valor vacío, restaurando a 1');
-                    handleAttendeesChange(1);
-                  }
-                }}
-                className="w-20 text-center"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  console.log('➕ Botón + clickeado, número actual:', numberOfAttendees);
-                  const newNumber = numberOfAttendees + 1;
-                  handleAttendeesChange(newNumber);
-                }}
-                disabled={
-                  ticketType.available_stock !== null && 
-                  ticketType.available_stock !== undefined && 
-                  numberOfAttendees >= ticketType.available_stock
-                }
-              >
-                +
-              </Button>
-              <span className="ml-auto font-bold">
-                {i18n.language === 'en' ? 'Total' : 'Total'}: {totalPrice}€
-                <span className="text-sm font-normal text-muted-foreground ml-2">
-                  ({numberOfTickets} {i18n.language === 'en' ? 'ticket(s)' : 'entrada(s)'})
+                  className="h-10 w-10"
+                >
+                  +
+                </Button>
+              </div>
+              <div className="ml-auto text-right">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {i18n.language === 'en' ? 'Total' : 'Total'}:
+                  </span>
+                  <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {totalPrice}€
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {numberOfTickets} {i18n.language === 'en' ? 'ticket(s)' : 'entrada(s)'}
                 </span>
-              </span>
+              </div>
             </div>
           </div>
 
-          {/* Forms for each attendee */}
+          {/* Forms for each attendee - Mejorado */}
           {attendees.map((attendee, attendeeIndex) => (
-            <Card key={attendeeIndex} className="p-4">
-              <h3 className="font-semibold mb-4">
-                {i18n.language === 'en' 
-                  ? `Attendee ${attendeeIndex + 1} / Ticket ${attendeeIndex + 1}`
-                  : `Asistente ${attendeeIndex + 1} / Entrada ${attendeeIndex + 1}`}
-              </h3>
+            <Card key={attendeeIndex} className="p-6 border-2 hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b">
+                <div className="p-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                  <User className="h-4 w-4" />
+                </div>
+                <h3 className="font-bold text-lg">
+                  {i18n.language === 'en' 
+                    ? `Attendee ${attendeeIndex + 1} / Ticket ${attendeeIndex + 1}`
+                    : `Asistente ${attendeeIndex + 1} / Entrada ${attendeeIndex + 1}`}
+                </h3>
+              </div>
               
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Full Name */}
-                <div className="space-y-2">
-                  <Label htmlFor={`fullName-${attendeeIndex}`}>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor={`fullName-${attendeeIndex}`} className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-purple-600" />
                     {i18n.language === 'en' ? 'Full Name' : 'Nombre Completo'} *
                   </Label>
                   <Input
@@ -534,13 +548,15 @@ export const TicketAtDoorModal = ({
                     value={attendee.full_name}
                     onChange={(e) => updateAttendee(attendeeIndex, 'full_name', e.target.value)}
                     placeholder={i18n.language === 'en' ? 'Enter full name' : 'Ingresa nombre completo'}
+                    className="h-11"
                     required
                   />
                 </div>
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <Label htmlFor={`email-${attendeeIndex}`}>
+                  <Label htmlFor={`email-${attendeeIndex}`} className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-purple-600" />
                     {i18n.language === 'en' ? 'Email' : 'Correo Electrónico'} *
                   </Label>
                   <Input
@@ -549,6 +565,7 @@ export const TicketAtDoorModal = ({
                     value={attendee.email}
                     onChange={(e) => updateAttendee(attendeeIndex, 'email', e.target.value)}
                     placeholder={i18n.language === 'en' ? 'your.email@example.com' : 'tu.email@ejemplo.com'}
+                    className="h-11"
                     required
                   />
                 </div>
@@ -556,7 +573,8 @@ export const TicketAtDoorModal = ({
                 {/* Phone (conditional) */}
                 {ticketType.require_phone && (
                   <div className="space-y-2">
-                    <Label htmlFor={`phone-${attendeeIndex}`}>
+                    <Label htmlFor={`phone-${attendeeIndex}`} className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-purple-600" />
                       {i18n.language === 'en' ? 'Phone' : 'Teléfono'} *
                     </Label>
                     <Input
@@ -565,6 +583,7 @@ export const TicketAtDoorModal = ({
                       value={attendee.phone || ''}
                       onChange={(e) => updateAttendee(attendeeIndex, 'phone', e.target.value)}
                       placeholder={i18n.language === 'en' ? '+34 612 345 678' : '+34 612 345 678'}
+                      className="h-11"
                       required
                     />
                   </div>
@@ -573,14 +592,15 @@ export const TicketAtDoorModal = ({
                 {/* Gender (conditional) */}
                 {ticketType.require_gender && (
                   <div className="space-y-2">
-                    <Label htmlFor={`gender-${attendeeIndex}`}>
+                    <Label htmlFor={`gender-${attendeeIndex}`} className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-purple-600" />
                       {i18n.language === 'en' ? 'Gender' : 'Género'} *
                     </Label>
                     <Select 
                       value={attendee.gender || ''} 
                       onValueChange={(value) => updateAttendee(attendeeIndex, 'gender', value as 'M' | 'F' | 'O')}
                     >
-                      <SelectTrigger id={`gender-${attendeeIndex}`}>
+                      <SelectTrigger id={`gender-${attendeeIndex}`} className="h-11">
                         <SelectValue placeholder={i18n.language === 'en' ? 'Select gender' : 'Selecciona género'} />
                       </SelectTrigger>
                       <SelectContent>
@@ -595,14 +615,15 @@ export const TicketAtDoorModal = ({
                 {/* Role (conditional) */}
                 {ticketType.require_role && (
                   <div className="space-y-2">
-                    <Label htmlFor={`role-${attendeeIndex}`}>
+                    <Label htmlFor={`role-${attendeeIndex}`} className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-purple-600" />
                       {i18n.language === 'en' ? 'Role' : 'Rol'} *
                     </Label>
                     <Select 
                       value={attendee.role || ''} 
                       onValueChange={(value) => updateAttendee(attendeeIndex, 'role', value as 'LEADER' | 'FOLLOWER')}
                     >
-                      <SelectTrigger id={`role-${attendeeIndex}`}>
+                      <SelectTrigger id={`role-${attendeeIndex}`} className="h-11">
                         <SelectValue placeholder={i18n.language === 'en' ? 'Select role' : 'Selecciona rol'} />
                       </SelectTrigger>
                       <SelectContent>
@@ -616,7 +637,8 @@ export const TicketAtDoorModal = ({
                 {/* ID Document (conditional) */}
                 {ticketType.require_document && (
                   <div className="space-y-2">
-                    <Label htmlFor={`idDocument-${attendeeIndex}`}>
+                    <Label htmlFor={`idDocument-${attendeeIndex}`} className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-purple-600" />
                       {i18n.language === 'en' ? 'ID Document' : 'Documento de Identidad'} *
                     </Label>
                     <Input
@@ -624,6 +646,7 @@ export const TicketAtDoorModal = ({
                       value={attendee.id_document || ''}
                       onChange={(e) => updateAttendee(attendeeIndex, 'id_document', e.target.value)}
                       placeholder={i18n.language === 'en' ? 'Enter ID document' : 'Ingresa documento de identidad'}
+                      className="h-11"
                       required
                     />
                   </div>
@@ -632,7 +655,8 @@ export const TicketAtDoorModal = ({
                 {/* Country (conditional) */}
                 {ticketType.require_country && (
                   <div className="space-y-2">
-                    <Label htmlFor={`country-${attendeeIndex}`}>
+                    <Label htmlFor={`country-${attendeeIndex}`} className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-purple-600" />
                       {i18n.language === 'en' ? 'Country' : 'País'} *
                     </Label>
                     <Input
@@ -640,6 +664,7 @@ export const TicketAtDoorModal = ({
                       value={attendee.country || ''}
                       onChange={(e) => updateAttendee(attendeeIndex, 'country', e.target.value)}
                       placeholder={i18n.language === 'en' ? 'Enter country' : 'Ingresa país'}
+                      className="h-11"
                       required
                     />
                   </div>
@@ -648,7 +673,8 @@ export const TicketAtDoorModal = ({
                 {/* City (conditional) */}
                 {ticketType.require_city && (
                   <div className="space-y-2">
-                    <Label htmlFor={`city-${attendeeIndex}`}>
+                    <Label htmlFor={`city-${attendeeIndex}`} className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-purple-600" />
                       {i18n.language === 'en' ? 'City' : 'Ciudad'} *
                     </Label>
                     <Input
@@ -656,6 +682,7 @@ export const TicketAtDoorModal = ({
                       value={attendee.city || ''}
                       onChange={(e) => updateAttendee(attendeeIndex, 'city', e.target.value)}
                       placeholder={i18n.language === 'en' ? 'Enter city' : 'Ingresa ciudad'}
+                      className="h-11"
                       required
                     />
                   </div>
@@ -664,44 +691,54 @@ export const TicketAtDoorModal = ({
             </Card>
           ))}
 
-          {/* Terms and Conditions */}
-          <div className="flex items-start space-x-2 pt-2">
-            <Checkbox
-              id="terms"
-              checked={termsAccepted}
-              onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-              className="mt-1"
-            />
-            <div className="flex-1 space-y-1">
-              <Label
-                htmlFor="terms"
-                className="text-sm font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {i18n.language === 'en' 
-                  ? 'I accept the ' 
-                  : 'Acepto los '}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setTermsModalOpen(true);
-                  }}
-                  className="text-primary underline hover:text-primary/80"
+          {/* Terms and Conditions - Mejorado */}
+          <div className="p-4 bg-muted/50 rounded-lg border-2 border-dashed border-muted-foreground/20">
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="terms"
+                checked={termsAccepted}
+                onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                className="mt-1 h-5 w-5"
+              />
+              <div className="flex-1 space-y-1">
+                <Label
+                  htmlFor="terms"
+                  className="text-sm font-normal cursor-pointer leading-relaxed peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  {i18n.language === 'en' ? 'terms and conditions' : 'términos y condiciones'}
-                </button>
-                {i18n.language === 'en' ? ' *' : ' *'}
-              </Label>
+                  {i18n.language === 'en' 
+                    ? 'I accept the ' 
+                    : 'Acepto los '}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setTermsModalOpen(true);
+                    }}
+                    className="text-primary underline hover:text-primary/80 font-medium"
+                  >
+                    {i18n.language === 'en' ? 'terms and conditions' : 'términos y condiciones'}
+                  </button>
+                  {i18n.language === 'en' ? ' *' : ' *'}
+                </Label>
+                {!termsAccepted && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {i18n.language === 'en' 
+                      ? 'You must accept the terms to continue' 
+                      : 'Debes aceptar los términos para continuar'}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-3 pt-4 border-t">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={loading}
+            className="min-w-[100px]"
           >
             {i18n.language === 'en' ? 'Cancel' : 'Cancelar'}
           </Button>
@@ -709,7 +746,7 @@ export const TicketAtDoorModal = ({
             type="button"
             onClick={handleSubmit}
             disabled={loading || !termsAccepted}
-            className="min-w-[120px]"
+            className="min-w-[160px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all"
           >
             {loading ? (
               <>
@@ -718,8 +755,10 @@ export const TicketAtDoorModal = ({
               </>
             ) : (
               <>
-                <Users className="mr-2 h-4 w-4" />
-                {i18n.language === 'en' ? `Register ${numberOfTickets}` : `Registrar ${numberOfTickets}`}
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                {i18n.language === 'en' 
+                  ? `Register ${numberOfTickets} ${numberOfTickets === 1 ? 'Attendee' : 'Attendees'}` 
+                  : `Registrar ${numberOfTickets} ${numberOfTickets === 1 ? 'Asistente' : 'Asistentes'}`}
               </>
             )}
           </Button>
