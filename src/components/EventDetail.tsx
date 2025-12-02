@@ -2,13 +2,20 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { dameEventsAPI } from "@/integrations/dame-api/events";
-import type { DameEventDetail } from "@/integrations/dame-api/events";
+import type { DameEventDetail, EventOrganizer } from "@/integrations/dame-api/events";
 import type { Ticket, TicketTypeDetail } from "@/types/tickets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   ArrowLeft, 
   Calendar, 
@@ -62,6 +69,7 @@ const EventDetail = () => {
   const [userTicketCount, setUserTicketCount] = useState(0);
   const [atDoorTicketType, setAtDoorTicketType] = useState<TicketTypeDetail | null>(null);
   const [atDoorModalOpen, setAtDoorModalOpen] = useState(false);
+  const [selectedOrganizer, setSelectedOrganizer] = useState<EventOrganizer | null>(null);
   const pendingAttendKey = 'dame_pending_attend';
   const locale = i18n.language === 'en' ? 'en-US' : 'es-ES';
   
@@ -281,6 +289,22 @@ const EventDetail = () => {
     return `${parseFloat(amount).toFixed(2)}€`;
   };
 
+  // Formatea el rango de precios usando from_price y to_price
+  const formatPriceRange = (event: DameEventDetail): string => {
+    const fromPrice = parseFloat(event.from_price || event.price_amount || '0');
+    const toPrice = event.to_price ? parseFloat(event.to_price) : null;
+    
+    if (fromPrice === 0 && (!toPrice || toPrice === 0)) {
+      return i18n.language === 'en' ? 'FREE' : 'GRATIS';
+    }
+    
+    if (toPrice && toPrice > fromPrice) {
+      return `${fromPrice.toFixed(2)}€ - ${toPrice.toFixed(2)}€`;
+    }
+    
+    return `${fromPrice.toFixed(2)}€`;
+  };
+
   const formatDuration = (minutes?: number): string => {
     if (!minutes) return 'Duración no especificada';
     const hours = Math.floor(minutes / 60);
@@ -475,13 +499,18 @@ const EventDetail = () => {
   };
 
   const getReserveLink = () => {
-    // Si hay tickets configurados en el sistema, no usar tickets_webview
+    // Prioridad 1: booking_link (link externo para reservas)
+    if (event?.booking_link) {
+      return event.booking_link;
+    }
+    
+    // Prioridad 2: Si hay tickets configurados en el sistema, no usar tickets_webview
     // Si no hay tickets, usar tickets_webview si existe
     if (hasTickets === false && event?.tickets_webview) {
       return event.tickets_webview;
     }
     
-    // Primero intentar usar el contacto de WhatsApp del evento
+    // Prioridad 3: Usar el contacto de WhatsApp del evento
     const whatsappLink = event?.whatsapp_contact;
     if (whatsappLink) {
       const sanitized = whatsappLink.replace(/\+/, '').replace(/\s/g, '');
@@ -491,7 +520,7 @@ const EventDetail = () => {
       return `https://wa.me/${sanitized}?text=${encodeURIComponent(message)}`;
     }
     
-    // Si no hay contacto de WhatsApp del evento, usar el grupo de WhatsApp del primer organizador
+    // Prioridad 4: Usar el grupo de WhatsApp del primer organizador
     if (event?.organizers && event.organizers.length > 0 && event.organizers[0]?.whatsapp_group) {
       return event.organizers[0].whatsapp_group;
     }
@@ -500,29 +529,45 @@ const EventDetail = () => {
   };
 
   const handleReserveClick = (reserveLink?: string) => {
-    // En ambos casos (con tickets o sin tickets) se requiere login
-    if (!user) {
-      try {
-        sessionStorage.setItem(
-          pendingAttendKey,
-          JSON.stringify({
-            slug,
-            timestamp: Date.now(),
-          })
-        );
-      } catch (error) {
-        console.error('⚠️ EventDetail: No se pudo guardar la acción pendiente', error);
+    // Si NO hay tickets, redirigir directamente al link de reserva (sin login requerido)
+    if (hasTickets === false) {
+      if (reserveLink) {
+        console.log('🔗 EventDetail: Abriendo link de reserva');
+        window.open(reserveLink, "_blank");
+      } else {
+        toast({
+          title: i18n.language === 'en' ? 'Reservation unavailable' : 'Reserva no disponible',
+          description: i18n.language === 'en'
+            ? 'Reservation link is not configured for this event.'
+            : 'El enlace de reserva no está configurado para este evento.',
+          variant: 'destructive',
+        });
       }
-      
-      const returnPath = `${location.pathname}${location.search}`;
-      navigate('/auth', {
-        state: { from: returnPath },
-      });
       return;
     }
 
-    // Si hay tickets configurados, abrir el modal de registro en puerta
+    // Si hay tickets configurados, se requiere login
     if (hasTickets === true) {
+      if (!user) {
+        try {
+          sessionStorage.setItem(
+            pendingAttendKey,
+            JSON.stringify({
+              slug,
+              timestamp: Date.now(),
+            })
+          );
+        } catch (error) {
+          console.error('⚠️ EventDetail: No se pudo guardar la acción pendiente', error);
+        }
+        
+        const returnPath = `${location.pathname}${location.search}`;
+        navigate('/auth', {
+          state: { from: returnPath },
+        });
+        return;
+      }
+
       if (!atDoorTicketType) {
         toast({
           title: i18n.language === 'en' ? 'Registration unavailable' : 'Registro no disponible',
@@ -551,23 +596,6 @@ const EventDetail = () => {
       }
 
       setAtDoorModalOpen(true);
-      return;
-    }
-
-    // Si NO hay tickets, abrir WhatsApp (después de login)
-    if (hasTickets === false) {
-      if (reserveLink) {
-        console.log('📱 EventDetail: Abriendo WhatsApp');
-        window.open(reserveLink, "_blank");
-      } else {
-        toast({
-          title: i18n.language === 'en' ? 'Contact unavailable' : 'Contacto no disponible',
-          description: i18n.language === 'en'
-            ? 'WhatsApp contact is not configured for this event.'
-            : 'El contacto de WhatsApp no está configurado para este evento.',
-          variant: 'destructive',
-        });
-      }
       return;
     }
   };
@@ -751,109 +779,19 @@ const EventDetail = () => {
                   <p className="text-muted-foreground">
                     {i18n.language === 'en' ? 'Hosted by' : 'Organizado por'}{' '}
                     <span className="font-medium text-foreground">
-                      {event.organizers.map(org => org.name).join(', ')}
+                      {event.organizers.map((org, idx) => (
+                        <span key={org.id}>
+                          {idx > 0 && ', '}
+                          <button
+                            onClick={() => setSelectedOrganizer(org)}
+                            className="hover:text-primary transition-colors underline decoration-dotted underline-offset-2 cursor-pointer"
+                          >
+                            {org.name}
+                          </button>
+                        </span>
+                      ))}
                     </span>
                   </p>
-                  {/* Redes sociales solo del primer organizador */}
-                  {event.organizers[0] && (() => {
-                    const firstOrganizer = event.organizers[0];
-                    const socialLinks = [];
-                    
-                    if (firstOrganizer.instagram) {
-                      socialLinks.push(
-                        <a
-                          key={`${firstOrganizer.id}-instagram`}
-                          href={firstOrganizer.instagram}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:opacity-80 transition-opacity"
-                          aria-label={`Instagram de ${firstOrganizer.name}`}
-                        >
-                          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <defs>
-                              <linearGradient id={`instagram-gradient-${firstOrganizer.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#f09433" />
-                                <stop offset="25%" stopColor="#e6683c" />
-                                <stop offset="50%" stopColor="#dc2743" />
-                                <stop offset="75%" stopColor="#cc2366" />
-                                <stop offset="100%" stopColor="#bc1888" />
-                              </linearGradient>
-                            </defs>
-                            <path
-                              d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
-                              fill={`url(#instagram-gradient-${firstOrganizer.id})`}
-                            />
-                          </svg>
-                        </a>
-                      );
-                    }
-                    if (firstOrganizer.facebook) {
-                      socialLinks.push(
-                        <a
-                          key={`${firstOrganizer.id}-facebook`}
-                          href={firstOrganizer.facebook}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-blue-600 transition-colors"
-                          aria-label={`Facebook de ${firstOrganizer.name}`}
-                        >
-                          <Facebook className="h-5 w-5" />
-                        </a>
-                      );
-                    }
-                    if (firstOrganizer.youtube) {
-                      socialLinks.push(
-                        <a
-                          key={`${firstOrganizer.id}-youtube`}
-                          href={firstOrganizer.youtube}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-red-600 transition-colors"
-                          aria-label={`YouTube de ${firstOrganizer.name}`}
-                        >
-                          <Youtube className="h-5 w-5" />
-                        </a>
-                      );
-                    }
-                    if (firstOrganizer.website) {
-                      socialLinks.push(
-                        <a
-                          key={`${firstOrganizer.id}-website`}
-                          href={firstOrganizer.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                          aria-label={`Website de ${firstOrganizer.name}`}
-                        >
-                          <Globe className="h-5 w-5" />
-                        </a>
-                      );
-                    }
-                    if (firstOrganizer.whatsapp_group) {
-                      socialLinks.push(
-                        <a
-                          key={`${firstOrganizer.id}-whatsapp-group`}
-                          href={firstOrganizer.whatsapp_group}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-green-600 transition-colors"
-                          aria-label={`Grupo de WhatsApp de ${firstOrganizer.name}`}
-                        >
-                          <img 
-                            src={WhatsAppIcon} 
-                            alt="Grupo de WhatsApp" 
-                            className="h-5 w-5"
-                          />
-                        </a>
-                      );
-                    }
-                    
-                    return socialLinks.length > 0 ? (
-                      <div className="flex items-center gap-2 ml-1">
-                        {socialLinks}
-                      </div>
-                    ) : null;
-                  })()}
                 </div>
               )}
               {!event.is_recurring_weekly && (
@@ -877,19 +815,34 @@ const EventDetail = () => {
                 </div>
               )}
               {event.is_recurring_weekly && (() => {
-                const nextOccurrences = generateNextWeeklyOccurrences(event, 8);
-                if (nextOccurrences.length === 0) return null;
+                // Usar upcoming_dates de la API si está disponible, sino generar manualmente
+                const datesToShow = event.upcoming_dates && event.upcoming_dates.length > 0
+                  ? event.upcoming_dates.map(d => new Date(d.date))
+                  : generateNextWeeklyOccurrences(event, 8);
+                
+                if (datesToShow.length === 0) return null;
                 return (
                   <div className="mb-4 -mx-1">
                     <div className="flex gap-2 overflow-x-auto pb-2 px-1">
-                      {nextOccurrences.map((occ, idx) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1 rounded-full border text-xs font-medium text-gray-800 whitespace-nowrap bg-white border-gray-200 shadow-sm"
-                        >
-                          {formatCompactDate(occ)}
-                        </span>
-                      ))}
+                      {datesToShow.map((occ, idx) => {
+                        const originalDate = event.upcoming_dates?.[idx];
+                        const isCancelled = originalDate?.is_cancelled;
+                        return (
+                          <span
+                            key={idx}
+                            className={`px-3 py-1 rounded-full border text-xs font-medium whitespace-nowrap shadow-sm ${
+                              isCancelled 
+                                ? 'bg-red-50 border-red-200 text-red-600 line-through' 
+                                : 'bg-white border-gray-200 text-gray-800'
+                            }`}
+                          >
+                            {formatCompactDate(occ)}
+                            {isCancelled && (
+                              <span className="ml-1 text-red-600">✕</span>
+                            )}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -991,6 +944,238 @@ const EventDetail = () => {
               </Card>
             )}
 
+            {/* Organizers Card - Desktop: visible after gallery */}
+            {event.organizers && event.organizers.length > 0 && (
+              <div className="hidden lg:block">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      {i18n.language === 'en' 
+                        ? event.organizers.length > 1 ? 'Organizers' : 'Organizer'
+                        : event.organizers.length > 1 ? 'Organizadores' : 'Organizador'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {event.organizers.map((organizer, orgIndex) => {
+                      const logoUrl = (organizer as any).logo_url || 
+                                     (organizer as any).image_url || 
+                                     (organizer as any).avatar_url || 
+                                     (organizer as any).logo ||
+                                     (organizer as any).image;
+                      
+                      return (
+                        <div 
+                          key={organizer.id} 
+                          className={`${orgIndex > 0 ? 'pt-6 border-t' : ''}`}
+                        >
+                          {/* Organizer Header */}
+                          <div className="flex items-start gap-4 mb-4">
+                            {logoUrl ? (
+                              <img 
+                                src={logoUrl} 
+                                alt={organizer.name}
+                                className="h-16 w-16 rounded-full object-cover border-2 border-border flex-shrink-0"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  const parent = e.currentTarget.parentElement;
+                                  if (parent) {
+                                    const icon = document.createElement('div');
+                                    icon.className = 'h-16 w-16 rounded-full bg-muted flex items-center justify-center border-2 border-border flex-shrink-0';
+                                    icon.innerHTML = '<svg class="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>';
+                                    parent.insertBefore(icon, e.currentTarget);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center border-2 border-border flex-shrink-0">
+                                <User className="h-8 w-8 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <h3 className="text-lg font-semibold mb-1">{organizer.name}</h3>
+                              {organizer.email && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Mail className="h-4 w-4" />
+                                  <a 
+                                    href={`mailto:${organizer.email}`}
+                                    className="hover:text-primary transition-colors"
+                                  >
+                                    {organizer.email}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Social Media Links */}
+                          {(organizer.instagram || organizer.facebook || organizer.youtube || organizer.website || organizer.whatsapp_group) && (
+                            <div className="mb-4">
+                              <h4 className="text-sm font-medium mb-2 text-muted-foreground">
+                                {i18n.language === 'en' ? 'Social Media' : 'Redes Sociales'}
+                              </h4>
+                              <div className="flex flex-wrap items-center gap-3">
+                                {organizer.instagram && (
+                                  <a
+                                    href={organizer.instagram}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:opacity-80 transition-opacity"
+                                    aria-label={`Instagram de ${organizer.name}`}
+                                  >
+                                    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <defs>
+                                        <linearGradient id={`instagram-gradient-card-main-${organizer.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                          <stop offset="0%" stopColor="#f09433" />
+                                          <stop offset="25%" stopColor="#e6683c" />
+                                          <stop offset="50%" stopColor="#dc2743" />
+                                          <stop offset="75%" stopColor="#cc2366" />
+                                          <stop offset="100%" stopColor="#bc1888" />
+                                        </linearGradient>
+                                      </defs>
+                                      <path
+                                        d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
+                                        fill={`url(#instagram-gradient-card-main-${organizer.id})`}
+                                      />
+                                    </svg>
+                                  </a>
+                                )}
+                                {organizer.facebook && (
+                                  <a
+                                    href={organizer.facebook}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-blue-600 transition-colors"
+                                    aria-label={`Facebook de ${organizer.name}`}
+                                  >
+                                    <Facebook className="h-6 w-6" />
+                                  </a>
+                                )}
+                                {organizer.youtube && (
+                                  <a
+                                    href={organizer.youtube}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-red-600 transition-colors"
+                                    aria-label={`YouTube de ${organizer.name}`}
+                                  >
+                                    <Youtube className="h-6 w-6" />
+                                  </a>
+                                )}
+                                {organizer.website && (
+                                  <a
+                                    href={organizer.website}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                    aria-label={`Website de ${organizer.name}`}
+                                  >
+                                    <Globe className="h-6 w-6" />
+                                  </a>
+                                )}
+                                {organizer.whatsapp_group && (
+                                  <a
+                                    href={organizer.whatsapp_group}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-green-600 transition-colors"
+                                    aria-label={`Grupo de WhatsApp de ${organizer.name}`}
+                                  >
+                                    <img 
+                                      src={WhatsAppIcon} 
+                                      alt="Grupo de WhatsApp" 
+                                      className="h-6 w-6"
+                                    />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Groups and Communities */}
+                          {organizer.groups && organizer.groups.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-medium mb-2 text-muted-foreground">
+                                {i18n.language === 'en' ? 'Groups & Communities' : 'Grupos y Comunidades'}
+                              </h4>
+                              <div className="space-y-2">
+                                {organizer.groups.map((group) => {
+                                  const getGroupIcon = () => {
+                                    switch (group.type) {
+                                      case 'whatsapp':
+                                        return (
+                                          <img 
+                                            src={WhatsAppIcon} 
+                                            alt="WhatsApp" 
+                                            className="h-5 w-5"
+                                          />
+                                        );
+                                      case 'telegram':
+                                        return (
+                                          <svg className="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                                          </svg>
+                                        );
+                                      case 'facebook':
+                                        return <Facebook className="h-5 w-5 text-blue-600" />;
+                                      case 'discord':
+                                        return (
+                                          <svg className="h-5 w-5 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                                          </svg>
+                                        );
+                                      default:
+                                        return <Globe className="h-5 w-5" />;
+                                    }
+                                  };
+
+                                  const getGroupTypeLabel = () => {
+                                    switch (group.type) {
+                                      case 'whatsapp':
+                                        return 'WhatsApp';
+                                      case 'telegram':
+                                        return 'Telegram';
+                                      case 'facebook':
+                                        return 'Facebook';
+                                      case 'discord':
+                                        return 'Discord';
+                                      default:
+                                        return group.type;
+                                    }
+                                  };
+
+                                  return (
+                                    <a
+                                      key={group.id}
+                                      href={group.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
+                                    >
+                                      <div className="flex-shrink-0">
+                                        {getGroupIcon()}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-sm group-hover:text-primary transition-colors">
+                                          {group.name}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {getGroupTypeLabel()}
+                                        </p>
+                                      </div>
+                                    </a>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             {/* Program Schedule */}
             {event.programs && event.programs.length > 0 && (
               <Card>
@@ -1078,18 +1263,34 @@ const EventDetail = () => {
                               : `Todos los ${getWeekdayName(event.recurrence_weekday)}`}
                           </p>
                           {(() => {
-                            const nextOccurrences = generateNextWeeklyOccurrences(event, 4);
-                            return nextOccurrences.length > 0 ? (
+                            // Usar upcoming_dates de la API si está disponible, sino generar manualmente
+                            const datesToShow = event.upcoming_dates && event.upcoming_dates.length > 0
+                              ? event.upcoming_dates.map(d => new Date(d.date))
+                              : generateNextWeeklyOccurrences(event, 4);
+                            
+                            return datesToShow.length > 0 ? (
                               <div className="mt-2 space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground/80">
                                   {i18n.language === 'en' ? 'Next dates:' : 'Próximas fechas:'}
                                 </p>
                                 <div className="space-y-0.5">
-                                  {nextOccurrences.map((occ, idx) => (
-                                    <p key={idx} className="text-xs text-muted-foreground">
-                                      • {formatCompactDate(occ)}
-                                    </p>
-                                  ))}
+                                  {datesToShow.map((occ, idx) => {
+                                    const originalDate = event.upcoming_dates?.[idx];
+                                    const isCancelled = originalDate?.is_cancelled;
+                                    return (
+                                      <p 
+                                        key={idx} 
+                                        className={`text-xs ${isCancelled ? 'text-red-500 line-through' : 'text-muted-foreground'}`}
+                                      >
+                                        • {formatCompactDate(occ)}
+                                        {isCancelled && (
+                                          <span className="ml-2 text-red-600 font-medium">
+                                            ({i18n.language === 'en' ? 'Cancelled' : 'Cancelado'})
+                                          </span>
+                                        )}
+                                      </p>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             ) : null;
@@ -1290,6 +1491,237 @@ const EventDetail = () => {
                 </CardContent>
               </Card>
 
+              {/* Organizers Card - Mobile: visible in sidebar */}
+              {event.organizers && event.organizers.length > 0 && (
+                <div className="lg:hidden">
+                  <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      {i18n.language === 'en' 
+                        ? event.organizers.length > 1 ? 'Organizers' : 'Organizer'
+                        : event.organizers.length > 1 ? 'Organizadores' : 'Organizador'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {event.organizers.map((organizer, orgIndex) => {
+                      const logoUrl = (organizer as any).logo_url || 
+                                     (organizer as any).image_url || 
+                                     (organizer as any).avatar_url || 
+                                     (organizer as any).logo ||
+                                     (organizer as any).image;
+                      
+                      return (
+                        <div 
+                          key={organizer.id} 
+                          className={`${orgIndex > 0 ? 'pt-6 border-t' : ''}`}
+                        >
+                          {/* Organizer Header */}
+                          <div className="flex items-start gap-4 mb-4">
+                            {logoUrl ? (
+                              <img 
+                                src={logoUrl} 
+                                alt={organizer.name}
+                                className="h-16 w-16 rounded-full object-cover border-2 border-border flex-shrink-0"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  const parent = e.currentTarget.parentElement;
+                                  if (parent) {
+                                    const icon = document.createElement('div');
+                                    icon.className = 'h-16 w-16 rounded-full bg-muted flex items-center justify-center border-2 border-border flex-shrink-0';
+                                    icon.innerHTML = '<svg class="h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>';
+                                    parent.insertBefore(icon, e.currentTarget);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center border-2 border-border flex-shrink-0">
+                                <User className="h-8 w-8 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <h3 className="text-lg font-semibold mb-1">{organizer.name}</h3>
+                              {organizer.email && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Mail className="h-4 w-4" />
+                                  <a 
+                                    href={`mailto:${organizer.email}`}
+                                    className="hover:text-primary transition-colors"
+                                  >
+                                    {organizer.email}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Social Media Links */}
+                          {(organizer.instagram || organizer.facebook || organizer.youtube || organizer.website || organizer.whatsapp_group) && (
+                            <div className="mb-4">
+                              <h4 className="text-sm font-medium mb-2 text-muted-foreground">
+                                {i18n.language === 'en' ? 'Social Media' : 'Redes Sociales'}
+                              </h4>
+                              <div className="flex flex-wrap items-center gap-3">
+                                {organizer.instagram && (
+                                  <a
+                                    href={organizer.instagram}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:opacity-80 transition-opacity"
+                                    aria-label={`Instagram de ${organizer.name}`}
+                                  >
+                                    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <defs>
+                                        <linearGradient id={`instagram-gradient-card-${organizer.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                          <stop offset="0%" stopColor="#f09433" />
+                                          <stop offset="25%" stopColor="#e6683c" />
+                                          <stop offset="50%" stopColor="#dc2743" />
+                                          <stop offset="75%" stopColor="#cc2366" />
+                                          <stop offset="100%" stopColor="#bc1888" />
+                                        </linearGradient>
+                                      </defs>
+                                      <path
+                                        d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
+                                        fill={`url(#instagram-gradient-card-${organizer.id})`}
+                                      />
+                                    </svg>
+                                  </a>
+                                )}
+                                {organizer.facebook && (
+                                  <a
+                                    href={organizer.facebook}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-blue-600 transition-colors"
+                                    aria-label={`Facebook de ${organizer.name}`}
+                                  >
+                                    <Facebook className="h-6 w-6" />
+                                  </a>
+                                )}
+                                {organizer.youtube && (
+                                  <a
+                                    href={organizer.youtube}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-red-600 transition-colors"
+                                    aria-label={`YouTube de ${organizer.name}`}
+                                  >
+                                    <Youtube className="h-6 w-6" />
+                                  </a>
+                                )}
+                                {organizer.website && (
+                                  <a
+                                    href={organizer.website}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                    aria-label={`Website de ${organizer.name}`}
+                                  >
+                                    <Globe className="h-6 w-6" />
+                                  </a>
+                                )}
+                                {organizer.whatsapp_group && (
+                                  <a
+                                    href={organizer.whatsapp_group}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-green-600 transition-colors"
+                                    aria-label={`Grupo de WhatsApp de ${organizer.name}`}
+                                  >
+                                    <img 
+                                      src={WhatsAppIcon} 
+                                      alt="Grupo de WhatsApp" 
+                                      className="h-6 w-6"
+                                    />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Groups and Communities */}
+                          {organizer.groups && organizer.groups.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-medium mb-2 text-muted-foreground">
+                                {i18n.language === 'en' ? 'Groups & Communities' : 'Grupos y Comunidades'}
+                              </h4>
+                              <div className="space-y-2">
+                                {organizer.groups.map((group) => {
+                                  const getGroupIcon = () => {
+                                    switch (group.type) {
+                                      case 'whatsapp':
+                                        return (
+                                          <img 
+                                            src={WhatsAppIcon} 
+                                            alt="WhatsApp" 
+                                            className="h-5 w-5"
+                                          />
+                                        );
+                                      case 'telegram':
+                                        return (
+                                          <svg className="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                                          </svg>
+                                        );
+                                      case 'facebook':
+                                        return <Facebook className="h-5 w-5 text-blue-600" />;
+                                      case 'discord':
+                                        return (
+                                          <svg className="h-5 w-5 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                                          </svg>
+                                        );
+                                      default:
+                                        return <Globe className="h-5 w-5" />;
+                                    }
+                                  };
+
+                                  const getGroupTypeLabel = () => {
+                                    switch (group.type) {
+                                      case 'whatsapp':
+                                        return 'WhatsApp';
+                                      case 'telegram':
+                                        return 'Telegram';
+                                      case 'facebook':
+                                        return 'Facebook';
+                                      case 'discord':
+                                        return 'Discord';
+                                      default:
+                                        return group.type;
+                                    }
+                                  };
+
+                                  return (
+                                    <a
+                                      key={group.id}
+                                      href={group.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
+                                    >
+                                      <div className="flex-shrink-0">
+                                        {getGroupIcon()}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-sm group-hover:text-primary transition-colors">
+                                          {group.name}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {getGroupTypeLabel()}
+                                        </p>
+                                      </div>
+                                    </a>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+                </div>
+              )}
 
               {/* FAQs */}
               {event.faqs && event.faqs.length > 0 && (
@@ -1349,10 +1781,33 @@ const EventDetail = () => {
             priceDisplay = i18n.language === 'en' ? 'Tickets' : 'Entradas';
           }
         } else {
-          // Si no hay tickets, mostrar el precio del evento
-          priceDisplay = parseFloat(event?.price_amount || '0') === 0
-            ? (i18n.language === 'en' ? 'FREE' : 'GRATIS')
-            : formatPrice(event?.price_amount, event?.price_currency);
+          // Si no hay tickets, mostrar solo el precio "Desde" (from_price)
+          if (event && event.from_price) {
+            const fromPrice = parseFloat(event.from_price);
+            if (isNaN(fromPrice) || fromPrice === 0) {
+              priceDisplay = i18n.language === 'en' ? 'FREE' : 'GRATIS';
+            } else {
+              const fromPriceText = `${fromPrice.toFixed(2)}€`;
+              // Si from_price == to_price, no mostrar "Desde"
+              if (event.to_price) {
+                const toPrice = parseFloat(event.to_price);
+                if (!isNaN(toPrice) && toPrice === fromPrice) {
+                  priceDisplay = fromPriceText;
+                } else {
+                  priceDisplay = i18n.language === 'en' 
+                    ? `From ${fromPriceText}` 
+                    : `Desde ${fromPriceText}`;
+                }
+              } else {
+                priceDisplay = i18n.language === 'en' 
+                  ? `From ${fromPriceText}` 
+                  : `Desde ${fromPriceText}`;
+              }
+            }
+          } else {
+            // Si no hay from_price, mostrar "Consultar precio"
+            priceDisplay = i18n.language === 'en' ? 'Contact for price' : 'Consultar precio';
+          }
         }
 
         const handleShare = async () => {
@@ -1412,7 +1867,7 @@ const EventDetail = () => {
           ? (i18n.language === 'en' ? 'Checking availability...' : 'Verificando disponibilidad...')
           : hasTickets === true
           ? (i18n.language === 'en' ? 'Reserve Tickets' : 'Reservar Tickets')
-          : (i18n.language === 'en' ? 'Attend Event' : 'Asistir al Evento');
+          : (i18n.language === 'en' ? 'Reserve' : 'Reservar');
 
         return (
           <div className="fixed bottom-4 left-0 right-0 px-4 z-40">
@@ -1482,6 +1937,234 @@ const EventDetail = () => {
         onSuccess={handleReserveSuccess}
       />
     )}
+
+    {/* Organizer Modal */}
+    <Dialog open={!!selectedOrganizer} onOpenChange={(open) => !open && setSelectedOrganizer(null)}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        {selectedOrganizer && (() => {
+          const organizer = selectedOrganizer;
+          const logoUrl = (organizer as any).logo_url || 
+                         (organizer as any).image_url || 
+                         (organizer as any).avatar_url || 
+                         (organizer as any).logo ||
+                         (organizer as any).image;
+
+          return (
+            <>
+              <DialogHeader>
+                <DialogTitle>{organizer.name}</DialogTitle>
+                <DialogDescription>
+                  {i18n.language === 'en' ? 'Organizer information' : 'Información del organizador'}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                {/* Organizer Header */}
+                <div className="flex items-start gap-4">
+                  {logoUrl ? (
+                    <img 
+                      src={logoUrl} 
+                      alt={organizer.name}
+                      className="h-20 w-20 rounded-full object-cover border-2 border-border flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          const icon = document.createElement('div');
+                          icon.className = 'h-20 w-20 rounded-full bg-muted flex items-center justify-center border-2 border-border flex-shrink-0';
+                          icon.innerHTML = '<svg class="h-10 w-10 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>';
+                          parent.insertBefore(icon, e.currentTarget);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center border-2 border-border flex-shrink-0">
+                      <User className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold mb-2">{organizer.name}</h3>
+                    {organizer.email && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Mail className="h-4 w-4" />
+                        <a 
+                          href={`mailto:${organizer.email}`}
+                          className="hover:text-primary transition-colors"
+                        >
+                          {organizer.email}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Social Media Links */}
+                {(organizer.instagram || organizer.facebook || organizer.youtube || organizer.website || organizer.whatsapp_group) && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-3 text-muted-foreground">
+                      {i18n.language === 'en' ? 'Social Media' : 'Redes Sociales'}
+                    </h4>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {organizer.instagram && (
+                        <a
+                          href={organizer.instagram}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:opacity-80 transition-opacity"
+                          aria-label={`Instagram de ${organizer.name}`}
+                        >
+                          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                              <linearGradient id={`instagram-gradient-modal-${organizer.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#f09433" />
+                                <stop offset="25%" stopColor="#e6683c" />
+                                <stop offset="50%" stopColor="#dc2743" />
+                                <stop offset="75%" stopColor="#cc2366" />
+                                <stop offset="100%" stopColor="#bc1888" />
+                              </linearGradient>
+                            </defs>
+                            <path
+                              d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
+                              fill={`url(#instagram-gradient-modal-${organizer.id})`}
+                            />
+                          </svg>
+                        </a>
+                      )}
+                      {organizer.facebook && (
+                        <a
+                          href={organizer.facebook}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-blue-600 transition-colors"
+                          aria-label={`Facebook de ${organizer.name}`}
+                        >
+                          <Facebook className="h-6 w-6" />
+                        </a>
+                      )}
+                      {organizer.youtube && (
+                        <a
+                          href={organizer.youtube}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-red-600 transition-colors"
+                          aria-label={`YouTube de ${organizer.name}`}
+                        >
+                          <Youtube className="h-6 w-6" />
+                        </a>
+                      )}
+                      {organizer.website && (
+                        <a
+                          href={organizer.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={`Website de ${organizer.name}`}
+                        >
+                          <Globe className="h-6 w-6" />
+                        </a>
+                      )}
+                      {organizer.whatsapp_group && (
+                        <a
+                          href={organizer.whatsapp_group}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-green-600 transition-colors"
+                          aria-label={`Grupo de WhatsApp de ${organizer.name}`}
+                        >
+                          <img 
+                            src={WhatsAppIcon} 
+                            alt="Grupo de WhatsApp" 
+                            className="h-6 w-6"
+                          />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Groups and Communities */}
+                {organizer.groups && organizer.groups.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-3 text-muted-foreground">
+                      {i18n.language === 'en' ? 'Groups & Communities' : 'Grupos y Comunidades'}
+                    </h4>
+                    <div className="space-y-2">
+                      {organizer.groups.map((group) => {
+                        const getGroupIcon = () => {
+                          switch (group.type) {
+                            case 'whatsapp':
+                              return (
+                                <img 
+                                  src={WhatsAppIcon} 
+                                  alt="WhatsApp" 
+                                  className="h-5 w-5"
+                                />
+                              );
+                            case 'telegram':
+                              return (
+                                <svg className="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                                </svg>
+                              );
+                            case 'facebook':
+                              return <Facebook className="h-5 w-5 text-blue-600" />;
+                            case 'discord':
+                              return (
+                                <svg className="h-5 w-5 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                                </svg>
+                              );
+                            default:
+                              return <Globe className="h-5 w-5" />;
+                          }
+                        };
+
+                        const getGroupTypeLabel = () => {
+                          switch (group.type) {
+                            case 'whatsapp':
+                              return 'WhatsApp';
+                            case 'telegram':
+                              return 'Telegram';
+                            case 'facebook':
+                              return 'Facebook';
+                            case 'discord':
+                              return 'Discord';
+                            default:
+                              return group.type;
+                          }
+                        };
+
+                        return (
+                          <a
+                            key={group.id}
+                            href={group.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors group"
+                          >
+                            <div className="flex-shrink-0">
+                              {getGroupIcon()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm group-hover:text-primary transition-colors">
+                                {group.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {getGroupTypeLabel()}
+                              </p>
+                            </div>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
+      </DialogContent>
+    </Dialog>
     </>
   );
 };

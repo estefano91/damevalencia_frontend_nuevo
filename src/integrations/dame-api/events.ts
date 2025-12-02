@@ -63,6 +63,13 @@ export interface EventTag {
   slug: string;
 }
 
+export interface OrganizerGroup {
+  id: number;
+  name: string;
+  type: 'whatsapp' | 'telegram' | 'facebook' | 'discord' | 'other';
+  link: string;
+}
+
 export interface EventOrganizer {
   id: number;
   name: string;
@@ -73,6 +80,7 @@ export interface EventOrganizer {
   youtube?: string;
   website?: string;
   whatsapp_group?: string;
+  groups?: OrganizerGroup[];
 }
 
 export interface EventPhoto {
@@ -116,13 +124,16 @@ export interface DameEventDetail {
   description_en?: string;
   slug: string;
   is_featured: boolean;
-  price_amount?: string;
-  price_currency: string;
+  price_amount?: string; // Legacy - usar from_price/to_price
+  price_currency: string; // Legacy
+  from_price: string; // Precio mínimo (obligatorio)
+  to_price?: string; // Precio máximo (opcional)
   duration_minutes?: number;
   capacity?: number;
   whatsapp_contact?: string;
   main_photo_url?: string; // Imagen principal del evento
   tickets_webview?: string;
+  booking_link?: string; // Link externo para reservas (opcional)
   start_datetime: string;
   end_datetime?: string;
   is_recurring_weekly: boolean;
@@ -130,6 +141,7 @@ export interface DameEventDetail {
   recurrence_end_time?: string; // Formato HH:mm:ss (ej: "00:30:00")
   recurrence_weekday?: number; // 0 = lunes, 1 = martes, ..., 6 = domingo
   recurring_info?: RecurringEventInfo; // Info adicional para eventos recurrentes (legacy)
+  upcoming_dates?: EventDate[]; // Próximas 6 fechas del evento (máximo), incluyendo ocurrencias con estado de cancelación
   place: EventPlace;
   categories: EventCategory[];
   tags: EventTag[];
@@ -152,6 +164,7 @@ export interface EventDate {
   available_spots: number;
   is_full: boolean;
   registration_deadline?: string;
+  is_cancelled?: boolean; // Indica si la fecha está cancelada
 }
 
 // Información extendida para eventos recurrentes
