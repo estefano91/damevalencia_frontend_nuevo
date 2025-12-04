@@ -25,8 +25,9 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Users, User, Mail, Phone, CreditCard, MapPin, FileText, Euro, Ticket, CheckCircle2 } from 'lucide-react';
+import { Loader2, Users, User, Mail, Phone, CreditCard, MapPin, FileText, Euro, Ticket, CheckCircle2, Info } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TicketReserveTerms } from '@/components/TicketReserveTerms';
 
 interface TicketAtDoorModalProps {
@@ -442,6 +443,15 @@ export const TicketAtDoorModal = ({
                 </div>
               )}
             </div>
+            {/* Aviso de pago en puerta - Justo debajo del precio */}
+            <Alert className="mt-4 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-blue-900 dark:text-blue-100 font-medium">
+                {i18n.language === 'en' 
+                  ? '💳 Payment will be made at the door when you arrive at the event. No online payment required.'
+                  : '💳 El pago se realizará en puerta al llegar al evento. No se requiere pago online.'}
+              </AlertDescription>
+            </Alert>
           </div>
 
           {/* Number of Attendees - Mejorado */}
@@ -505,19 +515,6 @@ export const TicketAtDoorModal = ({
                 >
                   +
                 </Button>
-              </div>
-              <div className="ml-auto text-right">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    {i18n.language === 'en' ? 'Total' : 'Total'}:
-                  </span>
-                  <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    {totalPrice}€
-                  </span>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {numberOfTickets} {i18n.language === 'en' ? 'ticket(s)' : 'entrada(s)'}
-                </span>
               </div>
             </div>
           </div>
