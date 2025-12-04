@@ -256,7 +256,7 @@ export const TicketPurchaseModal = ({
               <span className="font-medium">{i18n.language === 'en' ? 'Price per ticket' : 'Precio por entrada'}</span>
               <span className="text-lg font-bold">{formatPrice(ticketType.current_price)}</span>
             </div>
-            {ticketType.available_stock !== null && (
+            {ticketType.available_stock !== null && ticketType.available_stock <= 10 && (
               <div className="flex justify-between items-center mt-2 text-sm text-muted-foreground">
                 <span>{i18n.language === 'en' ? 'Available' : 'Disponibles'}</span>
                 <span>{ticketType.available_stock}</span>

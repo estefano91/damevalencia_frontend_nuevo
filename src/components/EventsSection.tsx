@@ -350,8 +350,6 @@ const CategorySection = ({
   userTicketsLoaded,
 }: CategorySectionProps) => {
   const { category, events } = categoryData;
-  const displayEvents = events.slice(0, maxEvents);
-  const hasMoreEvents = events.length > maxEvents;
   const { i18n } = useTranslation();
   
   const getLocalizedText = (textEs?: string, textEn?: string, generic?: string): string => {
@@ -380,7 +378,7 @@ const CategorySection = ({
 
       {/* Grid de eventos */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {displayEvents.map((event, index) => (
+        {events.map((event, index) => (
           <EventCard 
             key={`${event.event_slug}-${index}`} 
             event={event} 
@@ -390,17 +388,6 @@ const CategorySection = ({
           />
         ))}
       </div>
-
-      {/* Mostrar más eventos */}
-      {hasMoreEvents && (
-        <div className="text-center">
-          <Button variant="outline" size="sm">
-            {i18n.language === 'en'
-              ? `See ${events.length - maxEvents} more event${events.length - maxEvents !== 1 ? 's' : ''} from ${getLocalizedText(category.name_es, category.name_en)}`
-              : `Ver ${events.length - maxEvents} evento${events.length - maxEvents !== 1 ? 's' : ''} más de ${getLocalizedText(category.name_es, category.name_en)}`}
-          </Button>
-        </div>
-      )}
     </div>
   );
 };

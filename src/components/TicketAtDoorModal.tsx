@@ -420,7 +420,7 @@ export const TicketAtDoorModal = ({
         <div className="space-y-6 py-4">
           {/* Ticket Info - Mejorado */}
           <div className="p-5 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 rounded-xl border border-purple-200 dark:border-purple-800">
-            <div className="grid grid-cols-2 gap-4">
+            <div className={`grid gap-4 ${ticketType.available_stock !== null && ticketType.available_stock <= 10 ? 'grid-cols-2' : 'grid-cols-1'}`}>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Euro className="h-4 w-4" />
@@ -430,7 +430,7 @@ export const TicketAtDoorModal = ({
                   {formatPrice(ticketType.base_price || '0')}
                 </p>
               </div>
-              {ticketType.available_stock !== null && (
+              {ticketType.available_stock !== null && ticketType.available_stock <= 10 && (
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Ticket className="h-4 w-4" />
