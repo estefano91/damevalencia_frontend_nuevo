@@ -129,7 +129,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
         case 'all': return 'Always';
         case 'today': return 'Today';
         case 'tomorrow': return 'Tomorrow';
-        case 'weekend': return 'This Weekend';
+        case 'weekend': return 'Weekend';
         default: return 'Always';
       }
     } else {
@@ -137,7 +137,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
         case 'all': return 'Siempre';
         case 'today': return 'Hoy';
         case 'tomorrow': return 'Mañana';
-        case 'weekend': return 'Fin de Semana';
+        case 'weekend': return 'FinDeSemana';
         default: return 'Siempre';
       }
     }
@@ -496,7 +496,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
                     value="weekend" 
                     className="cursor-pointer text-base py-3 pl-3 pr-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium [&>span:first-child]:hidden !pl-3 text-foreground"
                   >
-                    {i18n.language === 'en' ? 'This Weekend' : 'Fin de Semana'}
+                    {i18n.language === 'en' ? 'Weekend' : 'FinDeSemana'}
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -505,7 +505,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
             {!loading && (
               <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-700 rounded-full shadow-sm flex-shrink-0">
                 <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-purple-600 dark:text-purple-400 hidden xs:block" />
-                <span className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 whitespace-nowrap">
+                <span className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 whitespace-nowrap" style={{ fontSize: '11px' }}>
                   {(() => {
                     const totalEvents = filteredEventsByCategory.reduce((sum, category) => sum + category.events.length, 0);
                     if (i18n.language === 'en') {
