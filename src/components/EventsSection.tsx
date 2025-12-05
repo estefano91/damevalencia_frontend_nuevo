@@ -411,34 +411,46 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
         </div>
       )}
 
-      {/* Dropdown de filtros por fecha - Moderno y user-friendly */}
+      {/* Dropdown de filtros por fecha - Moderno, user-friendly y compatible con dark mode */}
       <div className="w-full max-w-full overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
               {i18n.language === 'en' ? 'WHEN?' : '¿CUÁNDO?'}
             </h3>
           </div>
           <Select value={dateFilter} onValueChange={(value: 'all' | 'today' | 'tomorrow' | 'weekend') => setDateFilter(value)}>
-            <SelectTrigger className="w-full sm:w-[200px] h-11 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 hover:from-purple-100 hover:to-pink-100 hover:border-purple-300 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <Calendar className="h-4 w-4 text-purple-600 flex-shrink-0" />
-                <SelectValue className="truncate text-base">
+            <SelectTrigger className="w-full sm:w-[220px] h-11 bg-background border-2 border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:ring-offset-2 dark:focus:ring-offset-background transition-all duration-200 shadow-md hover:shadow-lg font-medium text-foreground">
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                <SelectValue className="truncate text-base font-medium">
                   {getFilterLabel(dateFilter)}
                 </SelectValue>
               </div>
             </SelectTrigger>
-            <SelectContent className="bg-white border-2 border-purple-200 shadow-xl">
-              <SelectItem value="all" className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 focus:bg-gradient-to-r focus:from-purple-50 focus:to-pink-50 text-base py-2.5">
+            <SelectContent className="bg-popover border-2 border-border shadow-xl min-w-[220px]">
+              <SelectItem 
+                value="all" 
+                className="cursor-pointer text-base py-3 px-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium"
+              >
                 {i18n.language === 'en' ? 'Always' : 'Siempre'}
               </SelectItem>
-              <SelectItem value="today" className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 focus:bg-gradient-to-r focus:from-purple-50 focus:to-pink-50 text-base py-2.5">
+              <SelectItem 
+                value="today" 
+                className="cursor-pointer text-base py-3 px-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium"
+              >
                 {i18n.language === 'en' ? 'Today' : 'Hoy'}
               </SelectItem>
-              <SelectItem value="tomorrow" className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 focus:bg-gradient-to-r focus:from-purple-50 focus:to-pink-50 text-base py-2.5">
+              <SelectItem 
+                value="tomorrow" 
+                className="cursor-pointer text-base py-3 px-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium"
+              >
                 {i18n.language === 'en' ? 'Tomorrow' : 'Mañana'}
               </SelectItem>
-              <SelectItem value="weekend" className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 focus:bg-gradient-to-r focus:from-purple-50 focus:to-pink-50 text-base py-2.5">
+              <SelectItem 
+                value="weekend" 
+                className="cursor-pointer text-base py-3 px-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium"
+              >
                 {i18n.language === 'en' ? 'This Weekend' : 'Fin de Semana'}
               </SelectItem>
             </SelectContent>
