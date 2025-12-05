@@ -546,6 +546,7 @@ export const TicketAtDoorModal = ({
                     onChange={(e) => updateAttendee(attendeeIndex, 'full_name', e.target.value)}
                     placeholder={i18n.language === 'en' ? 'Enter full name' : 'Ingresa nombre completo'}
                     className="h-11"
+                    autoComplete="off"
                     required
                   />
                 </div>
@@ -563,6 +564,7 @@ export const TicketAtDoorModal = ({
                     onChange={(e) => updateAttendee(attendeeIndex, 'email', e.target.value)}
                     placeholder={i18n.language === 'en' ? 'your.email@example.com' : 'tu.email@ejemplo.com'}
                     className="h-11"
+                    autoComplete="off"
                     required
                   />
                 </div>
@@ -581,6 +583,7 @@ export const TicketAtDoorModal = ({
                       onChange={(e) => updateAttendee(attendeeIndex, 'phone', e.target.value)}
                       placeholder={i18n.language === 'en' ? '+34 612 345 678' : '+34 612 345 678'}
                       className="h-11"
+                      autoComplete="off"
                       required
                     />
                   </div>
@@ -638,14 +641,15 @@ export const TicketAtDoorModal = ({
                       <CreditCard className="h-4 w-4 text-purple-600" />
                       {i18n.language === 'en' ? 'ID Document' : 'Documento de Identidad'} *
                     </Label>
-                    <Input
-                      id={`idDocument-${attendeeIndex}`}
-                      value={attendee.id_document || ''}
-                      onChange={(e) => updateAttendee(attendeeIndex, 'id_document', e.target.value)}
-                      placeholder={i18n.language === 'en' ? 'Enter ID document' : 'Ingresa documento de identidad'}
-                      className="h-11"
-                      required
-                    />
+                      <Input
+                        id={`idDocument-${attendeeIndex}`}
+                        value={attendee.id_document || ''}
+                        onChange={(e) => updateAttendee(attendeeIndex, 'id_document', e.target.value)}
+                        placeholder={i18n.language === 'en' ? 'Enter ID document' : 'Ingresa documento de identidad'}
+                        className="h-11"
+                        autoComplete="off"
+                        required
+                      />
                   </div>
                 )}
 

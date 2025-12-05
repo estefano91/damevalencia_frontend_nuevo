@@ -123,6 +123,7 @@ const Auth = () => {
               placeholder={t("auth.emailPlaceholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="off"
               required
             />
           </div>

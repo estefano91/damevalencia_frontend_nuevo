@@ -182,6 +182,7 @@ const Register = () => {
                 placeholder={i18n.language === 'en' ? 'your@email.com' : 'tu@email.com'}
                 value={email}
                 onChange={(e) => handleEmailChange(e.target.value)}
+                autoComplete="off"
                 required
                 className={errors.email ? "border-red-500" : ""}
                 disabled={loading}

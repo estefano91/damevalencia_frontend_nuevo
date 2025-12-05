@@ -251,6 +251,7 @@ export const TicketReserveModal = ({
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder={i18n.language === 'en' ? 'Enter your full name' : 'Ingresa tu nombre completo'}
+              autoComplete="off"
               required
             />
           </div>
@@ -266,6 +267,7 @@ export const TicketReserveModal = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={i18n.language === 'en' ? 'your.email@example.com' : 'tu.email@ejemplo.com'}
+              autoComplete="off"
               required
             />
           </div>
@@ -282,6 +284,7 @@ export const TicketReserveModal = ({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder={i18n.language === 'en' ? '+34 612 345 678' : '+34 612 345 678'}
+                autoComplete="off"
                 required
               />
             </div>
@@ -335,6 +338,7 @@ export const TicketReserveModal = ({
                 value={idDocument}
                 onChange={(e) => setIdDocument(e.target.value)}
                 placeholder={i18n.language === 'en' ? 'Enter ID document' : 'Ingresa documento de identidad'}
+                autoComplete="off"
                 required
               />
             </div>

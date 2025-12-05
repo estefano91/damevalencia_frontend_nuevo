@@ -212,6 +212,7 @@ const EditProfile = () => {
                     id="first_name"
                     value={formData.first_name}
                     onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                    autoComplete="off"
                     required
                   />
                 </div>
@@ -221,6 +222,7 @@ const EditProfile = () => {
                     id="last_name"
                     value={formData.last_name}
                     onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                    autoComplete="off"
                     required
                   />
                 </div>
