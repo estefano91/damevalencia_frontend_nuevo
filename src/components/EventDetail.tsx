@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { dameEventsAPI } from "@/integrations/dame-api/events";
 import type { DameEventDetail, EventOrganizer } from "@/integrations/dame-api/events";
-import type { Ticket, TicketTypeDetail } from "@/types/tickets";
+import type { Ticket as TicketType, TicketTypeDetail } from "@/types/tickets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,11 +38,15 @@ import {
   Facebook,
   Youtube,
   Globe,
+  Ticket as TicketIcon,
+  Euro,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import EventMap from "@/components/EventMap";
 import { TicketAtDoorModal } from "@/components/TicketAtDoorModal";
+import { TicketPurchaseModal } from "@/components/TicketPurchaseModal";
+import { TicketReserveModal } from "@/components/TicketReserveModal";
 import { dameTicketsAPI } from "@/integrations/dame-api/tickets";
 import googleMapsIcon from "@/assets/mapsgoogle.png";
 import wazeIcon from "@/assets/wazeicon.png";
@@ -68,8 +72,13 @@ const EventDetail = () => {
   const [shouldResumeAttend, setShouldResumeAttend] = useState(false);
   const [userTicketCount, setUserTicketCount] = useState(0);
   const [atDoorTicketType, setAtDoorTicketType] = useState<TicketTypeDetail | null>(null);
+  const [allTicketTypes, setAllTicketTypes] = useState<TicketTypeDetail[]>([]);
   const [atDoorModalOpen, setAtDoorModalOpen] = useState(false);
   const [selectedOrganizer, setSelectedOrganizer] = useState<EventOrganizer | null>(null);
+  const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
+  const [reserveModalOpen, setReserveModalOpen] = useState(false);
+  const [selectedTicketType, setSelectedTicketType] = useState<TicketTypeDetail | null>(null);
+  const [ticketsSelectionModalOpen, setTicketsSelectionModalOpen] = useState(false);
   const pendingAttendKey = 'dame_pending_attend';
   const locale = i18n.language === 'en' ? 'en-US' : 'es-ES';
   
@@ -130,14 +139,27 @@ const EventDetail = () => {
       const response = await dameTicketsAPI.getTicketTypes(event.id);
       if (response.success && response.data) {
         const tickets = response.data.results || [];
+        
+        // Guardar todos los tipos de tickets
+        setAllTicketTypes(tickets);
+        
+        // Buscar ticket EN_PUERTA para el modal específico
         const atDoorTicket = tickets.find((t) => t.ticket_type === 'EN_PUERTA') || null;
-
         setAtDoorTicketType(atDoorTicket);
 
-        if (atDoorTicket) {
-          const priceValue = parseFloat(
-            atDoorTicket.current_price || atDoorTicket.base_price || '0'
-          );
+        // Verificar si hay CUALQUIER tipo de ticket visible (ONLINE, RESERVA, EN_PUERTA)
+        const hasAnyVisibleTickets = tickets.length > 0;
+        
+        if (hasAnyVisibleTickets) {
+          // Calcular precio mínimo de todos los tickets disponibles
+          const prices = tickets
+            .filter(t => parseFloat(t.current_price || t.base_price || '0') > 0)
+            .map(t => parseFloat(t.current_price || t.base_price || '0'));
+          
+          let priceValue = 0;
+          if (prices.length > 0) {
+            priceValue = Math.min(...prices);
+          }
 
           setHasTickets(true);
           setMinTicketPrice(
@@ -179,7 +201,7 @@ const EventDetail = () => {
 
     let isMounted = true;
     let currentPage = 1;
-    const collectedTickets: Ticket[] = [];
+    const collectedTickets: TicketType[] = [];
 
     const fetchPage = async (page: number): Promise<boolean> => {
       const response = await dameTicketsAPI.getMyCurrentTickets(page);
@@ -546,7 +568,7 @@ const EventDetail = () => {
       return;
     }
 
-    // Si hay tickets configurados, se requiere login
+    // Si hay tickets configurados, mostrar modal de selección de entradas
     if (hasTickets === true) {
       if (!user) {
         try {
@@ -568,21 +590,25 @@ const EventDetail = () => {
         return;
       }
 
-      if (!atDoorTicketType) {
-        toast({
-          title: i18n.language === 'en' ? 'Registration unavailable' : 'Registro no disponible',
-          description: i18n.language === 'en'
-            ? 'At-door tickets are not available right now.'
-            : 'No hay entradas en puerta disponibles en este momento.',
-          variant: 'destructive',
-        });
-        return;
-      }
+      // Abrir modal de selección de entradas
+      setTicketsSelectionModalOpen(true);
+      return;
+    }
+  };
 
+  const handleTicketSelection = (ticketType: TicketTypeDetail) => {
+    setTicketsSelectionModalOpen(false);
+    setSelectedTicketType(ticketType);
+
+    if (ticketType.ticket_type === 'ONLINE' && ticketType.payment_gateway === 'STRIPE') {
+      setPurchaseModalOpen(true);
+    } else if (ticketType.ticket_type === 'RESERVA') {
+      setReserveModalOpen(true);
+    } else if (ticketType.ticket_type === 'EN_PUERTA') {
       const isSoldOut =
-        atDoorTicketType.available_stock !== null &&
-        atDoorTicketType.available_stock !== undefined &&
-        atDoorTicketType.available_stock <= 0;
+        ticketType.available_stock !== null &&
+        ticketType.available_stock !== undefined &&
+        ticketType.available_stock <= 0;
 
       if (isSoldOut) {
         toast({
@@ -596,9 +622,9 @@ const EventDetail = () => {
       }
 
       setAtDoorModalOpen(true);
-      return;
     }
   };
+
 
   useEffect(() => {
     if (!user) return;
@@ -624,11 +650,12 @@ const EventDetail = () => {
   useEffect(() => {
     if (!shouldResumeAttend) return;
     if (hasTickets === null) return;
+    if (allTicketTypes.length === 0) return; // Esperar a que se carguen los tickets
 
-    const reserveLink = getReserveLink();
-    handleReserveClick(reserveLink || undefined);
+    // Reanudar acción: abrir modal de selección de entradas
+    setTicketsSelectionModalOpen(true);
     setShouldResumeAttend(false);
-  }, [shouldResumeAttend, hasTickets, event]);
+  }, [shouldResumeAttend, hasTickets, allTicketTypes]);
 
   const handleReserveSuccess = () => {
     setAtDoorModalOpen(false);
@@ -905,6 +932,7 @@ const EventDetail = () => {
                 </CardContent>
               </Card>
             )}
+
 
             {/* Photo Gallery */}
             {event.photos && event.photos.length > 0 && (
@@ -1929,12 +1957,145 @@ const EventDetail = () => {
     )}
     </div>
     
-    {atDoorTicketType && (
+    {/* Modal de selección de entradas */}
+    <Dialog open={ticketsSelectionModalOpen} onOpenChange={setTicketsSelectionModalOpen}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <TicketIcon className="h-5 w-5" />
+            {i18n.language === 'en' ? 'Select Ticket' : 'Seleccionar Entrada'}
+          </DialogTitle>
+          <DialogDescription>
+            {i18n.language === 'en' 
+              ? 'Choose the type of ticket you want to purchase or reserve'
+              : 'Elige el tipo de entrada que deseas comprar o reservar'}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {allTicketTypes
+            .filter(t => t.is_on_sale && (t.available_stock === null || t.available_stock > 0))
+            .map((ticketType) => {
+              const isSoldOut = ticketType.available_stock !== null && ticketType.available_stock <= 0;
+              const price = parseFloat(ticketType.current_price || ticketType.base_price || '0');
+              const isFree = price === 0;
+
+              return (
+                <Card 
+                  key={ticketType.id}
+                  className={`cursor-pointer hover:shadow-lg transition-all ${
+                    isSoldOut ? 'opacity-50 cursor-not-allowed' : 'hover:border-primary'
+                  }`}
+                  onClick={() => !isSoldOut && handleTicketSelection(ticketType)}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold mb-2">
+                          {getLocalizedText(ticketType.title_es, ticketType.title_en)}
+                        </h3>
+                        {ticketType.description_es && (
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {getLocalizedText(ticketType.description_es, ticketType.description_en)}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Euro className="h-4 w-4 text-purple-600" />
+                            <span className="font-bold text-lg">
+                              {isFree 
+                                ? (i18n.language === 'en' ? 'Free' : 'Gratis')
+                                : formatPrice(ticketType.current_price || ticketType.base_price || '0')}
+                            </span>
+                          </div>
+                          {ticketType.available_stock !== null && ticketType.available_stock <= 10 && (
+                            <div className="flex items-center gap-2">
+                              <TicketIcon className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                {ticketType.available_stock} {i18n.language === 'en' ? 'available' : 'disponibles'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        {isSoldOut ? (
+                          <Badge variant="destructive">
+                            {i18n.language === 'en' ? 'Sold out' : 'Agotado'}
+                          </Badge>
+                        ) : (
+                          <Button variant="outline">
+                            {ticketType.ticket_type === 'ONLINE' 
+                              ? (i18n.language === 'en' ? 'Buy' : 'Comprar')
+                              : ticketType.ticket_type === 'RESERVA'
+                              ? (i18n.language === 'en' ? 'Reserve' : 'Reservar')
+                              : (i18n.language === 'en' ? 'Register' : 'Registrarse')}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          
+          {allTicketTypes.filter(t => t.is_on_sale && (t.available_stock === null || t.available_stock > 0)).length === 0 && (
+            <Alert>
+              <AlertDescription>
+                {i18n.language === 'en' 
+                  ? 'No tickets available at this time.'
+                  : 'No hay entradas disponibles en este momento.'}
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {atDoorTicketType && atDoorModalOpen && (
       <TicketAtDoorModal
         ticketType={atDoorTicketType}
         open={atDoorModalOpen}
         onOpenChange={setAtDoorModalOpen}
         onSuccess={handleReserveSuccess}
+      />
+    )}
+
+    {selectedTicketType && selectedTicketType.ticket_type === 'ONLINE' && (
+      <TicketPurchaseModal
+        ticketType={selectedTicketType}
+        open={purchaseModalOpen}
+        onOpenChange={(open) => {
+          setPurchaseModalOpen(open);
+          if (!open) {
+            setSelectedTicketType(null);
+          }
+        }}
+        onSuccess={() => {
+          // Recargar tickets del usuario después de comprar
+          setUserHasTicket(false);
+          setUserTicketCount(0);
+          setCheckingUserTicket(true);
+        }}
+      />
+    )}
+
+    {selectedTicketType && selectedTicketType.ticket_type === 'RESERVA' && (
+      <TicketReserveModal
+        ticketType={selectedTicketType}
+        open={reserveModalOpen}
+        onOpenChange={(open) => {
+          setReserveModalOpen(open);
+          if (!open) {
+            setSelectedTicketType(null);
+          }
+        }}
+        onSuccess={() => {
+          // Recargar tickets del usuario después de reservar
+          setUserHasTicket(false);
+          setUserTicketCount(0);
+          setCheckingUserTicket(true);
+        }}
       />
     )}
 

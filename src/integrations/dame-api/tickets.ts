@@ -14,6 +14,9 @@ import type {
   TicketDetailResponse,
   TicketStatusResponse,
   TicketHashLookupResponse,
+  StripeCheckoutRequest,
+  StripeCheckoutResponse,
+  PaymentStatusResponse,
 } from '@/types/tickets';
 
 const API_BASE_URL = import.meta.env.VITE_DAME_API_URL || 'https://organizaciondame.org/api';
@@ -266,6 +269,39 @@ export class DameTicketsAPI {
    */
   async getTicketByHash(hash: string): Promise<ApiResponse<TicketHashLookupResponse>> {
     return this.makePublicRequest<TicketHashLookupResponse>(`/tickets/hash/${hash}/`);
+  }
+
+  /**
+   * Iniciar checkout con Stripe
+   * Endpoint: POST /api/tickets/online/checkout/
+   * Requiere autenticación.
+   */
+  async initiateStripeCheckout(request: StripeCheckoutRequest): Promise<ApiResponse<StripeCheckoutResponse>> {
+    const body = JSON.stringify(request);
+    
+    console.log('🌐 API Request Details:');
+    console.log('  - Endpoint: /tickets/online/checkout/');
+    console.log('  - Method: POST');
+    console.log('  - Headers: Content-Type: application/json, Authorization: Bearer [token]');
+    
+    const response = await this.makeRequest<StripeCheckoutResponse>('/tickets/online/checkout/', {
+      method: 'POST',
+      body: body,
+    });
+    
+    console.log('🌐 API Response Details:');
+    console.log('  - Status: HTTP Response recibido');
+    console.log('  - Success:', response.success);
+    
+    return response;
+  }
+
+  /**
+   * Consultar estado del pago (endpoint público)
+   * Endpoint: GET /api/tickets/payment-status/{order_id}/
+   */
+  async getPaymentStatus(orderId: number): Promise<ApiResponse<PaymentStatusResponse>> {
+    return this.makePublicRequest<PaymentStatusResponse>(`/tickets/payment-status/${orderId}/`);
   }
 }
 

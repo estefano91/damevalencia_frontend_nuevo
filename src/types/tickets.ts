@@ -197,3 +197,53 @@ export interface TicketStatusResponse {
   };
   error?: string;
 }
+
+// Tipos para checkout de Stripe
+export interface StripeCheckoutRequest {
+  ticket_type_id: number;
+  quantity: number;
+  attendee_data: Array<{
+    full_name: string;
+    email: string;
+    phone?: string;
+    gender?: 'M' | 'F' | 'O';
+    role?: 'LEADER' | 'FOLLOWER';
+    id_document?: string;
+    country?: string;
+    city?: string;
+    additional_notes?: string;
+  }>;
+  referral_code?: string;
+}
+
+export interface StripeCheckoutResponse {
+  success: boolean;
+  order_id: number;
+  payment_intent_id: string;
+  client_secret: string;
+  publishable_key: string;
+  amount: string;
+  currency: string;
+  message?: string;
+  error?: string;
+}
+
+export interface PaymentStatusResponse {
+  success: boolean;
+  order: {
+    id: number;
+    status: 'PENDING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+    amount: string;
+    currency: string;
+    quantity: number;
+    ticket_type_title: string;
+    event_title: string;
+    customer_email: string;
+    stripe_payment_intent_id: string;
+    created_at: string;
+    updated_at: string;
+    tickets?: Ticket[];
+    error_message?: string;
+  };
+  error?: string;
+}

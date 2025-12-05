@@ -126,19 +126,27 @@ export const EventTickets = ({
             hasCallback: !!onOpenAtDoorModal
           });
 
+          // NO abrir el modal automáticamente
+          // Solo exponer la función si se necesita, pero NO ejecutarla
           if (atDoorTicket && onOpenAtDoorModal) {
-            console.log('✅ EventTickets: Ticket EN_PUERTA encontrado, exponiendo función');
+            console.log('✅ EventTickets: Ticket EN_PUERTA encontrado, exponiendo función (sin ejecutar)');
             const openModal = () => {
               console.log('🚀 EventTickets: Abriendo modal EN_PUERTA', atDoorTicket.id);
               setSelectedTicketType(atDoorTicket);
               setAtDoorModalOpen(true);
             };
+            // Solo pasar la función, NO ejecutarla
             onOpenAtDoorModal(openModal);
           } else {
             if (onOpenAtDoorModal) {
               console.log('⚠️ EventTickets: No se encontró ticket EN_PUERTA disponible');
             }
           }
+          
+          // Asegurarse de que el modal NO se abra automáticamente
+          // El modal solo se abrirá cuando el usuario haga clic en el botón
+          setAtDoorModalOpen(false);
+          setSelectedTicketType(null);
         } else {
           setError(response.error || 'Error al cargar tipos de entrada');
           if (onTicketsLoaded) {
@@ -536,7 +544,8 @@ export const EventTickets = ({
 
                     {isAvailable && !saleNotStarted && !saleEnded && (
                       <>
-                        {ticketType.ticket_type === 'ONLINE' && (
+                        {/* No mostrar botón "Comprar" para tickets ONLINE con Stripe - se maneja desde el botón flotante "Reservar" */}
+                        {ticketType.ticket_type === 'ONLINE' && ticketType.payment_gateway !== 'STRIPE' && (
                           <Button
                             onClick={() => handlePurchase(ticketType)}
                             className="w-full"
