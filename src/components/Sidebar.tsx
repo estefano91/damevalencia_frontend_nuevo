@@ -215,7 +215,7 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
 
   return (
     <div className="h-full bg-gradient-to-b from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900 flex flex-col">
-      {/* Flecha cuando está expandido - Barra completa */}
+      {/* Flecha cuando está expandido - Barra completa con título */}
       {sidebarOpen && setSidebarOpen && (
         <Button
           variant="ghost"
@@ -223,7 +223,8 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
           className="w-full h-12 px-4 py-2 text-purple-600 hover:text-purple-700 hover:bg-purple-100 dark:hover:bg-purple-800/50 border-b-2 border-purple-200 dark:border-purple-700 hover:border-purple-400 transition-all duration-200 rounded-none flex items-center justify-between group"
           title={i18n.language === 'en' ? 'Minimize menu' : 'Minimizar menú'}
         >
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-purple-600">
+          <span className="text-base font-bold text-gray-700 dark:text-gray-200 group-hover:text-purple-600 uppercase tracking-wide">
+            {i18n.language === 'en' ? 'Categories' : 'Categorías'}
           </span>
           <ChevronLeft className="h-5 w-5" />
         </Button>
@@ -250,7 +251,7 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
           {/* Filtros por Categoría */}
           <div className="flex-1 min-h-0 px-3 pt-4">
             <div className="h-full flex flex-col space-y-2">
-              {/* Botón "Todos los eventos" */}
+              {/* Botón "Todos" */}
               <div className="overflow-hidden rounded-xl">
                 <Button
                   variant="ghost"
@@ -266,15 +267,12 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
                   </div>
                   <div className="text-left flex-1">
                     <div className={`font-bold text-sm ${selectedCategoryId === null ? 'text-white' : 'text-purple-700 dark:text-purple-300'}`}>
-                      {i18n.language === 'en' ? 'All events' : 'Todos los eventos'}
+                      {i18n.language === 'en' ? 'All' : 'Todos'}
                     </div>
                     <div className={`text-xs mt-0.5 ${selectedCategoryId === null ? 'text-purple-100' : 'text-purple-600/80 dark:text-purple-400/80'}`}>
-                      {i18n.language === 'en' ? 'View all categories' : 'Ver todas las categorías'}
+                      {i18n.language === 'en' ? 'All categories' : 'Todas las categorías'}
                     </div>
                   </div>
-                  {selectedCategoryId === null && (
-                    <div className="ml-2 text-white text-lg font-bold">✓</div>
-                  )}
                 </Button>
               </div>
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCategoryFilter } from './AppLayout';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -59,6 +60,7 @@ interface EventsSectionProps {
 const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const { i18n } = useTranslation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [, forceUpdate] = useState({});
   const [eventsByCategory, setEventsByCategory] = useState<EventsByCategory[]>([]);
   const [filteredEventsByCategory, setFilteredEventsByCategory] = useState<EventsByCategory[]>([]);
@@ -67,7 +69,58 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const { selectedCategoryId, setAvailableCategories } = useCategoryFilter();
   const [userTickets, setUserTickets] = useState<UserAttendance[]>([]);
   const [userTicketsLoaded, setUserTicketsLoaded] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(0);
+  
+  // Inicializar dateFilter en 'all' por defecto
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend'>('all');
+
+  // Guardar el filtro cuando cambie
+  const handleDateFilterChange = (value: 'all' | 'today' | 'tomorrow' | 'weekend') => {
+    setDateFilter(value);
+  };
+
+  // Resetear el filtro a 'all' cuando cambie la categoría
+  useEffect(() => {
+    setDateFilter('all');
+  }, [selectedCategoryId]);
+
+  // Calcular el ancho del sidebar para posicionar la barra correctamente
+  useEffect(() => {
+    const calculateSidebarWidth = () => {
+      if (isMobile) {
+        // En móvil, el sidebar está cerrado por defecto (w-12 = 48px)
+        // Si está abierto, será w-64 (256px) pero con overlay, así que usamos 48px
+        setSidebarWidth(48);
+      } else {
+        // En desktop, buscar el sidebar en el DOM
+        const sidebar = document.querySelector('[class*="fixed"][class*="left-0"][class*="z-40"]') as HTMLElement;
+        if (sidebar) {
+          const width = sidebar.offsetWidth || sidebar.getBoundingClientRect().width;
+          setSidebarWidth(width);
+        } else {
+          // Por defecto en desktop: 256px si está abierto, 48px si está cerrado
+          // Asumimos que está abierto por defecto en desktop
+          setSidebarWidth(256);
+        }
+      }
+    };
+
+    calculateSidebarWidth();
+    
+    // Recalcular cuando cambie el tamaño de la ventana o cuando cambie selectedCategoryId
+    const handleResize = () => {
+      calculateSidebarWidth();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    // Recalcular periódicamente para detectar cambios en el sidebar
+    const interval = setInterval(calculateSidebarWidth, 300);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearInterval(interval);
+    };
+  }, [isMobile, selectedCategoryId]);
 
   // Helper para obtener el texto del filtro seleccionado
   const getFilterLabel = (filter: 'all' | 'today' | 'tomorrow' | 'weekend'): string => {
@@ -396,67 +449,80 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header solo en "Todos los eventos" */}
-      {selectedCategoryId === null && (
-        <div className="text-center">
-          <h2 className="text-3xl font-bold mb-4 dame-text-gradient">
-            {i18n.language === 'en' ? 'DAME Valencia Events' : 'Eventos de DAME Valencia'}
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            {i18n.language === 'en'
-              ? 'Discover our upcoming community activities. Art, music, dance, wellness and much more await you in Valencia.'
-              : 'Descubre las próximas actividades organizadas por nuestra comunidad. Arte, música, baile, bienestar y mucho más te esperan en Valencia.'}
-          </p>
-        </div>
-      )}
-
-      {/* Dropdown de filtros por fecha - Moderno, user-friendly y compatible con dark mode */}
-      <div className="w-full max-w-full overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
-              {i18n.language === 'en' ? 'WHEN?' : '¿CUÁNDO?'}
-            </h3>
-          </div>
-          <Select value={dateFilter} onValueChange={(value: 'all' | 'today' | 'tomorrow' | 'weekend') => setDateFilter(value)}>
-            <SelectTrigger className="w-full sm:w-[220px] h-11 bg-background border-2 border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:ring-offset-2 dark:focus:ring-offset-background transition-all duration-200 shadow-md hover:shadow-lg font-medium text-foreground">
-              <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
-                <SelectValue className="truncate text-base font-medium">
-                  {getFilterLabel(dateFilter)}
-                </SelectValue>
+    <>
+      {/* Barra fija superior con dropdown de filtros */}
+      <div 
+        className="fixed top-20 sm:top-24 md:top-28 z-30 bg-card border-b shadow-sm transition-all duration-300"
+        style={{
+          left: isMobile ? '48px' : `${sidebarWidth}px`,
+          right: '0'
+        }}
+      >
+        <div className="container mx-auto px-2 sm:px-4">
+          <div className="flex items-center justify-center flex-wrap sm:flex-nowrap gap-2 sm:gap-4 md:gap-6 h-auto sm:h-14 py-2 sm:py-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <span className="text-sm sm:text-base md:text-lg font-semibold text-foreground whitespace-nowrap">
+                {i18n.language === 'en' ? 'When:' : 'Cuando:'}
+              </span>
+              <Select value={dateFilter} onValueChange={handleDateFilterChange}>
+                <SelectTrigger className="w-[140px] xs:w-[160px] sm:w-[180px] md:w-[220px] h-9 sm:h-10 bg-background border-2 border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:ring-offset-2 dark:focus:ring-offset-background transition-all duration-200 shadow-md hover:shadow-lg font-medium text-foreground">
+                  <div className="flex items-center gap-1.5 sm:gap-2.5 flex-1 min-w-0">
+                    <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                    <SelectValue className="truncate text-xs sm:text-sm md:text-base font-medium">
+                      {getFilterLabel(dateFilter)}
+                    </SelectValue>
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-2 border-border shadow-xl min-w-[220px] text-popover-foreground">
+                  <SelectItem 
+                    value="all" 
+                    className="cursor-pointer text-base py-3 pl-3 pr-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium [&>span:first-child]:hidden !pl-3 text-foreground"
+                  >
+                    {i18n.language === 'en' ? 'Always' : 'Siempre'}
+                  </SelectItem>
+                  <SelectItem 
+                    value="today" 
+                    className="cursor-pointer text-base py-3 pl-3 pr-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium [&>span:first-child]:hidden !pl-3 text-foreground"
+                  >
+                    {i18n.language === 'en' ? 'Today' : 'Hoy'}
+                  </SelectItem>
+                  <SelectItem 
+                    value="tomorrow" 
+                    className="cursor-pointer text-base py-3 pl-3 pr-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium [&>span:first-child]:hidden !pl-3 text-foreground"
+                  >
+                    {i18n.language === 'en' ? 'Tomorrow' : 'Mañana'}
+                  </SelectItem>
+                  <SelectItem 
+                    value="weekend" 
+                    className="cursor-pointer text-base py-3 pl-3 pr-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium [&>span:first-child]:hidden !pl-3 text-foreground"
+                  >
+                    {i18n.language === 'en' ? 'This Weekend' : 'Fin de Semana'}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Contador de eventos en la misma barra */}
+            {!loading && (
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-700 rounded-full shadow-sm flex-shrink-0">
+                <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-purple-600 dark:text-purple-400 hidden xs:block" />
+                <span className="text-xs sm:text-sm font-semibold text-purple-700 dark:text-purple-300 whitespace-nowrap">
+                  {(() => {
+                    const totalEvents = filteredEventsByCategory.reduce((sum, category) => sum + category.events.length, 0);
+                    if (i18n.language === 'en') {
+                      return `${totalEvents} event${totalEvents !== 1 ? 's' : ''}`;
+                    } else {
+                      return `${totalEvents} evento${totalEvents !== 1 ? 's' : ''}`;
+                    }
+                  })()}
+                </span>
               </div>
-            </SelectTrigger>
-            <SelectContent className="bg-popover border-2 border-border shadow-xl min-w-[220px]">
-              <SelectItem 
-                value="all" 
-                className="cursor-pointer text-base py-3 px-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium"
-              >
-                {i18n.language === 'en' ? 'Always' : 'Siempre'}
-              </SelectItem>
-              <SelectItem 
-                value="today" 
-                className="cursor-pointer text-base py-3 px-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium"
-              >
-                {i18n.language === 'en' ? 'Today' : 'Hoy'}
-              </SelectItem>
-              <SelectItem 
-                value="tomorrow" 
-                className="cursor-pointer text-base py-3 px-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium"
-              >
-                {i18n.language === 'en' ? 'Tomorrow' : 'Mañana'}
-              </SelectItem>
-              <SelectItem 
-                value="weekend" 
-                className="cursor-pointer text-base py-3 px-3 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors duration-150 rounded-sm font-medium"
-              >
-                {i18n.language === 'en' ? 'This Weekend' : 'Fin de Semana'}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Contenido con padding superior para la barra fija */}
+      <div className="pt-14 space-y-8">
 
       {/* Eventos por categoría (incluye recurrentes y únicos) - Filtrados por sidebar */}
       {filteredEventsByCategory.length > 0 ? (
@@ -487,7 +553,8 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
           <p className="text-muted-foreground">Un momento por favor</p>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
