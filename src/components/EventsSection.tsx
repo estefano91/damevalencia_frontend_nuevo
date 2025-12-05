@@ -74,9 +74,11 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   // Inicializar dateFilter en 'all' por defecto
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend'>('all');
 
-  // Guardar el filtro cuando cambie
+  // Guardar el filtro cuando cambie y hacer scroll al inicio
   const handleDateFilterChange = (value: 'all' | 'today' | 'tomorrow' | 'weekend') => {
     setDateFilter(value);
+    // Hacer scroll al inicio cuando cambia el filtro
+    window.scrollTo(0, 0);
   };
 
   // Resetear el filtro a 'all' cuando cambie la categoría
