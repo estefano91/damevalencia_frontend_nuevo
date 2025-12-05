@@ -396,7 +396,7 @@ export const TicketAtDoorModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y' }}>
         <DialogHeader className="pb-4 border-b">
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white">

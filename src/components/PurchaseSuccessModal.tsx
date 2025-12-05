@@ -318,7 +318,7 @@ export const PurchaseSuccessModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden touch-pan-y p-0" style={{ touchAction: 'pan-y' }}>
         {/* Header con gradiente */}
         <div className="relative bg-gradient-to-br from-purple-600 via-purple-700 to-pink-600 p-8 text-white rounded-t-lg">
           <div className="absolute top-4 right-4">

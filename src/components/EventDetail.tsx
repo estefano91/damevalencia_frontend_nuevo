@@ -1959,7 +1959,7 @@ const EventDetail = () => {
     
     {/* Modal de selección de entradas */}
     <Dialog open={ticketsSelectionModalOpen} onOpenChange={setTicketsSelectionModalOpen}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y' }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TicketIcon className="h-5 w-5" />
@@ -2106,7 +2106,7 @@ const EventDetail = () => {
 
     {/* Organizer Modal */}
     <Dialog open={!!selectedOrganizer} onOpenChange={(open) => !open && setSelectedOrganizer(null)}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden touch-pan-y" style={{ touchAction: 'pan-y' }}>
         {selectedOrganizer && (() => {
           const organizer = selectedOrganizer;
           const logoUrl = (organizer as any).logo_url || 
