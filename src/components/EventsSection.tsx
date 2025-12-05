@@ -59,6 +59,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const { selectedCategoryId, setAvailableCategories } = useCategoryFilter();
   const [userTickets, setUserTickets] = useState<UserAttendance[]>([]);
   const [userTicketsLoaded, setUserTicketsLoaded] = useState(false);
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend'>('all');
   
   // Forzar re-render cuando cambie el idioma
   useEffect(() => {
@@ -77,19 +78,101 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
     loadEvents();
   }, []);
 
-  // Efecto para filtrar eventos por categoría
+  // Función helper para obtener fecha en zona horaria de España
+  const getSpainDate = (date: Date = new Date()): Date => {
+    // Convertir a zona horaria de España (Europe/Madrid)
+    const spainTime = new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Madrid' }));
+    return spainTime;
+  };
+
+  // Función helper para comparar solo la fecha (sin hora)
+  const isSameDate = (date1: Date, date2: Date): boolean => {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+  };
+
+  // Función para filtrar eventos por fecha
+  const filterEventsByDate = (events: DameEvent[], filter: 'all' | 'today' | 'tomorrow' | 'weekend'): DameEvent[] => {
+    if (filter === 'all') return events;
+
+    const now = getSpainDate();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return events.filter(event => {
+      if (!event.start) return false;
+      
+      const eventDate = new Date(event.start);
+      const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+
+      switch (filter) {
+        case 'today':
+          return isSameDate(eventDateOnly, today);
+        
+        case 'tomorrow':
+          return isSameDate(eventDateOnly, tomorrow);
+        
+        case 'weekend': {
+          // Fin de semana: desde el viernes hasta el domingo
+          const dayOfWeek = eventDateOnly.getDay(); // 0 = domingo, 5 = viernes, 6 = sábado
+          const todayDayOfWeek = today.getDay();
+          
+          // Solo eventos futuros o de hoy
+          if (eventDateOnly < today) return false;
+          
+          // Si hoy es viernes, sábado o domingo, mostrar eventos de este fin de semana (futuros o hoy)
+          if (todayDayOfWeek >= 5 || todayDayOfWeek === 0) {
+            // Estamos en fin de semana, mostrar eventos de viernes, sábado o domingo de esta semana
+            // Calcular el viernes de esta semana
+            const daysFromMonday = todayDayOfWeek === 0 ? 6 : todayDayOfWeek - 1; // Lunes = 0
+            const thisWeekFriday = new Date(today);
+            thisWeekFriday.setDate(thisWeekFriday.getDate() - daysFromMonday + 4); // Viernes
+            const thisWeekSunday = new Date(thisWeekFriday);
+            thisWeekSunday.setDate(thisWeekSunday.getDate() + 2); // Domingo
+            
+            return eventDateOnly >= thisWeekFriday && eventDateOnly <= thisWeekSunday && 
+                   (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
+          } else {
+            // Estamos entre lunes y jueves, mostrar eventos del próximo fin de semana
+            const daysUntilFriday = 5 - todayDayOfWeek;
+            const nextFriday = new Date(today);
+            nextFriday.setDate(nextFriday.getDate() + daysUntilFriday);
+            const nextSunday = new Date(nextFriday);
+            nextSunday.setDate(nextSunday.getDate() + 2);
+            
+            return eventDateOnly >= nextFriday && eventDateOnly <= nextSunday;
+          }
+        }
+        
+        default:
+          return true;
+      }
+    });
+  };
+
+  // Efecto para filtrar eventos por categoría y fecha
   useEffect(() => {
-    if (selectedCategoryId === null) {
-      // Mostrar todas las categorías
-      setFilteredEventsByCategory(eventsByCategory);
-    } else {
-      // Filtrar solo la categoría seleccionada
-      const filtered = eventsByCategory.filter(
+    let filtered = eventsByCategory;
+
+    // Filtrar por categoría
+    if (selectedCategoryId !== null) {
+      filtered = filtered.filter(
         categoryData => categoryData.category.id === selectedCategoryId
       );
-      setFilteredEventsByCategory(filtered);
     }
-  }, [selectedCategoryId, eventsByCategory]);
+
+    // Filtrar por fecha
+    if (dateFilter !== 'all') {
+      filtered = filtered.map(categoryData => ({
+        ...categoryData,
+        events: filterEventsByDate(categoryData.events, dateFilter)
+      })).filter(categoryData => categoryData.events.length > 0); // Solo categorías con eventos después del filtro
+    }
+
+    setFilteredEventsByCategory(filtered);
+  }, [selectedCategoryId, eventsByCategory, dateFilter]);
 
   // Scroll al principio de la página cuando cambia la categoría
   useEffect(() => {
@@ -298,6 +381,45 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
           </p>
         </div>
       )}
+
+      {/* Barra rápida de filtros por fecha - Optimizada para móvil */}
+      <div className="w-full max-w-full overflow-hidden">
+        {/* Botones de filtro - Scroll horizontal en móvil, wrap en desktop */}
+        <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 sm:flex-wrap sm:overflow-x-visible scrollbar-none max-w-full">
+          <Button
+            variant={dateFilter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setDateFilter('all')}
+            className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 px-3 sm:px-4 h-8 sm:h-9"
+          >
+            {i18n.language === 'en' ? 'All' : 'Todos'}
+          </Button>
+          <Button
+            variant={dateFilter === 'today' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setDateFilter('today')}
+            className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 px-3 sm:px-4 h-8 sm:h-9"
+          >
+            {i18n.language === 'en' ? 'Today' : 'Hoy'}
+          </Button>
+          <Button
+            variant={dateFilter === 'tomorrow' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setDateFilter('tomorrow')}
+            className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 px-3 sm:px-4 h-8 sm:h-9"
+          >
+            {i18n.language === 'en' ? 'Tomorrow' : 'Mañana'}
+          </Button>
+          <Button
+            variant={dateFilter === 'weekend' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setDateFilter('weekend')}
+            className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 px-3 sm:px-4 h-8 sm:h-9"
+          >
+            {i18n.language === 'en' ? 'Weekend' : 'Fin de Semana'}
+          </Button>
+        </div>
+      </div>
 
       {/* Eventos por categoría (incluye recurrentes y únicos) - Filtrados por sidebar */}
       {filteredEventsByCategory.length > 0 ? (
