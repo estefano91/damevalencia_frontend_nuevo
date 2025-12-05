@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { dameTicketsAPI } from '@/integrations/dame-api/tickets';
 import type { TicketTypeDetail, PurchaseTicketRequest, Ticket } from '@/types/tickets';
 import { StripeCheckout } from '@/components/StripeCheckout';
+import { PurchaseSuccessModal } from '@/components/PurchaseSuccessModal';
 import {
   Dialog,
   DialogContent,
@@ -25,13 +26,14 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ShoppingCart } from 'lucide-react';
+import { Loader2, ShoppingCart, ArrowLeft } from 'lucide-react';
 
 interface TicketPurchaseModalProps {
   ticketType: TicketTypeDetail;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  onBack?: () => void; // Callback para volver a la selección de entradas
 }
 
 export const TicketPurchaseModal = ({
@@ -39,6 +41,7 @@ export const TicketPurchaseModal = ({
   open,
   onOpenChange,
   onSuccess,
+  onBack,
 }: TicketPurchaseModalProps) => {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
@@ -52,6 +55,8 @@ export const TicketPurchaseModal = ({
     orderId: number;
   } | null>(null);
   const [showStripeForm, setShowStripeForm] = useState(false);
+  const [purchasedTickets, setPurchasedTickets] = useState<Ticket[] | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Form fields
   const [quantity, setQuantity] = useState(1);
@@ -457,17 +462,11 @@ export const TicketPurchaseModal = ({
   };
 
   const handleStripeSuccess = (tickets: Ticket[]) => {
-    toast({
-      title: i18n.language === 'en' ? 'Purchase successful!' : '¡Compra exitosa!',
-      description: i18n.language === 'en'
-        ? `You have purchased ${tickets.length} ticket(s)`
-        : `Has comprado ${tickets.length} entrada(s)`,
-    });
-
+    setPurchasedTickets(tickets);
     setShowStripeForm(false);
     setStripeCheckoutData(null);
-    onOpenChange(false);
-    if (onSuccess) onSuccess();
+    setShowSuccessModal(true);
+    // No cerramos el modal principal todavía, se cerrará cuando se cierre el modal de éxito
   };
 
   const handleStripeError = (error: string) => {
@@ -497,8 +496,17 @@ export const TicketPurchaseModal = ({
     if (!newOpen) {
       setShowStripeForm(false);
       setStripeCheckoutData(null);
+      setPurchasedTickets(null);
+      setShowSuccessModal(false);
     }
     onOpenChange(newOpen);
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    setPurchasedTickets(null);
+    onOpenChange(false);
+    if (onSuccess) onSuccess();
   };
 
   return (
@@ -506,6 +514,18 @@ export const TicketPurchaseModal = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            {onBack && !showStripeForm && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={onBack}
+                className="mr-2 h-8 w-8"
+                title={i18n.language === 'en' ? 'Back to ticket selection' : 'Volver a selección de entradas'}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
             <ShoppingCart className="h-5 w-5" />
             {i18n.language === 'en' ? 'Purchase Tickets' : 'Comprar Entradas'}
           </DialogTitle>
@@ -805,6 +825,15 @@ export const TicketPurchaseModal = ({
           </DialogFooter>
         )}
       </DialogContent>
+
+      {/* Modal de éxito */}
+      {purchasedTickets && (
+        <PurchaseSuccessModal
+          open={showSuccessModal}
+          tickets={purchasedTickets}
+          onClose={handleSuccessModalClose}
+        />
+      )}
     </Dialog>
   );
 };

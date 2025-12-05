@@ -74,14 +74,13 @@ const StripePaymentForm = ({ orderId, onSuccess, onError, onCancel }: {
 
       if (confirmError) {
         console.error('❌ Stripe payment error:', confirmError);
+        resetLoadingStates();
         toast({
           title: i18n.language === 'en' ? 'Payment failed' : 'Pago fallido',
           description: confirmError.message || (i18n.language === 'en' ? 'Could not process payment' : 'No se pudo procesar el pago'),
           variant: 'destructive',
         });
         onError(confirmError.message || 'Payment failed');
-        setLoading(false);
-        setIsProcessing(false);
         return;
       }
 
@@ -105,9 +104,10 @@ const StripePaymentForm = ({ orderId, onSuccess, onError, onCancel }: {
       // Si llegamos aquí, el pago fue confirmado por Stripe
       // Ahora verificamos el estado con polling
       console.log(`🔄 Iniciando verificación del estado del pago para orden ${orderId}...`);
-      await checkPaymentStatus(orderId, onSuccess, onError, i18n.language);
+      await checkPaymentStatus(orderId, onSuccess, onError, i18n.language, 20, 2000, setLoading, setIsProcessing);
     } catch (error) {
       console.error('❌ Error confirming payment:', error);
+      resetLoadingStates();
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
         title: i18n.language === 'en' ? 'Error' : 'Error',
@@ -115,8 +115,6 @@ const StripePaymentForm = ({ orderId, onSuccess, onError, onCancel }: {
         variant: 'destructive',
       });
       onError(errorMessage);
-      setLoading(false);
-      setIsProcessing(false);
     }
   };
 
@@ -143,7 +141,7 @@ const StripePaymentForm = ({ orderId, onSuccess, onError, onCancel }: {
           {loading || isProcessing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {i18n.language === 'en' ? 'Processing...' : 'Procesando...'}
+              {i18n.language === 'en' ? 'Processing payment...' : 'Procesando pago...'}
             </>
           ) : (
             i18n.language === 'en' ? 'Pay now' : 'Pagar ahora'
@@ -161,7 +159,9 @@ const checkPaymentStatus = async (
   onError: (error: string) => void,
   language: string = 'es',
   maxAttempts: number = 20,
-  intervalMs: number = 2000
+  intervalMs: number = 2000,
+  setLoading?: (loading: boolean) => void,
+  setIsProcessing?: (processing: boolean) => void
 ): Promise<void> => {
   console.log(`🔄 Iniciando verificación de pago para orden ${orderId} (máximo ${maxAttempts} intentos, intervalo ${intervalMs}ms)`);
   
@@ -172,12 +172,16 @@ const checkPaymentStatus = async (
       
       if (!response.success) {
         console.error(`❌ Error en respuesta del API:`, response.error);
+        if (setLoading) setLoading(false);
+        if (setIsProcessing) setIsProcessing(false);
         onError(response.error || (language === 'en' ? 'Could not verify payment status' : 'No se pudo verificar el estado del pago'));
         return;
       }
 
       if (!response.data || !response.data.order) {
         console.error(`❌ Respuesta del API sin datos de orden`);
+        if (setLoading) setLoading(false);
+        if (setIsProcessing) setIsProcessing(false);
         onError(language === 'en' ? 'Invalid response from server' : 'Respuesta inválida del servidor');
         return;
       }
@@ -189,10 +193,15 @@ const checkPaymentStatus = async (
         // Pago exitoso, los tickets están listos
         console.log(`✅ Pago exitoso! Tickets encontrados: ${order.tickets?.length || 0}`);
         if (order.tickets && order.tickets.length > 0) {
+          // Resetear estados de loading antes de llamar a onSuccess
+          if (setLoading) setLoading(false);
+          if (setIsProcessing) setIsProcessing(false);
           onSuccess(order.tickets);
           return;
         } else {
           console.warn(`⚠️ Pago exitoso pero no hay tickets en la respuesta`);
+          if (setLoading) setLoading(false);
+          if (setIsProcessing) setIsProcessing(false);
           onError(language === 'en' 
             ? 'Payment succeeded but no tickets found. Please contact support.' 
             : 'El pago fue exitoso pero no se encontraron tickets. Por favor contacta con soporte.');
@@ -200,10 +209,12 @@ const checkPaymentStatus = async (
         }
       } else if (order.status === 'FAILED') {
         console.error(`❌ Pago fallido: ${order.error_message || 'Unknown error'}`);
+        resetLoadingStates();
         onError(order.error_message || (language === 'en' ? 'Payment failed' : 'El pago falló'));
         return;
       } else if (order.status === 'CANCELLED') {
         console.warn(`⚠️ Pago cancelado`);
+        resetLoadingStates();
         onError(language === 'en' ? 'Payment was cancelled' : 'El pago fue cancelado');
         return;
       } else if (order.status === 'PENDING') {
@@ -229,6 +240,8 @@ const checkPaymentStatus = async (
             created_at: order.created_at,
             updated_at: order.updated_at,
           });
+          if (setLoading) setLoading(false);
+          if (setIsProcessing) setIsProcessing(false);
           onError(language === 'en' 
             ? `Payment verification timeout after ${totalTime.toFixed(0)} seconds. The payment may still be processing. Please check your tickets or contact support with order ID: ${order.id}` 
             : `Tiempo de espera agotado después de ${totalTime.toFixed(0)} segundos. El pago puede estar procesándose aún. Por favor verifica tus entradas o contacta con soporte con el ID de orden: ${order.id}`);
@@ -241,6 +254,8 @@ const checkPaymentStatus = async (
           await new Promise(resolve => setTimeout(resolve, intervalMs));
           continue;
         } else {
+          if (setLoading) setLoading(false);
+          if (setIsProcessing) setIsProcessing(false);
           onError(language === 'en' 
             ? 'Payment status verification timeout' 
             : 'Tiempo de espera agotado al verificar el estado del pago');
@@ -250,6 +265,9 @@ const checkPaymentStatus = async (
     } catch (error) {
       console.error(`❌ Error en intento ${attempt + 1}:`, error);
       if (attempt === maxAttempts - 1) {
+        // Resetear estados de loading en caso de error
+        if (setLoading) setLoading(false);
+        if (setIsProcessing) setIsProcessing(false);
         onError(error instanceof Error 
           ? error.message 
           : (language === 'en' ? 'Unknown error occurred' : 'Ocurrió un error desconocido'));
@@ -262,6 +280,9 @@ const checkPaymentStatus = async (
   
   // Si llegamos aquí, se agotaron todos los intentos sin éxito
   console.error(`❌ Se agotaron todos los intentos sin obtener un resultado definitivo`);
+  // Resetear estados de loading
+  if (setLoading) setLoading(false);
+  if (setIsProcessing) setIsProcessing(false);
   onError(language === 'en' 
     ? 'Payment verification timeout. Please check your tickets or contact support.' 
     : 'Tiempo de espera agotado. Por favor verifica tus entradas o contacta con soporte.');

@@ -224,7 +224,6 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
           title={i18n.language === 'en' ? 'Minimize menu' : 'Minimizar menú'}
         >
           <span className="text-sm font-medium text-gray-600 dark:text-gray-300 group-hover:text-purple-600">
-            {i18n.language === 'en' ? 'Sidebar menu' : 'Menú lateral'}
           </span>
           <ChevronLeft className="h-5 w-5" />
         </Button>
@@ -252,30 +251,32 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
           <div className="flex-1 min-h-0 px-3 pt-4">
             <div className="h-full flex flex-col space-y-2">
               {/* Botón "Todos los eventos" */}
-              <Button
-                variant="ghost"
-                className={`w-full justify-start h-auto py-4 px-4 rounded-xl transition-all duration-300 transform ${
-                  selectedCategoryId === null
-                    ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 border-2 border-purple-400 text-white shadow-xl shadow-purple-500/50 ring-2 ring-purple-300 scale-105'
-                    : 'bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 border-2 border-purple-300 text-purple-700 dark:text-purple-300 hover:from-purple-200 hover:to-purple-300 dark:hover:from-purple-800/50 dark:hover:to-purple-700/50 hover:shadow-lg hover:scale-[1.02]'
-                }`}
-                onClick={() => handleCategoryFilter(null)}
-              >
-                <div className={`mr-3 p-2 rounded-lg ${selectedCategoryId === null ? 'bg-white/20' : 'bg-purple-500/20'}`}>
-                  <List className={`h-5 w-5 ${selectedCategoryId === null ? 'text-white' : 'text-purple-700 dark:text-purple-300'}`} />
-                </div>
-                <div className="text-left flex-1">
-                  <div className={`font-bold text-sm ${selectedCategoryId === null ? 'text-white' : 'text-purple-700 dark:text-purple-300'}`}>
-                    {i18n.language === 'en' ? 'All events' : 'Todos los eventos'}
+              <div className="overflow-hidden rounded-xl">
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start h-auto py-4 px-4 rounded-xl transition-all duration-300 transform ${
+                    selectedCategoryId === null
+                      ? 'bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 border-2 border-purple-400 text-white shadow-xl shadow-purple-500/50 ring-2 ring-purple-300 scale-105'
+                      : 'bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 border-2 border-purple-300 text-purple-700 dark:text-purple-300 hover:from-purple-200 hover:to-purple-300 dark:hover:from-purple-800/50 dark:hover:to-purple-700/50 hover:shadow-lg hover:scale-[1.02]'
+                  }`}
+                  onClick={() => handleCategoryFilter(null)}
+                >
+                  <div className={`mr-3 p-2 rounded-lg ${selectedCategoryId === null ? 'bg-white/20' : 'bg-purple-500/20'}`}>
+                    <List className={`h-5 w-5 ${selectedCategoryId === null ? 'text-white' : 'text-purple-700 dark:text-purple-300'}`} />
                   </div>
-                  <div className={`text-xs mt-0.5 ${selectedCategoryId === null ? 'text-purple-100' : 'text-purple-600/80 dark:text-purple-400/80'}`}>
-                    {i18n.language === 'en' ? 'View all categories' : 'Ver todas las categorías'}
+                  <div className="text-left flex-1">
+                    <div className={`font-bold text-sm ${selectedCategoryId === null ? 'text-white' : 'text-purple-700 dark:text-purple-300'}`}>
+                      {i18n.language === 'en' ? 'All events' : 'Todos los eventos'}
+                    </div>
+                    <div className={`text-xs mt-0.5 ${selectedCategoryId === null ? 'text-purple-100' : 'text-purple-600/80 dark:text-purple-400/80'}`}>
+                      {i18n.language === 'en' ? 'View all categories' : 'Ver todas las categorías'}
+                    </div>
                   </div>
-                </div>
-                {selectedCategoryId === null && (
-                  <div className="ml-2 text-white text-lg font-bold">✓</div>
-                )}
-              </Button>
+                  {selectedCategoryId === null && (
+                    <div className="ml-2 text-white text-lg font-bold">✓</div>
+                  )}
+                </Button>
+              </div>
 
               {/* Botones de Categorías */}
               <div className="space-y-2 flex-1 min-h-0 overflow-y-auto">
@@ -285,45 +286,46 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
                   const isSelected = selectedCategoryId === category.id;
                   
                   return (
-                    <Button
-                      key={category.id}
-                      variant="ghost"
-                      className={`w-full justify-start h-auto py-4 px-4 rounded-xl transition-all duration-300 transform ${
-                        isSelected
-                          ? `${colors.bgColor} border-2 ${colors.borderColor} text-white shadow-xl ${colors.shadowColor} ring-2 ${colors.ringColor} scale-105`
-                          : `${colors.bgColorInactive} border-2 ${colors.borderColor} text-gray-700 dark:text-gray-300 ${colors.hoverColor} hover:shadow-lg hover:scale-[1.02]`
-                      }`}
-                      onClick={() => handleCategoryFilter(category.id)}
-                    >
-                      <div className={`mr-3 p-2 rounded-lg transition-colors duration-300 ${
-                        isSelected ? 'bg-white/20' : 'bg-white/60 dark:bg-gray-700/60'
-                      }`}>
-                        <CategoryIcon 
-                          className={`h-5 w-5 ${
+                    <div key={category.id} className="overflow-hidden rounded-xl">
+                      <Button
+                        variant="ghost"
+                        className={`w-full justify-start h-auto py-4 px-4 rounded-xl transition-all duration-300 transform ${
+                          isSelected
+                            ? `${colors.bgColor} border-2 ${colors.borderColor} text-white shadow-xl ${colors.shadowColor} ring-2 ${colors.ringColor} scale-105`
+                            : `${colors.bgColorInactive} border-2 ${colors.borderColor} text-gray-700 dark:text-gray-300 ${colors.hoverColor} hover:shadow-lg hover:scale-[1.02]`
+                        }`}
+                        onClick={() => handleCategoryFilter(category.id)}
+                      >
+                        <div className={`mr-3 p-2 rounded-lg transition-colors duration-300 ${
+                          isSelected ? 'bg-white/20' : 'bg-white/60 dark:bg-gray-700/60'
+                        }`}>
+                          <CategoryIcon 
+                            className={`h-5 w-5 ${
+                              isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
+                            }`} 
+                          />
+                        </div>
+                        <div className="text-left flex-1 min-w-0">
+                          <div className={`font-bold text-sm truncate ${
                             isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
-                          }`} 
-                        />
-                      </div>
-                      <div className="text-left flex-1 min-w-0">
-                        <div className={`font-bold text-sm truncate ${
-                          isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
-                        }`}>
-                          {i18n.language === 'en' ? (category.name_en || category.name_es) : category.name_es}
+                          }`}>
+                            {i18n.language === 'en' ? (category.name_en || category.name_es) : category.name_es}
+                          </div>
+                          <div className={`text-xs mt-0.5 ${
+                            isSelected ? 'text-white/90' : 'text-gray-600/80 dark:text-gray-400/80'
+                          }`}>
+                            {i18n.language === 'en' 
+                              ? `${category.total_events || 0} events`
+                              : `${category.total_events || 0} eventos`}
+                          </div>
                         </div>
-                        <div className={`text-xs mt-0.5 ${
-                          isSelected ? 'text-white/90' : 'text-gray-600/80 dark:text-gray-400/80'
-                        }`}>
-                          {i18n.language === 'en' 
-                            ? `${category.total_events || 0} events`
-                            : `${category.total_events || 0} eventos`}
-                        </div>
-                      </div>
-                      {isSelected && (
-                        <div className="ml-2 text-white text-lg font-bold animate-in fade-in duration-300">
-                          ✓
-                        </div>
-                      )}
-                    </Button>
+                        {isSelected && (
+                          <div className="ml-2 text-white text-lg font-bold animate-in fade-in duration-300">
+                            ✓
+                          </div>
+                        )}
+                      </Button>
+                    </div>
                   );
                 })}
               </div>
@@ -340,7 +342,7 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
           <Button
             variant="ghost"
             size="sm"
-            className={`h-12 w-12 p-0 rounded-xl border-2 transition-all duration-300 transform ${
+            className={`h-12 w-12 p-0 rounded-xl border-2 transition-all duration-300 transform overflow-hidden ${
               selectedCategoryId === null
                 ? 'bg-gradient-to-br from-purple-600 to-purple-800 border-purple-400 text-white shadow-lg shadow-purple-500/50 ring-2 ring-purple-300 scale-110'
                 : 'bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 border-purple-400 text-purple-600 dark:text-purple-400 hover:from-purple-200 hover:to-purple-300 dark:hover:from-purple-800/60 dark:hover:to-purple-700/60 hover:shadow-md hover:scale-105'
@@ -362,7 +364,7 @@ const Sidebar = ({ userType, onCategoryFilter, selectedCategoryId = null, availa
                 key={category.id}
                 variant="ghost"
                 size="sm"
-                className={`h-12 w-12 p-0 rounded-xl border-2 transition-all duration-300 transform ${
+                className={`h-12 w-12 p-0 rounded-xl border-2 transition-all duration-300 transform overflow-hidden ${
                   isSelected
                     ? `${colors.bgColor} ${colors.borderColor} text-white shadow-lg ${colors.shadowColor} ring-2 ${colors.ringColor} scale-110`
                     : `${colors.bgColorInactive} ${colors.borderColor} text-gray-700 dark:text-gray-300 ${colors.hoverColor} hover:shadow-md hover:scale-105`

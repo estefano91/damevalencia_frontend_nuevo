@@ -2075,7 +2075,12 @@ const EventDetail = () => {
           // Recargar tickets del usuario después de comprar
           setUserHasTicket(false);
           setUserTicketCount(0);
-          setCheckingUserTicket(true);
+          setCheckingUserTicket(false); // No verificar de nuevo, el usuario ya compró
+        }}
+        onBack={() => {
+          // Volver a la selección de entradas
+          setPurchaseModalOpen(false);
+          setTicketsSelectionModalOpen(true);
         }}
       />
     )}
