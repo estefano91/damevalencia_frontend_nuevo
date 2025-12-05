@@ -69,12 +69,12 @@ const AppLayout = ({ children, hideSidebar = false }: AppLayoutProps) => {
 
   return (
     <CategoryFilterContext.Provider value={{ selectedCategoryId, setSelectedCategoryId, setAvailableCategories }}>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background overflow-x-hidden max-w-full">
         <Navigation
           isMobile={isMobile}
         />
         
-        <div className="flex">
+        <div className="flex overflow-x-hidden max-w-full">
         {/* Sidebar - Desktop */}
         {!hideSidebar && !isMobile && (
           <div className={`fixed top-20 sm:top-24 md:top-28 left-0 h-[calc(100vh-5rem)] sm:h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)] bg-card border-r shadow-lg transition-all duration-300 z-40 ${
@@ -126,14 +126,14 @@ const AppLayout = ({ children, hideSidebar = false }: AppLayoutProps) => {
         )}
 
         {/* Main content con margin automático */}
-        <main className={`flex-1 pt-20 sm:pt-24 md:pt-28 min-h-screen transition-all duration-300 flex flex-col ${
+        <main className={`flex-1 pt-20 sm:pt-24 md:pt-28 min-h-screen transition-all duration-300 flex flex-col overflow-x-hidden max-w-full ${
           hideSidebar
             ? 'ml-0'
             : isMobile
               ? (sidebarOpen ? 'ml-0' : 'ml-12')
               : (sidebarOpen ? 'ml-64' : 'ml-12')
         }`}>
-            <div className="container mx-auto px-4 py-6 flex-1">
+            <div className="container mx-auto px-4 py-6 flex-1 w-full max-w-full overflow-x-hidden">
               {children}
             </div>
             <Footer />

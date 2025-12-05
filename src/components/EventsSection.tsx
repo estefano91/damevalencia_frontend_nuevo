@@ -7,6 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
   Calendar, 
   MapPin, 
@@ -25,7 +32,8 @@ import {
   User,
   RefreshCw,
   Repeat,
-  CheckCircle
+  CheckCircle,
+  Filter
 } from 'lucide-react';
 import { 
   dameEventsAPI, 
@@ -60,6 +68,27 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const [userTickets, setUserTickets] = useState<UserAttendance[]>([]);
   const [userTicketsLoaded, setUserTicketsLoaded] = useState(false);
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend'>('all');
+
+  // Helper para obtener el texto del filtro seleccionado
+  const getFilterLabel = (filter: 'all' | 'today' | 'tomorrow' | 'weekend'): string => {
+    if (i18n.language === 'en') {
+      switch (filter) {
+        case 'all': return 'Always';
+        case 'today': return 'Today';
+        case 'tomorrow': return 'Tomorrow';
+        case 'weekend': return 'This Weekend';
+        default: return 'Always';
+      }
+    } else {
+      switch (filter) {
+        case 'all': return 'Siempre';
+        case 'today': return 'Hoy';
+        case 'tomorrow': return 'Mañana';
+        case 'weekend': return 'Fin de Semana';
+        default: return 'Siempre';
+      }
+    }
+  };
   
   // Forzar re-render cuando cambie el idioma
   useEffect(() => {
@@ -382,42 +411,38 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
         </div>
       )}
 
-      {/* Barra rápida de filtros por fecha - Optimizada para móvil */}
+      {/* Dropdown de filtros por fecha - Moderno y user-friendly */}
       <div className="w-full max-w-full overflow-hidden">
-        {/* Botones de filtro - Scroll horizontal en móvil, wrap en desktop */}
-        <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 sm:flex-wrap sm:overflow-x-visible scrollbar-none max-w-full">
-          <Button
-            variant={dateFilter === 'all' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDateFilter('all')}
-            className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 px-3 sm:px-4 h-8 sm:h-9"
-          >
-            {i18n.language === 'en' ? 'All' : 'Todos'}
-          </Button>
-          <Button
-            variant={dateFilter === 'today' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDateFilter('today')}
-            className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 px-3 sm:px-4 h-8 sm:h-9"
-          >
-            {i18n.language === 'en' ? 'Today' : 'Hoy'}
-          </Button>
-          <Button
-            variant={dateFilter === 'tomorrow' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDateFilter('tomorrow')}
-            className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 px-3 sm:px-4 h-8 sm:h-9"
-          >
-            {i18n.language === 'en' ? 'Tomorrow' : 'Mañana'}
-          </Button>
-          <Button
-            variant={dateFilter === 'weekend' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setDateFilter('weekend')}
-            className="text-xs sm:text-sm whitespace-nowrap flex-shrink-0 px-3 sm:px-4 h-8 sm:h-9"
-          >
-            {i18n.language === 'en' ? 'Weekend' : 'Fin de Semana'}
-          </Button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              {i18n.language === 'en' ? 'WHEN?' : '¿CUÁNDO?'}
+            </h3>
+          </div>
+          <Select value={dateFilter} onValueChange={(value: 'all' | 'today' | 'tomorrow' | 'weekend') => setDateFilter(value)}>
+            <SelectTrigger className="w-full sm:w-[200px] h-11 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 hover:from-purple-100 hover:to-pink-100 hover:border-purple-300 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg font-medium">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Calendar className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                <SelectValue className="truncate text-base">
+                  {getFilterLabel(dateFilter)}
+                </SelectValue>
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-white border-2 border-purple-200 shadow-xl">
+              <SelectItem value="all" className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 focus:bg-gradient-to-r focus:from-purple-50 focus:to-pink-50 text-base py-2.5">
+                {i18n.language === 'en' ? 'Always' : 'Siempre'}
+              </SelectItem>
+              <SelectItem value="today" className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 focus:bg-gradient-to-r focus:from-purple-50 focus:to-pink-50 text-base py-2.5">
+                {i18n.language === 'en' ? 'Today' : 'Hoy'}
+              </SelectItem>
+              <SelectItem value="tomorrow" className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 focus:bg-gradient-to-r focus:from-purple-50 focus:to-pink-50 text-base py-2.5">
+                {i18n.language === 'en' ? 'Tomorrow' : 'Mañana'}
+              </SelectItem>
+              <SelectItem value="weekend" className="cursor-pointer hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 focus:bg-gradient-to-r focus:from-purple-50 focus:to-pink-50 text-base py-2.5">
+                {i18n.language === 'en' ? 'This Weekend' : 'Fin de Semana'}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
