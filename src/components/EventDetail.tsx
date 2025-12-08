@@ -67,6 +67,7 @@ const EventDetail = () => {
   const [, forceUpdate] = useState({});
   const [hasTickets, setHasTickets] = useState<boolean | null>(null); // null = checking, true = has tickets, false = no tickets
   const [minTicketPrice, setMinTicketPrice] = useState<string | null>(null); // Precio mínimo de los tickets
+  const [maxTicketPrice, setMaxTicketPrice] = useState<string | null>(null); // Precio máximo de los tickets
   const [userHasTicket, setUserHasTicket] = useState(false);
   const [checkingUserTicket, setCheckingUserTicket] = useState(false);
   const [shouldResumeAttend, setShouldResumeAttend] = useState(false);
@@ -151,38 +152,48 @@ const EventDetail = () => {
         const hasAnyVisibleTickets = tickets.length > 0;
         
         if (hasAnyVisibleTickets) {
-          // Calcular precio mínimo de todos los tickets disponibles
+          // Calcular precio mínimo y máximo de todos los tickets disponibles
           const prices = tickets
             .filter(t => parseFloat(t.current_price || t.base_price || '0') > 0)
             .map(t => parseFloat(t.current_price || t.base_price || '0'));
           
-          let priceValue = 0;
+          let minPriceValue = 0;
+          let maxPriceValue = 0;
           if (prices.length > 0) {
-            priceValue = Math.min(...prices);
+            minPriceValue = Math.min(...prices);
+            maxPriceValue = Math.max(...prices);
           }
 
           setHasTickets(true);
           setMinTicketPrice(
-            priceValue > 0
-              ? `${priceValue.toFixed(2)}€`
+            minPriceValue > 0
+              ? (minPriceValue % 1 === 0 ? `${minPriceValue}€` : `${minPriceValue.toFixed(2)}€`)
               : i18n.language === 'en'
                 ? 'FREE'
                 : 'GRATIS'
           );
+          setMaxTicketPrice(
+            maxPriceValue > 0 && maxPriceValue > minPriceValue
+              ? (maxPriceValue % 1 === 0 ? `${maxPriceValue}€` : `${maxPriceValue.toFixed(2)}€`)
+              : null
+          );
         } else {
           setHasTickets(false);
           setMinTicketPrice(null);
+          setMaxTicketPrice(null);
         }
       } else {
         setAtDoorTicketType(null);
         setHasTickets(false);
         setMinTicketPrice(null);
+        setMaxTicketPrice(null);
       }
     } catch (err) {
       console.error('Error fetching ticket info:', err);
       setAtDoorTicketType(null);
       setHasTickets(false);
       setMinTicketPrice(null);
+      setMaxTicketPrice(null);
     }
   }, [event?.id, i18n.language]);
 
@@ -309,6 +320,15 @@ const EventDetail = () => {
   const formatPrice = (amount?: string, currency: string = 'EUR'): string => {
     if (!amount || parseFloat(amount) === 0) return 'Gratuito';
     return `${parseFloat(amount).toFixed(2)}€`;
+  };
+
+  // Formatea precio sin decimales si es entero
+  const formatPriceCompact = (amount: number): string => {
+    if (amount === 0) return i18n.language === 'en' ? 'FREE' : 'GRATIS';
+    if (amount % 1 === 0) {
+      return `${amount}€`;
+    }
+    return `${amount.toFixed(2)}€`;
   };
 
   // Formatea el rango de precios usando from_price y to_price
@@ -1801,35 +1821,51 @@ const EventDetail = () => {
         // Determinar el precio a mostrar
         let priceDisplay = '';
         if (hasTickets === true) {
-          // Si hay tickets, mostrar el precio mínimo de los tickets
+          // Si hay tickets, mostrar el rango de precios "De X a Y"
           if (minTicketPrice) {
-            priceDisplay = minTicketPrice;
+            if (maxTicketPrice && maxTicketPrice !== minTicketPrice) {
+              // Hay un rango de precios
+              priceDisplay = i18n.language === 'en' 
+                ? `From ${minTicketPrice} to ${maxTicketPrice}`
+                : `De ${minTicketPrice} a ${maxTicketPrice}`;
+            } else {
+              // Solo un precio o todos los precios son iguales
+              priceDisplay = minTicketPrice;
+            }
           } else {
             // Fallback si no hay precio disponible
             priceDisplay = i18n.language === 'en' ? 'Tickets' : 'Entradas';
           }
         } else {
-          // Si no hay tickets, mostrar solo el precio "Desde" (from_price)
+          // Si no hay tickets, mostrar el rango de precios "De X a Y" (from_price y to_price)
           if (event && event.from_price) {
             const fromPrice = parseFloat(event.from_price);
             if (isNaN(fromPrice) || fromPrice === 0) {
               priceDisplay = i18n.language === 'en' ? 'FREE' : 'GRATIS';
             } else {
-              const fromPriceText = `${fromPrice.toFixed(2)}€`;
-              // Si from_price == to_price, no mostrar "Desde"
+              const fromPriceText = formatPriceCompact(fromPrice);
+              // Si hay to_price y es diferente, mostrar "De X a Y"
               if (event.to_price) {
                 const toPrice = parseFloat(event.to_price);
-                if (!isNaN(toPrice) && toPrice === fromPrice) {
+                if (!isNaN(toPrice) && toPrice > fromPrice) {
+                  const toPriceText = formatPriceCompact(toPrice);
+                  priceDisplay = i18n.language === 'en' 
+                    ? `From ${fromPriceText} to ${toPriceText}`
+                    : `De ${fromPriceText} a ${toPriceText}`;
+                } else if (!isNaN(toPrice) && toPrice === fromPrice) {
+                  // Si from_price == to_price, mostrar solo el precio
                   priceDisplay = fromPriceText;
                 } else {
+                  // Si to_price es menor o inválido, mostrar solo "De"
                   priceDisplay = i18n.language === 'en' 
                     ? `From ${fromPriceText}` 
-                    : `Desde ${fromPriceText}`;
+                    : `De ${fromPriceText}`;
                 }
               } else {
+                // Si no hay to_price, mostrar solo "De"
                 priceDisplay = i18n.language === 'en' 
                   ? `From ${fromPriceText}` 
-                  : `Desde ${fromPriceText}`;
+                  : `De ${fromPriceText}`;
               }
             }
           } else {
