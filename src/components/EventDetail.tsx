@@ -375,6 +375,62 @@ const EventDetail = () => {
     }
   };
 
+  // Formatea el rango de fechas cuando inicio y fin son diferentes
+  const formatDateRange = (startDateString?: string, endDateString?: string): string => {
+    if (!startDateString) return i18n.language === 'en' ? 'Date TBD' : 'Fecha por determinar';
+    
+    try {
+      const startDate = new Date(startDateString);
+      if (isNaN(startDate.getTime()) || startDate.getFullYear() < 2000) {
+        return i18n.language === 'en' ? 'Invalid date' : 'Fecha inválida';
+      }
+
+      // Si no hay fecha de fin o es la misma fecha, mostrar solo la fecha de inicio
+      if (!endDateString) {
+        return formatOnlyDate(startDateString);
+      }
+
+      const endDate = new Date(endDateString);
+      if (isNaN(endDate.getTime()) || endDate.getFullYear() < 2000) {
+        return formatOnlyDate(startDateString);
+      }
+
+      // Comparar solo las fechas (sin hora)
+      const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+      const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+      // Si son la misma fecha, mostrar solo una
+      if (startDateOnly.getTime() === endDateOnly.getTime()) {
+        return formatOnlyDate(startDateString);
+      }
+
+      // Si son fechas diferentes, mostrar el rango
+      const startFormatted = startDate.toLocaleDateString(locale, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: MADRID_TZ
+      });
+
+      const endFormatted = endDate.toLocaleDateString(locale, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: MADRID_TZ
+      });
+
+      if (i18n.language === 'en') {
+        return `${startFormatted} - ${endFormatted}`;
+      } else {
+        return `${startFormatted} - ${endFormatted}`;
+      }
+    } catch {
+      return formatOnlyDate(startDateString);
+    }
+  };
+
   const formatOnlyTime = (dateString?: string): string => {
     if (!dateString) return '';
     try {
@@ -388,6 +444,87 @@ const EventDetail = () => {
       });
     } catch {
       return '';
+    }
+  };
+
+  // Formatea fecha y hora de forma compacta: "Fecha, Hora" o "Fecha Hora - Fecha Hora"
+  const formatCompactDateWithTime = (startDateString?: string, endDateString?: string): { start: string; end: string | null; sameDay: boolean } => {
+    if (!startDateString) {
+      return {
+        start: i18n.language === 'en' ? 'Date TBD' : 'Fecha por determinar',
+        end: null,
+        sameDay: false
+      };
+    }
+
+    try {
+      const startDate = new Date(startDateString);
+      if (isNaN(startDate.getTime()) || startDate.getFullYear() < 2000) {
+        return {
+          start: i18n.language === 'en' ? 'Invalid date' : 'Fecha inválida',
+          end: null,
+          sameDay: false
+        };
+      }
+
+      const startTime = formatOnlyTime(startDateString);
+      const startDateOnly = startDate.toLocaleDateString(locale, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        timeZone: MADRID_TZ
+      });
+      const startFormatted = `${startDateOnly}, ${startTime}`;
+
+      if (!endDateString) {
+        return {
+          start: startFormatted,
+          end: null,
+          sameDay: true
+        };
+      }
+
+      const endDate = new Date(endDateString);
+      if (isNaN(endDate.getTime()) || endDate.getFullYear() < 2000) {
+        return {
+          start: startFormatted,
+          end: null,
+          sameDay: true
+        };
+      }
+
+      const endTime = formatOnlyTime(endDateString);
+      const startDateOnlyObj = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+      const endDateOnlyObj = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+      const sameDay = startDateOnlyObj.getTime() === endDateOnlyObj.getTime();
+
+      if (sameDay) {
+        // Mismo día: solo mostrar hora de fin
+        return {
+          start: startFormatted,
+          end: endTime,
+          sameDay: true
+        };
+      } else {
+        // Días diferentes: mostrar fecha y hora de fin
+        const endDateOnly = endDate.toLocaleDateString(locale, {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          timeZone: MADRID_TZ
+        });
+        return {
+          start: startFormatted,
+          end: `${endDateOnly}, ${endTime}`,
+          sameDay: false
+        };
+      }
+    } catch {
+      return {
+        start: i18n.language === 'en' ? 'Date TBD' : 'Fecha por determinar',
+        end: null,
+        sameDay: false
+      };
     }
   };
 
@@ -841,26 +978,31 @@ const EventDetail = () => {
                   </p>
                 </div>
               )}
-              {!event.is_recurring_weekly && (
-                <div className="flex flex-wrap items-center gap-3 mb-4">
-                  {event.start_datetime && (
-                    <div className="inline-flex items-center gap-2.5 rounded-lg bg-muted/40 px-4 py-2 border border-border/60 hover:border-border transition-colors duration-200">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium text-foreground text-sm">
-                        {formatOnlyDate(event.start_datetime)}
-                      </span>
+              {!event.is_recurring_weekly && (event.start_datetime || event.end_datetime) && (() => {
+                const dateTimeInfo = formatCompactDateWithTime(event.start_datetime, event.end_datetime);
+                return (
+                  <div className="flex flex-wrap items-center gap-3 mb-4 sm:mb-6">
+                    <div className="w-full sm:w-auto inline-flex items-center gap-3 sm:gap-4 rounded-xl sm:rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 px-4 py-3.5 sm:px-5 sm:py-3 border border-border/60 hover:border-border hover:shadow-md sm:hover:shadow-lg transition-all duration-200 backdrop-blur-sm">
+                      <div className="flex items-center gap-2.5 text-primary flex-shrink-0">
+                        <Calendar className="h-6 w-6 sm:h-5 sm:w-5" />
+                      </div>
+                      <div className="flex flex-col gap-1.5 sm:gap-1 flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground text-base sm:text-sm leading-tight break-words">
+                            {dateTimeInfo.start}
+                          </span>
+                        </div>
+                        {dateTimeInfo.end && (
+                          <div className="flex items-center gap-2 text-sm sm:text-xs text-muted-foreground">
+                            <span className="text-muted-foreground/70 text-lg sm:text-base">→</span>
+                            <span className="break-words">{dateTimeInfo.end}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  {(event.start_datetime || event.end_datetime) && (
-                    <div className="inline-flex items-center gap-2.5 rounded-lg bg-muted/40 px-4 py-2 border border-border/60 hover:border-border transition-colors duration-200">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium text-foreground text-sm">
-                        {formatTimeRange(event.start_datetime, event.end_datetime)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                );
+              })()}
               {event.is_recurring_weekly && (() => {
                 // Usar upcoming_dates de la API si está disponible, sino generar manualmente
                 const datesToShow = event.upcoming_dates && event.upcoming_dates.length > 0
@@ -1357,24 +1499,27 @@ const EventDetail = () => {
                     </>
                   ) : (
                     <>
-                      <div className="flex items-center gap-3">
-                        <Calendar className="h-5 w-5 text-purple-600" />
-                        <div>
-                          <p className="font-medium">{i18n.language === 'en' ? 'Date' : 'Fecha'}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatOnlyDate(event.start_datetime)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Clock className="h-5 w-5 text-blue-600" />
-                        <div>
-                          <p className="font-medium">{i18n.language === 'en' ? 'Time' : 'Horario'}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatTimeRange(event.start_datetime, event.end_datetime)}
-                          </p>
-                        </div>
-                      </div>
+                      {(() => {
+                        const dateTimeInfo = formatCompactDateWithTime(event.start_datetime, event.end_datetime);
+                        return (
+                          <div className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-muted/50 to-muted/30 border border-border/60 hover:shadow-md sm:hover:shadow-lg transition-all duration-200">
+                            <div className="flex items-center justify-center h-12 w-12 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-primary/10 text-primary flex-shrink-0">
+                              <Calendar className="h-6 w-6 sm:h-5 sm:w-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-foreground text-base sm:text-sm mb-1.5 sm:mb-1 leading-tight break-words">
+                                {dateTimeInfo.start}
+                              </p>
+                              {dateTimeInfo.end && (
+                                <p className="text-sm sm:text-xs text-muted-foreground flex items-center gap-1.5 sm:gap-1.5">
+                                  <span className="text-muted-foreground/70 text-lg sm:text-base">→</span>
+                                  <span className="break-words">{dateTimeInfo.end}</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </>
                   )}
 
