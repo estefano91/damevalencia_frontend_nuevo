@@ -40,6 +40,7 @@ import {
   Globe,
   Ticket as TicketIcon,
   Euro,
+  ShoppingCart,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -200,6 +201,7 @@ const EventDetail = () => {
   useEffect(() => {
     loadAtDoorTicket();
   }, [loadAtDoorTicket]);
+
 
 
   // Verificar si el usuario ya tiene tickets para este evento
@@ -1095,6 +1097,26 @@ const EventDetail = () => {
               </Card>
             )}
 
+            {/* Card de compra con webview */}
+            {event.tickets_webview && hasTickets === false && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5 text-primary" />
+                    {i18n.language === 'en' ? 'Purchase Tickets' : 'Comprar Entradas'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 sm:p-6">
+                  <iframe
+                    src={event.tickets_webview}
+                    className="w-full min-h-[600px] sm:min-h-[700px] border-0 rounded-lg"
+                    title={i18n.language === 'en' ? 'Purchase Tickets' : 'Comprar Entradas'}
+                    allow="payment; fullscreen"
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* Photo Gallery */}
             {event.photos && event.photos.length > 0 && (
@@ -1959,6 +1981,11 @@ const EventDetail = () => {
       {(() => {
         // Esperar a que termine la verificación de tickets
         if (hasTickets === null || !event) return null;
+
+        // Si hay tickets_webview, no mostrar el botón flotante
+        if (event.tickets_webview && hasTickets === false) {
+          return null;
+        }
 
         // Todos los eventos deben tener alguna opción, siempre mostrar el botón
         const reserveLink = getReserveLink();
