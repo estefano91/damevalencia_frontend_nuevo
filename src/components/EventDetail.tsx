@@ -2024,20 +2024,13 @@ const EventDetail = () => {
                   priceDisplay = i18n.language === 'en' 
                     ? `From ${fromPriceText} to ${toPriceText}`
                     : `De ${fromPriceText} a ${toPriceText}`;
-                } else if (!isNaN(toPrice) && toPrice === fromPrice) {
-                  // Si from_price == to_price, mostrar solo el precio
-                  priceDisplay = fromPriceText;
                 } else {
-                  // Si to_price es menor o inválido, mostrar solo "De"
-                  priceDisplay = i18n.language === 'en' 
-                    ? `From ${fromPriceText}` 
-                    : `De ${fromPriceText}`;
+                  // Si to_price es igual, menor o inválido, mostrar solo el precio sin "De"
+                  priceDisplay = fromPriceText;
                 }
               } else {
-                // Si no hay to_price, mostrar solo "De"
-                priceDisplay = i18n.language === 'en' 
-                  ? `From ${fromPriceText}` 
-                  : `De ${fromPriceText}`;
+                // Si no hay to_price, mostrar solo el precio sin "De"
+                priceDisplay = fromPriceText;
               }
             }
           } else {
