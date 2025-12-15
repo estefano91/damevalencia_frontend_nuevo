@@ -555,7 +555,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
           <p className="text-muted-foreground">Un momento por favor</p>
         </div>
       )}
-      </div>
+    </div>
     </>
   );
 };

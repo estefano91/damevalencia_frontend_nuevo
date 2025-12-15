@@ -103,6 +103,26 @@ const EventDetail = () => {
     return textEs || textEn || '';
   };
 
+  // Detectar si tickets_webview es una URL o código HTML
+  const isWebviewUrl = (webview: string): boolean => {
+    if (!webview) return false;
+    const trimmed = webview.trim();
+    // Si comienza con http://, https://, o //, es una URL
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('//')) {
+      return true;
+    }
+    // Si parece una URL válida (contiene :// o www.)
+    if (trimmed.includes('://') || trimmed.startsWith('www.')) {
+      return true;
+    }
+    // Si contiene etiquetas HTML, es código HTML
+    if (trimmed.includes('<') && trimmed.includes('>')) {
+      return false;
+    }
+    // Por defecto, si no parece URL, asumimos que es HTML
+    return false;
+  };
+
 
   useEffect(() => {
     const fetchEventDetail = async () => {
@@ -1098,25 +1118,35 @@ const EventDetail = () => {
             )}
 
             {/* Card de compra con webview */}
-            {event.tickets_webview && hasTickets === false && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5 text-primary" />
-                    {i18n.language === 'en' ? 'Purchase Tickets' : 'Comprar Entradas'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0 sm:p-6">
-                  <iframe
-                    src={event.tickets_webview}
-                    className="w-full min-h-[600px] sm:min-h-[700px] border-0 rounded-lg"
-                    title={i18n.language === 'en' ? 'Purchase Tickets' : 'Comprar Entradas'}
-                    allow="payment; fullscreen"
-                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
-                  />
-                </CardContent>
-              </Card>
-            )}
+            {event.tickets_webview && hasTickets === false && (() => {
+              const isUrl = isWebviewUrl(event.tickets_webview);
+              return (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ShoppingCart className="h-5 w-5 text-primary" />
+                      {i18n.language === 'en' ? 'Purchase Tickets' : 'Comprar Entradas'}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 sm:p-6">
+                    {isUrl ? (
+                      <iframe
+                        src={event.tickets_webview}
+                        className="w-full min-h-[600px] sm:min-h-[700px] border-0 rounded-lg"
+                        title={i18n.language === 'en' ? 'Purchase Tickets' : 'Comprar Entradas'}
+                        allow="payment; fullscreen"
+                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+                      />
+                    ) : (
+                      <div 
+                        className="w-full min-h-[400px] sm:min-h-[500px] max-h-[800px] overflow-auto rounded-lg border border-border/50 bg-white [&_a]:inline-flex [&_a]:items-center [&_a]:justify-center [&_a]:rounded-md [&_a]:bg-primary [&_a]:px-4 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-primary-foreground [&_a]:transition-colors [&_a]:hover:bg-primary/90 [&_a]:focus-visible:outline-none [&_a]:focus-visible:ring-2 [&_a]:focus-visible:ring-ring [&_a]:focus-visible:ring-offset-2 [&_a]:disabled:pointer-events-none [&_a]:disabled:opacity-50 [&_a]:no-underline [&_a]:text-white [&_button]:inline-flex [&_button]:items-center [&_button]:justify-center [&_button]:rounded-md [&_button]:bg-primary [&_button]:px-4 [&_button]:py-2 [&_button]:text-sm [&_button]:font-medium [&_button]:text-primary-foreground [&_button]:transition-colors [&_button]:hover:bg-primary/90 [&_button]:focus-visible:outline-none [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-ring [&_button]:focus-visible:ring-offset-2 [&_button]:disabled:pointer-events-none [&_button]:disabled:opacity-50 [&_button]:text-white [&_button]:border-0 [&_button]:cursor-pointer"
+                        dangerouslySetInnerHTML={{ __html: event.tickets_webview }}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* Photo Gallery */}
             {event.photos && event.photos.length > 0 && (

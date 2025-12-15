@@ -194,8 +194,12 @@ export class DameEventsAPI {
 
       if (!response.ok) {
         console.warn('⚠️ DAME API not available, using demo data with simulated image URLs');
+        console.warn(`⚠️ Response status: ${response.status} ${response.statusText}`);
         // Decidir qué tipo de demo data devolver basado en el endpoint
-        if (endpoint.includes('/events/') && !endpoint.includes('/by-category/')) {
+        if (endpoint.includes('/events/monthly/')) {
+          return this.getDemoData<T>(endpoint);
+        }
+        if (endpoint.includes('/events/') && !endpoint.includes('/by-category/') && !endpoint.includes('/monthly/')) {
           const slug = endpoint.replace('/events/', '').replace('/', '');
           return this.getEventDetailDemo(slug) as ApiResponse<T>;
         }
@@ -205,14 +209,26 @@ export class DameEventsAPI {
       let data = await response.json();
       
       // Procesar eventos detallados para asegurar que recurring_info está correcto
-      if (endpoint.includes('/events/') && !endpoint.includes('/by-category/')) {
+      if (endpoint.includes('/events/monthly/')) {
+        // Endpoint mensual: puede devolver array directamente o objeto con propiedad 'events'
+        console.log('📦 Monthly events API response:', data);
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          // Si es un objeto, extraer el array de eventos
+          if ('events' in data && Array.isArray(data.events)) {
+            data = data.events;
+          } else if ('results' in data && Array.isArray(data.results)) {
+            data = data.results;
+          }
+        }
+        console.log('✅ Monthly events loaded from DAME API:', Array.isArray(data) ? data.length : 'N/A');
+      } else if (endpoint.includes('/events/') && !endpoint.includes('/by-category/')) {
         // Es un evento detallado (objeto único)
         if (data && typeof data === 'object' && !Array.isArray(data) && data.is_recurring_weekly) {
           data = this.processRecurringEvent(data);
         }
         console.log('✅ Event detail loaded from DAME API');
       } else {
-        console.log('✅ Events loaded from DAME API with images:', data.length || 'N/A');
+        console.log('✅ Events loaded from DAME API with images:', Array.isArray(data) ? data.length : 'N/A');
       }
       
       return {
@@ -222,7 +238,10 @@ export class DameEventsAPI {
     } catch (error) {
       console.warn('⚠️ API Connection Error, falling back to demo data:', error);
       // Decidir qué tipo de demo data devolver basado en el endpoint
-      if (endpoint.includes('/events/') && !endpoint.includes('/by-category/')) {
+      if (endpoint.includes('/events/monthly/')) {
+        return this.getDemoData<T>(endpoint);
+      }
+      if (endpoint.includes('/events/') && !endpoint.includes('/by-category/') && !endpoint.includes('/monthly/')) {
         const slug = endpoint.replace('/events/', '').replace('/', '');
         return this.getEventDetailDemo(slug) as ApiResponse<T>;
       }
@@ -233,6 +252,25 @@ export class DameEventsAPI {
   private getDemoData<T>(endpoint: string): ApiResponse<T> {
     // SIMULACIÓN: Estos datos representan lo que devolvería la API real de organizaciondame.org
     // En producción, las image_url vendrían directamente desde el backend de DAME
+    
+    // Manejar endpoint de eventos mensuales
+    if (endpoint.includes('/events/monthly/')) {
+      // Extraer año y mes de los parámetros
+      const yearMatch = endpoint.match(/year=(\d+)/);
+      const monthMatch = endpoint.match(/month=(\d+)/);
+      
+      const year = yearMatch ? parseInt(yearMatch[1], 10) : new Date().getFullYear();
+      const month = monthMatch ? parseInt(monthMatch[1], 10) : new Date().getMonth() + 1;
+      
+      // Generar eventos demo para el mes solicitado
+      const demoEvents: DameEvent[] = this.generateMonthlyDemoEvents(year, month);
+      
+      return {
+        success: true,
+        data: demoEvents as T,
+      };
+    }
+    
     if (endpoint.includes('/events/by-category')) {
       const demoData: EventsByCategory[] = [
         {
@@ -460,6 +498,103 @@ export class DameEventsAPI {
     };
   }
 
+  // Generar eventos demo para un mes específico
+  private generateMonthlyDemoEvents(year: number, month: number): DameEvent[] {
+    const events: DameEvent[] = [];
+    const daysInMonth = new Date(year, month, 0).getDate();
+    
+    // Eventos recurrentes semanales (cada martes, jueves, sábado)
+    const recurringDays = [2, 4, 6]; // Martes, Jueves, Sábado
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day);
+      const dayOfWeek = date.getDay(); // 0 = domingo, 1 = lunes, etc.
+      
+      // Ajustar para que 1 = lunes, 2 = martes, etc.
+      const adjustedDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+      
+      // Agregar eventos según el día de la semana
+      if (recurringDays.includes(adjustedDayOfWeek)) {
+        // Martes - Taller de Bachata
+        if (adjustedDayOfWeek === 2) {
+          events.push({
+            event_slug: `taller-bachata-principiantes-${year}-${month}-${day}`,
+            title_es: "Taller de Bachata para Principiantes",
+            title_en: "Beginner's Bachata Workshop",
+            short_description_es: "Aprende los pasos básicos de bachata",
+            short_description_en: "Learn basic bachata steps",
+            start: new Date(year, month - 1, day, 18, 0, 0).toISOString(),
+            price: "20.00",
+            place: {
+              id: 3,
+              name: "Escuela de Baile DAME",
+              city: "Valencia"
+            },
+            is_recurring_weekly: true
+          });
+        }
+        
+        // Jueves - Clase de Yoga
+        if (adjustedDayOfWeek === 4) {
+          events.push({
+            event_slug: `clase-yoga-parque-${year}-${month}-${day}`,
+            title_es: "Clase de Yoga en el Parque",
+            title_en: "Park Yoga Class",
+            short_description_es: "Sesión de yoga matutino al aire libre",
+            short_description_en: "Morning outdoor yoga session",
+            start: new Date(year, month - 1, day, 8, 0, 0).toISOString(),
+            price: "0.00",
+            place: {
+              id: 7,
+              name: "Parque de la Ciudadela",
+              city: "Valencia"
+            },
+            is_recurring_weekly: true
+          });
+        }
+        
+        // Sábado - Taller de Mindfulness
+        if (adjustedDayOfWeek === 6) {
+          events.push({
+            event_slug: `taller-mindfulness-${year}-${month}-${day}`,
+            title_es: "Taller de Mindfulness y Relajación",
+            title_en: "Mindfulness and Relaxation Workshop",
+            short_description_es: "Técnicas de relajación y mindfulness",
+            short_description_en: "Relaxation and mindfulness techniques",
+            start: new Date(year, month - 1, day, 18, 30, 0).toISOString(),
+            price: "0.00",
+            place: {
+              id: 9,
+              name: "Centro DAME Apoyo",
+              city: "Valencia"
+            },
+            is_recurring_weekly: true
+          });
+        }
+      }
+      
+      // Eventos únicos ocasionales
+      if (day % 7 === 0) { // Cada domingo
+        events.push({
+          event_slug: `concierto-jazz-valencia-${year}-${month}-${day}`,
+          title_es: "Concierto de Jazz en Valencia",
+          title_en: "Jazz Concert in Valencia",
+          short_description_es: "Una noche mágica con los mejores músicos de jazz",
+          short_description_en: "A magical night with the best jazz musicians",
+          start: new Date(year, month - 1, day, 20, 0, 0).toISOString(),
+          price: "25.00",
+          place: {
+            id: 1,
+            name: "Palau de la Música Catalana",
+            city: "Valencia"
+          }
+        });
+      }
+    }
+    
+    return events;
+  }
+
   // Obtener eventos por categoría
   async getEventsByCategory(): Promise<ApiResponse<EventsByCategory[]>> {
     return this.makeRequest<EventsByCategory[]>('/events/by-category/');
@@ -473,6 +608,19 @@ export class DameEventsAPI {
   // Obtener eventos de una categoría específica
   async getEventsBySpecificCategory(categoryId: number): Promise<ApiResponse<EventsByCategory>> {
     return this.makeRequest<EventsByCategory>(`/events/by-category/${categoryId}/`);
+  }
+
+  // Obtener todos los eventos de un mes específico (sin paginación, con eventos recurrentes expandidos)
+  async getMonthlyEvents(year: number, month: number): Promise<ApiResponse<DameEvent[]>> {
+    // El mes debe ser 1-12, construir URL con parámetros usando URLSearchParams
+    // Intentar primero con query parameters: /events/monthly/?year=2024&month=1
+    const params = new URLSearchParams({
+      year: year.toString(),
+      month: month.toString()
+    });
+    const endpoint = `/events/monthly/?${params.toString()}`;
+    console.log(`📡 Calling monthly events API: ${API_BASE_URL}${endpoint}`);
+    return this.makeRequest<DameEvent[]>(endpoint);
   }
 
   // Procesar evento recurrente para asegurar datos válidos

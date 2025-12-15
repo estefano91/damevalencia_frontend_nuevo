@@ -27,6 +27,8 @@ import EditMember from "./pages/EditMember";
 import MyTickets from "./pages/MyTickets";
 import MyUpcomingEvents from "./pages/MyUpcomingEvents";
 import TicketHashLookup from "./pages/TicketHashLookup";
+import MonthlyEvents from "./pages/MonthlyEvents";
+import Alquiler from "./pages/Alquiler";
 
 const queryClient = new QueryClient();
 
@@ -164,6 +166,26 @@ const App = () => (
                   <Route path="/about" element={<AboutUs />} />
                   <Route path="/tickets/hash/:hash" element={<TicketHashLookup />} />
                   <Route path="/ticket-hash" element={<TicketHashLookup />} />
+                  
+                  {/* Eventos mensuales */}
+                  <Route
+                    path="/monthly"
+                    element={
+                      <ProtectedRoute hideSidebar>
+                        <MonthlyEvents />
+                      </ProtectedRoute>
+                    }
+                  />
+                  
+                  {/* Alquiler de material */}
+                  <Route
+                    path="/alquiler"
+                    element={
+                      <ProtectedRoute hideSidebar>
+                        <Alquiler />
+                      </ProtectedRoute>
+                    }
+                  />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
