@@ -304,10 +304,17 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
     try {
       const response = await dameEventsAPI.getEventsByCategory();
       if (response.success && response.data) {
-        // Eliminar duplicados usando event_slug como identificador único
+        // Eliminar duplicados y eventos cancelados usando event_slug como identificador único
         const seenEventSlugs = new Set<string>();
         const uniqueCategories = response.data.map(categoryData => {
           const uniqueEvents = categoryData.events.filter(event => {
+            // Filtrar eventos cancelados
+            if (event.is_cancelled) {
+              console.log(`🚫 Evento cancelado filtrado: ${event.event_slug} - ${event.start}`);
+              return false;
+            }
+            
+            // Filtrar duplicados
             if (seenEventSlugs.has(event.event_slug)) {
               console.warn(`🚨 Evento duplicado eliminado: ${event.event_slug}`);
               return false; // Saltar evento duplicado

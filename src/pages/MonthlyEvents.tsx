@@ -88,8 +88,12 @@ const MonthlyEvents = () => {
         
         console.log(`✅ Loaded ${eventsArray.length} events`);
         
+        // Filtrar eventos cancelados
+        const activeEvents = eventsArray.filter(event => !event.is_cancelled);
+        console.log(`✅ Filtered ${activeEvents.length} active events (${eventsArray.length - activeEvents.length} cancelled removed)`);
+        
         // Ordenar eventos por fecha
-        const sortedEvents = eventsArray.sort((a, b) => {
+        const sortedEvents = activeEvents.sort((a, b) => {
           const dateA = new Date(a.start).getTime();
           const dateB = new Date(b.start).getTime();
           return dateA - dateB;

@@ -45,6 +45,7 @@ export interface DameEvent {
   capacity?: number;
   registered_count?: number;
   is_recurring_weekly?: boolean; // Indica si el evento se repite semanalmente
+  is_cancelled?: boolean; // Indica si esta sesión específica del evento está cancelada (para eventos recurrentes expandidos)
   organizers?: EventOrganizer[]; // Organizadores del evento
 }
 
@@ -218,6 +219,14 @@ export class DameEventsAPI {
             data = data.events;
           } else if ('results' in data && Array.isArray(data.results)) {
             data = data.results;
+          }
+        }
+        // Filtrar eventos cancelados en la respuesta de la API
+        if (Array.isArray(data)) {
+          const beforeFilter = data.length;
+          data = data.filter((event: any) => !event.is_cancelled);
+          if (beforeFilter !== data.length) {
+            console.log(`🚫 Filtered ${beforeFilter - data.length} cancelled events from monthly API response`);
           }
         }
         console.log('✅ Monthly events loaded from DAME API:', Array.isArray(data) ? data.length : 'N/A');
@@ -597,7 +606,18 @@ export class DameEventsAPI {
 
   // Obtener eventos por categoría
   async getEventsByCategory(): Promise<ApiResponse<EventsByCategory[]>> {
-    return this.makeRequest<EventsByCategory[]>('/events/by-category/');
+    const response = await this.makeRequest<EventsByCategory[]>('/events/by-category/');
+    
+    // Filtrar eventos cancelados en cada categoría
+    if (response.success && response.data) {
+      response.data = response.data.map(categoryData => ({
+        ...categoryData,
+        events: categoryData.events.filter(event => !event.is_cancelled),
+        total_events: categoryData.events.filter(event => !event.is_cancelled).length
+      })).filter(categoryData => categoryData.events.length > 0);
+    }
+    
+    return response;
   }
 
   // Obtener un evento específico por slug - DATOS DETALLADOS
