@@ -223,7 +223,7 @@ const Membership = () => {
           <div>
             <CardTitle className="text-2xl flex items-center gap-2">
               <IdCard className="h-6 w-6 text-primary" />
-              {i18n.language === 'en' ? 'Join Benefits Program' : 'Afiliarse al Programa de Beneficios'}
+              {i18n.language === 'en' ? 'Become DAME Member' : 'Hazte Miembro DAME'}
             </CardTitle>
             <CardDescription className="mt-2">
               {i18n.language === 'en'
@@ -338,7 +338,7 @@ const Membership = () => {
                 {i18n.language === 'en' ? 'Processing...' : 'Procesando...'}
               </>
             ) : (
-              i18n.language === 'en' ? 'Join Program' : 'Afiliarse'
+              i18n.language === 'en' ? 'Become Member' : 'Hazte Miembro'
             )}
           </Button>
         </form>

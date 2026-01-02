@@ -1,3 +1,5 @@
+export type SubscriptionType = "FREE" | "VIP" | "SUPER";
+
 export interface ApiMember {
   id: number;
   document_type: string;
@@ -7,6 +9,7 @@ export interface ApiMember {
   is_active: boolean;
   full_name: string;
   email: string;
+  subscription_type?: SubscriptionType;
   created_at: string;
   updated_at: string;
 }
@@ -98,6 +101,7 @@ export interface UpdateMemberPayload {
   document_type?: "DNI" | "PASAPORTE" | "NIE";
   document_number?: string;
   birth_date?: string; // YYYY-MM-DD
+  subscription_type?: SubscriptionType;
 }
 
 export interface UpdateMemberResponse {

@@ -15,7 +15,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,6 +114,9 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                     className="relative h-9 w-9 rounded-full"
                   >
                     <Avatar className="h-8 w-8">
+                      {user.avatar_url ? (
+                        <AvatarImage src={user.avatar_url} alt={user.full_name || user.email || "User"} />
+                      ) : null}
                       <AvatarFallback className="bg-purple-600 text-white">
                         {user.full_name?.split(" ").map(n => n[0]).join("").toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
                       </AvatarFallback>
@@ -123,6 +126,9 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="flex items-center gap-2 p-2">
                     <Avatar className="h-10 w-10">
+                      {user.avatar_url ? (
+                        <AvatarImage src={user.avatar_url} alt={user.full_name || user.email || "User"} />
+                      ) : null}
                       <AvatarFallback className="bg-purple-600 text-white">
                         {user.full_name?.split(" ").map(n => n[0]).join("").toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
                       </AvatarFallback>
@@ -147,7 +153,7 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                       className="bg-orange-500 text-white hover:bg-orange-600 focus:bg-orange-600 focus:text-white cursor-pointer"
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      {i18n.language === 'en' ? 'Join Benefits Program' : 'Afiliarse al Programa'}
+                      {i18n.language === 'en' ? 'Become DAME Member' : 'Hazte Miembro DAME'}
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => navigate("/configuracion")}>

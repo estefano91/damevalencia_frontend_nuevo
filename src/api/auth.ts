@@ -161,5 +161,14 @@ export const authApi = {
         Authorization: `Bearer ${accessToken}`,
       },
     }),
+
+  updateSubscription: (accessToken: string, subscriptionType: string) =>
+    request<UpdateMemberResponse>("/users/member/update/", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: { subscription_type: subscriptionType },
+    }),
 };
 

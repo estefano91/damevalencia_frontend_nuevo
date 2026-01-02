@@ -29,6 +29,7 @@ import MyUpcomingEvents from "./pages/MyUpcomingEvents";
 import TicketHashLookup from "./pages/TicketHashLookup";
 import MonthlyEvents from "./pages/MonthlyEvents";
 import Alquiler from "./pages/Alquiler";
+import Subscription from "./pages/Subscription";
 
 const queryClient = new QueryClient();
 
@@ -130,6 +131,16 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar requireAuth>
                         <EditMember />
+                      </ProtectedRoute>
+                    }
+                  />
+                  
+                  {/* Cambiar suscripción */}
+                  <Route
+                    path="/suscripcion"
+                    element={
+                      <ProtectedRoute hideSidebar requireAuth>
+                        <Subscription />
                       </ProtectedRoute>
                     }
                   />
