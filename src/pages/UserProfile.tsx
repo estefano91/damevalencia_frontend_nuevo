@@ -235,7 +235,7 @@ const UserProfile = () => {
                             {(member.subscription_type || "FREE") === "VIP"
                               ? "9,99€/mes"
                               : (member.subscription_type || "FREE") === "SUPER"
-                              ? "19,99€/mes"
+                              ? (i18n.language === 'en' ? 'Coming Soon' : 'Próximamente')
                               : (i18n.language === 'en' ? 'Free plan' : 'Plan gratuito')}
                           </p>
                         </div>

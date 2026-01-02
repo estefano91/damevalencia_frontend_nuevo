@@ -126,6 +126,17 @@ const Subscription = () => {
       return;
     }
 
+    if (planType === "SUPER") {
+      toast({
+        title: i18n.language === 'en' ? 'Coming Soon' : 'Próximamente',
+        description: i18n.language === 'en' 
+          ? 'SuperMember plan will be available soon'
+          : 'El plan SuperMiembro estará disponible próximamente',
+        variant: "default",
+      });
+      return;
+    }
+
     if (planType === "FREE") {
       toast({
         title: i18n.language === 'en' ? 'Cannot downgrade' : 'No se puede degradar',
@@ -222,8 +233,9 @@ const Subscription = () => {
           {plans.map((plan) => {
             const isCurrent = plan.type === currentSubscription;
             const isUpgrade = 
-              (currentSubscription === "FREE" && (plan.type === "VIP" || plan.type === "SUPER")) ||
-              (currentSubscription === "VIP" && plan.type === "SUPER");
+              (currentSubscription === "FREE" && plan.type === "VIP") ||
+              (currentSubscription === "VIP" && plan.type === "SUPER" && false); // SuperMiembro aún no disponible
+            const isComingSoon = plan.type === "SUPER";
 
             return (
               <Card
@@ -250,11 +262,19 @@ const Subscription = () => {
                     {isEnglish ? plan.descriptionEn : plan.description}
                   </CardDescription>
                   <div className="mt-4">
-                    <span className="text-3xl font-bold">{plan.price.toFixed(2)}€</span>
-                    {plan.price > 0 && (
-                      <span className="text-muted-foreground text-sm ml-1">
-                        {isEnglish ? '/month' : '/mes'}
+                    {plan.type === "SUPER" ? (
+                      <span className="text-xl font-bold text-muted-foreground">
+                        {isEnglish ? 'Coming Soon' : 'Próximamente'}
                       </span>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold">{plan.price.toFixed(2)}€</span>
+                        {plan.price > 0 && (
+                          <span className="text-muted-foreground text-sm ml-1">
+                            {isEnglish ? '/month' : '/mes'}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </CardHeader>
@@ -269,13 +289,13 @@ const Subscription = () => {
                   </ul>
                   <Button
                     className={`w-full ${
-                      isCurrent
+                      isCurrent || isComingSoon
                         ? 'bg-gray-400 cursor-not-allowed'
                         : isUpgrade
                         ? 'bg-purple-600 hover:bg-purple-700'
                         : 'bg-gray-400 cursor-not-allowed'
                     }`}
-                    disabled={loading || isCurrent || !isUpgrade}
+                    disabled={loading || isCurrent || !isUpgrade || isComingSoon}
                     onClick={() => handleChangeSubscription(plan.type)}
                   >
                     {loading ? (
@@ -285,6 +305,8 @@ const Subscription = () => {
                       </>
                     ) : isCurrent ? (
                       isEnglish ? 'Current Plan' : 'Plan Actual'
+                    ) : isComingSoon ? (
+                      isEnglish ? 'Coming Soon' : 'Próximamente'
                     ) : isUpgrade ? (
                       isEnglish ? 'Upgrade Now' : 'Actualizar Ahora'
                     ) : (
