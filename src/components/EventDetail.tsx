@@ -699,6 +699,11 @@ const EventDetail = () => {
     return null;
   };
 
+  // Verificar si hay un link de reserva explícito (booking_link o tickets_webview)
+  const hasReserveLink = () => {
+    return !!(event?.booking_link || (hasTickets === false && event?.tickets_webview));
+  };
+
   const getReserveLink = () => {
     // Prioridad 1: booking_link (link externo para reservas)
     if (event?.booking_link) {
@@ -2012,12 +2017,11 @@ const EventDetail = () => {
         // Esperar a que termine la verificación de tickets
         if (hasTickets === null || !event) return null;
 
-        // Si hay tickets_webview, no mostrar el botón flotante
-        if (event.tickets_webview && hasTickets === false) {
+        // Si no hay tickets ni link de reserva explícito, no mostrar botón
+        if (hasTickets === false && !hasReserveLink()) {
           return null;
         }
 
-        // Todos los eventos deben tener alguna opción, siempre mostrar el botón
         const reserveLink = getReserveLink();
 
         // Determinar el precio a mostrar
@@ -2121,12 +2125,15 @@ const EventDetail = () => {
           }
         };
 
-        // Determinar el label del botón según si hay tickets o no
+        // Determinar el label del botón según la lógica:
+        // 1. Si hay tickets → "Reservar Tickets"
+        // 2. Si no hay tickets pero hay link de reserva → "Reserva & Info"
+        // 3. Si no hay tickets ni link → no mostrar (ya filtrado arriba)
         const attendLabel = checkingUserTicket
           ? (i18n.language === 'en' ? 'Checking availability...' : 'Verificando disponibilidad...')
           : hasTickets === true
           ? (i18n.language === 'en' ? 'Reserve Tickets' : 'Reservar Tickets')
-          : (i18n.language === 'en' ? 'Reserve' : 'Reservar');
+          : (i18n.language === 'en' ? 'Reserve & Info' : 'Reserva & Info');
 
         return (
           <div className="fixed bottom-4 left-0 right-0 px-4 z-40">
