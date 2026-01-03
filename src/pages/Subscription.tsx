@@ -126,6 +126,17 @@ const Subscription = () => {
       return;
     }
 
+    if (planType === "VIP") {
+      toast({
+        title: i18n.language === 'en' ? 'Coming Soon' : 'Próximamente',
+        description: i18n.language === 'en' 
+          ? 'VIP Member plan will be available soon'
+          : 'El plan Miembro VIP estará disponible próximamente',
+        variant: "default",
+      });
+      return;
+    }
+
     if (planType === "SUPER") {
       toast({
         title: i18n.language === 'en' ? 'Coming Soon' : 'Próximamente',
@@ -233,9 +244,9 @@ const Subscription = () => {
           {plans.map((plan) => {
             const isCurrent = plan.type === currentSubscription;
             const isUpgrade = 
-              (currentSubscription === "FREE" && plan.type === "VIP") ||
+              (currentSubscription === "FREE" && plan.type === "VIP" && false) || // VIP aún no disponible
               (currentSubscription === "VIP" && plan.type === "SUPER" && false); // SuperMiembro aún no disponible
-            const isComingSoon = plan.type === "SUPER";
+            const isComingSoon = plan.type === "VIP" || plan.type === "SUPER";
 
             return (
               <Card
@@ -262,7 +273,7 @@ const Subscription = () => {
                     {isEnglish ? plan.descriptionEn : plan.description}
                   </CardDescription>
                   <div className="mt-4">
-                    {plan.type === "SUPER" ? (
+                    {plan.type === "VIP" || plan.type === "SUPER" ? (
                       <span className="text-xl font-bold text-muted-foreground">
                         {isEnglish ? 'Coming Soon' : 'Próximamente'}
                       </span>
