@@ -67,6 +67,7 @@ const EventDetail = () => {
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [, forceUpdate] = useState({});
   const [hasTickets, setHasTickets] = useState<boolean | null>(null); // null = checking, true = has tickets, false = no tickets
+  const [allTicketsSoldOut, setAllTicketsSoldOut] = useState(false); // true = todas las entradas están agotadas
   const [minTicketPrice, setMinTicketPrice] = useState<string | null>(null); // Precio mínimo de los tickets
   const [maxTicketPrice, setMaxTicketPrice] = useState<string | null>(null); // Precio máximo de los tickets
   const [userHasTicket, setUserHasTicket] = useState(false);
@@ -173,6 +174,14 @@ const EventDetail = () => {
         const hasAnyVisibleTickets = tickets.length > 0;
         
         if (hasAnyVisibleTickets) {
+          // Verificar si todas las entradas en venta están agotadas
+          const ticketsOnSale = tickets.filter(t => t.is_on_sale);
+          const allSoldOut = ticketsOnSale.length > 0 && ticketsOnSale.every(t => 
+            t.available_stock !== null && 
+            t.available_stock <= 0
+          );
+          setAllTicketsSoldOut(allSoldOut);
+          
           // Calcular precio mínimo y máximo de todos los tickets disponibles
           const prices = tickets
             .filter(t => parseFloat(t.current_price || t.base_price || '0') > 0)
@@ -200,12 +209,14 @@ const EventDetail = () => {
           );
         } else {
           setHasTickets(false);
+          setAllTicketsSoldOut(false);
           setMinTicketPrice(null);
           setMaxTicketPrice(null);
         }
       } else {
         setAtDoorTicketType(null);
         setHasTickets(false);
+        setAllTicketsSoldOut(false);
         setMinTicketPrice(null);
         setMaxTicketPrice(null);
       }
@@ -213,6 +224,7 @@ const EventDetail = () => {
       console.error('Error fetching ticket info:', err);
       setAtDoorTicketType(null);
       setHasTickets(false);
+      setAllTicketsSoldOut(false);
       setMinTicketPrice(null);
       setMaxTicketPrice(null);
     }
@@ -2027,8 +2039,10 @@ const EventDetail = () => {
         // Determinar el precio a mostrar
         let priceDisplay = '';
         if (hasTickets === true) {
-          // Si hay tickets, mostrar el rango de precios "De X a Y"
-          if (minTicketPrice) {
+          // Si todas las entradas están agotadas, mostrar "(agotada)"
+          if (allTicketsSoldOut) {
+            priceDisplay = i18n.language === 'en' ? '(Sold out)' : '(Agotada)';
+          } else if (minTicketPrice) {
             if (maxTicketPrice && maxTicketPrice !== minTicketPrice) {
               // Hay un rango de precios
               priceDisplay = i18n.language === 'en' 
@@ -2148,7 +2162,7 @@ const EventDetail = () => {
                 <Button 
                   className="flex-1 h-16 sm:h-14 rounded-[999px] text-base sm:text-lg font-bold bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-orange-500/50 hover:scale-105 active:scale-100 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-lg relative overflow-hidden group"
                   onClick={() => handleReserveClick(reserveLink)}
-                  disabled={checkingUserTicket}
+                  disabled={checkingUserTicket || (hasTickets === true && allTicketsSoldOut)}
                 >
                   <span className="relative z-10">{attendLabel}</span>
                   {!checkingUserTicket && (
@@ -2212,7 +2226,7 @@ const EventDetail = () => {
 
         <div className="space-y-4 py-4">
           {allTicketTypes
-            .filter(t => t.is_on_sale && (t.available_stock === null || t.available_stock > 0))
+            .filter(t => t.is_on_sale)
             .map((ticketType) => {
               const isSoldOut = ticketType.available_stock !== null && ticketType.available_stock <= 0;
               const price = parseFloat(ticketType.current_price || ticketType.base_price || '0');
@@ -2277,7 +2291,7 @@ const EventDetail = () => {
               );
             })}
           
-          {allTicketTypes.filter(t => t.is_on_sale && (t.available_stock === null || t.available_stock > 0)).length === 0 && (
+          {allTicketTypes.filter(t => t.is_on_sale).length === 0 && (
             <Alert>
               <AlertDescription>
                 {i18n.language === 'en' 
