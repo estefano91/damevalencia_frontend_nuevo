@@ -2304,7 +2304,7 @@ const EventDetail = () => {
                                 : formatPrice(ticketType.current_price || ticketType.base_price || '0')}
                             </span>
                           </div>
-                          {ticketType.available_stock !== null && ticketType.available_stock <= 10 && (
+                          {ticketType.available_stock !== null && ticketType.available_stock <= 5 && (
                             <div className="flex items-center gap-2">
                               <TicketIcon className="h-4 w-4 text-muted-foreground" />
                               <span className="text-muted-foreground">
