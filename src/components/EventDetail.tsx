@@ -764,35 +764,39 @@ const EventDetail = () => {
       return;
     }
 
-    // Si hay tickets configurados, mostrar modal de selección de entradas
+    // Si hay tickets configurados, mostrar modal de selección de entradas (sin verificar login primero)
     if (hasTickets === true) {
-      if (!user) {
-        try {
-          sessionStorage.setItem(
-            pendingAttendKey,
-            JSON.stringify({
-              slug,
-              timestamp: Date.now(),
-            })
-          );
-        } catch (error) {
-          console.error('⚠️ EventDetail: No se pudo guardar la acción pendiente', error);
-        }
-        
-        const returnPath = `${location.pathname}${location.search}`;
-        navigate('/auth', {
-          state: { from: returnPath },
-        });
-        return;
-      }
-
-      // Abrir modal de selección de entradas
+      // Abrir modal de selección de entradas directamente
       setTicketsSelectionModalOpen(true);
       return;
     }
   };
 
   const handleTicketSelection = (ticketType: TicketTypeDetail) => {
+    // Verificar login antes de proceder con la selección
+    if (!user) {
+      // Guardar el tipo de ticket seleccionado para reanudar después del login
+      try {
+        sessionStorage.setItem(
+          pendingAttendKey,
+          JSON.stringify({
+            slug,
+            ticketTypeId: ticketType.id,
+            timestamp: Date.now(),
+          })
+        );
+      } catch (error) {
+        console.error('⚠️ EventDetail: No se pudo guardar la acción pendiente', error);
+      }
+      
+      const returnPath = `${location.pathname}${location.search}`;
+      navigate('/auth', {
+        state: { from: returnPath },
+      });
+      return;
+    }
+
+    // Si el usuario está logueado, proceder con la selección
     setTicketsSelectionModalOpen(false);
     setSelectedTicketType(ticketType);
 
@@ -829,19 +833,59 @@ const EventDetail = () => {
     if (!pendingActionRaw) return;
 
     try {
-      const pendingAction = JSON.parse(pendingActionRaw) as { slug?: string; timestamp?: number };
+      const pendingAction = JSON.parse(pendingActionRaw) as { slug?: string; timestamp?: number; ticketTypeId?: number };
       const isExpired = pendingAction.timestamp ? (Date.now() - pendingAction.timestamp) > 15 * 60 * 1000 : false;
       const slugMatches = !pendingAction.slug || pendingAction.slug === slug;
 
       if (!isExpired && slugMatches) {
+        // Si hay un ticketTypeId guardado, seleccionar automáticamente ese ticket
+        if (pendingAction.ticketTypeId && allTicketTypes.length > 0) {
+          const ticketType = allTicketTypes.find(t => t.id === pendingAction.ticketTypeId);
+          if (ticketType) {
+            // Limpiar la acción pendiente antes de proceder
+            sessionStorage.removeItem(pendingAttendKey);
+            // Proceder directamente con la selección del ticket (sin verificar login de nuevo)
+            setTicketsSelectionModalOpen(false);
+            setSelectedTicketType(ticketType);
+
+            if (ticketType.ticket_type === 'ONLINE' && ticketType.payment_gateway === 'STRIPE') {
+              setPurchaseModalOpen(true);
+            } else if (ticketType.ticket_type === 'RESERVA') {
+              setReserveModalOpen(true);
+            } else if (ticketType.ticket_type === 'EN_PUERTA') {
+              const isSoldOut =
+                ticketType.available_stock !== null &&
+                ticketType.available_stock !== undefined &&
+                ticketType.available_stock <= 0;
+
+              if (isSoldOut) {
+                toast({
+                  title: i18n.language === 'en' ? 'Sold out' : 'Agotado',
+                  description: i18n.language === 'en'
+                    ? 'No at-door spots available right now.'
+                    : 'No hay plazas en puerta disponibles en este momento.',
+                  variant: 'destructive',
+                });
+                return;
+              }
+
+              setAtDoorModalOpen(true);
+            }
+            return;
+          }
+        }
+        // Si no hay ticketTypeId específico, solo abrir el modal de selección
         setShouldResumeAttend(true);
+        sessionStorage.removeItem(pendingAttendKey);
+      } else {
+        // Limpiar si está expirado o no coincide
+        sessionStorage.removeItem(pendingAttendKey);
       }
     } catch (error) {
       console.error('⚠️ EventDetail: Error leyendo acción pendiente', error);
-    } finally {
       sessionStorage.removeItem(pendingAttendKey);
     }
-  }, [user, slug]);
+  }, [user, slug, allTicketTypes, toast, i18n.language]);
 
   useEffect(() => {
     if (!shouldResumeAttend) return;

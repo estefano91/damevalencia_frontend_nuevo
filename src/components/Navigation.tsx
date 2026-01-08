@@ -174,11 +174,11 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                     variant="ghost"
                     size="sm"
                     className="relative h-9 w-9 rounded-full"
-                    aria-label={i18n.language === 'en' ? 'Anonymous profile' : 'Perfil anónimo'}
+                    aria-label={i18n.language === 'en' ? 'Sign in' : 'Iniciar sesión'}
                   >
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-muted text-foreground">
-                        AN
+                      <AvatarFallback className="bg-muted text-foreground flex items-center justify-center">
+                        <User className="h-4 w-4" />
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -186,8 +186,8 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                 <DropdownMenuContent align="end" className="w-60">
                   <div className="flex items-center gap-3 p-3">
                     <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-muted text-foreground text-lg">
-                        AN
+                      <AvatarFallback className="bg-muted text-foreground flex items-center justify-center">
+                        <User className="h-5 w-5" />
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
