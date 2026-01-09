@@ -231,10 +231,10 @@ const MyTickets = () => {
       const lightGray = [240, 240, 240];
 
       // Header compacto
-      const headerHeight = 16;
+      const headerHeight = 20;
       doc.setFillColor(dark[0], dark[1], dark[2]);
       doc.rect(0, 0, pageWidth, headerHeight, 'F');
-      const logoHeight = headerHeight - 4;
+      const logoHeight = headerHeight - 2;
       const ratio = logoData.width / logoData.height;
       const logoWidth = logoHeight * ratio;
       doc.addImage(logoData.dataUrl, 'PNG', margin, (headerHeight - logoHeight) / 2, logoWidth, logoHeight);
@@ -248,7 +248,7 @@ const MyTickets = () => {
         { align: 'right' }
       );
 
-      let cursorY = headerHeight + 12;
+      let cursorY = headerHeight + 10;
       const cardWidth = pageWidth - margin * 2;
 
       // Hero card compacto
