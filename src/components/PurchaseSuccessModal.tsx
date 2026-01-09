@@ -320,10 +320,10 @@ export const PurchaseSuccessModal = ({
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       const infoLines = doc.splitTextToSize(infoText, cardWidth - 24);
-      const titleHeight = 12;
-      const textHeight = infoLines.length * 5;
-      const padding = 20;
-      const infoBoxHeight = titleHeight + textHeight + padding;
+      const infoTitleHeight = 12;
+      const infoTextHeight = infoLines.length * 5;
+      const infoPadding = 20;
+      const infoBoxHeight = infoTitleHeight + infoTextHeight + infoPadding;
       
       // Si no hay espacio suficiente, agregar nueva página
       if (remainingSpace < infoBoxHeight + 20) {
