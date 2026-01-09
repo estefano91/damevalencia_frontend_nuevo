@@ -6,11 +6,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, ArrowLeft, MapPin, Share2, Copy, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Calendar, ArrowLeft, MapPin, Share2, Copy, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
 import { dameTicketsAPI } from '@/integrations/dame-api/tickets';
 import type { Ticket, TicketStatus } from '@/types/tickets';
 import { useToast } from '@/hooks/use-toast';
 import QRCode from 'qrcode';
+import jsPDF from 'jspdf';
+import dameLogoWhite from '@/assets/damelogo blanco.png';
 
 const STATUS_COLORS: Record<TicketStatus, string> = {
   PURCHASED: 'bg-green-500 text-white',
@@ -30,6 +32,7 @@ const TicketHashLookup = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const formatDate = (value?: string) => {
     if (!value) return '--';
@@ -168,6 +171,308 @@ const TicketHashLookup = () => {
     }
   };
 
+  const generateTicketPDF = async () => {
+    if (!ticket) return;
+
+    setDownloading(true);
+    try {
+      const ticketHash =
+        ticket.hash ||
+        ticket.ticket_hash ||
+        ticket.ticket_metadata?.hash ||
+        ticket.ticket_metadata?.ticket_hash ||
+        effectiveHash;
+
+      const qrDataUrlForPDF = ticketHash
+        ? await QRCode.toDataURL(ticketHash, {
+            width: 400,
+            margin: 0,
+            errorCorrectionLevel: 'H',
+          })
+        : null;
+
+      const loadImageAsBase64 = (
+        src: string
+      ): Promise<{ dataUrl: string; width: number; height: number }> => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              if (!ctx) {
+                reject(new Error('Could not get canvas context'));
+                return;
+              }
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+              resolve({
+                dataUrl: canvas.toDataURL('image/png'),
+                width: img.width,
+                height: img.height,
+              });
+            } catch (error) {
+              reject(error);
+            }
+          };
+          img.onerror = (error) => reject(error);
+          img.src = src;
+        });
+      };
+
+      const logoData = await loadImageAsBase64(dameLogoWhite);
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
+      const purple = [98, 47, 141];
+      const dark = [18, 18, 18];
+      const gray = [80, 80, 80];
+      const lightGray = [240, 240, 240];
+
+      // Header compacto
+      const headerHeight = 16;
+      doc.setFillColor(dark[0], dark[1], dark[2]);
+      doc.rect(0, 0, pageWidth, headerHeight, 'F');
+      const logoHeight = headerHeight - 4;
+      const ratio = logoData.width / logoData.height;
+      const logoWidth = logoHeight * ratio;
+      doc.addImage(logoData.dataUrl, 'PNG', margin, (headerHeight - logoHeight) / 2, logoWidth, logoHeight);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(
+        i18n.language === 'en' ? 'Digital Access Ticket' : 'Entrada digital de acceso',
+        pageWidth - margin,
+        headerHeight / 2 + 2,
+        { align: 'right' }
+      );
+
+      let cursorY = headerHeight + 12;
+      const cardWidth = pageWidth - margin * 2;
+
+      // Hero card compacto
+      const heroHeight = 50;
+      doc.setFillColor(dark[0], dark[1], dark[2]);
+      doc.roundedRect(margin, cursorY, cardWidth, heroHeight, 4, 4, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      const titleLines = doc.splitTextToSize(ticket.event_title, cardWidth - 20);
+      doc.text(titleLines, margin + 10, cursorY + 12);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const eventDate = formatDate(ticket.event_date);
+      const dateY = cursorY + 12 + (titleLines.length * 5.5) + 4;
+      doc.text(eventDate, margin + 10, dateY);
+
+      cursorY += heroHeight + 10;
+
+      // Location box compacto
+      const eventPlace =
+        ticket.ticket_metadata?.event_place ||
+        (i18n.language === 'en' ? 'Location to be confirmed' : 'Ubicación por confirmar');
+      
+      let placeName = '';
+      let placeAddress = '';
+      if (eventPlace && eventPlace !== (i18n.language === 'en' ? 'Location to be confirmed' : 'Ubicación por confirmar')) {
+        const parts = eventPlace.split(',').map(p => p.trim()).filter(p => p);
+        if (parts.length >= 2) {
+          placeName = parts[0];
+          placeAddress = parts.slice(1).join(', ');
+        } else {
+          placeName = eventPlace;
+        }
+      } else {
+        placeName = eventPlace;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      const placeNameLines = placeName ? doc.splitTextToSize(placeName, cardWidth / 2 - 15) : [];
+      const placeAddressLines = placeAddress && placeAddress !== placeName ? doc.splitTextToSize(placeAddress, cardWidth / 2 - 15) : [];
+      const locationBoxHeight = Math.max(28, 8 + (placeNameLines.length * 4.5) + (placeAddressLines.length * 4) + 8);
+      
+      doc.setFillColor(250, 248, 255);
+      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 4, 4, 'F');
+      doc.setDrawColor(purple[0], purple[1], purple[2]);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 4, 4, 'D');
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(purple[0], purple[1], purple[2]);
+      doc.text(
+        i18n.language === 'en' ? 'Location' : 'Ubicación',
+        margin + 8,
+        cursorY + 8
+      );
+      
+      if (placeName) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(dark[0], dark[1], dark[2]);
+        const nameY = cursorY + 8 + 6;
+        doc.text(placeNameLines, margin + 8, nameY);
+        
+        if (placeAddress && placeAddress !== placeName) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(gray[0], gray[1], gray[2]);
+          const addressY = nameY + (placeNameLines.length * 4.5) + 2;
+          doc.text(placeAddressLines, margin + 8, addressY);
+        }
+      }
+
+      cursorY += locationBoxHeight + 8;
+
+      // Ticket info block - diseño horizontal compacto
+      const infoHeight = 50;
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(margin, cursorY, cardWidth, infoHeight, 4, 4, 'FD');
+
+      if (qrDataUrlForPDF) {
+        const qrSize = 35;
+        doc.addImage(qrDataUrlForPDF, 'PNG', margin + cardWidth - qrSize - 8, cursorY + 7, qrSize, qrSize);
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(dark[0], dark[1], dark[2]);
+      doc.text(i18n.language === 'en' ? 'Ticket' : 'Entrada', margin + 8, cursorY + 12);
+      doc.setFontSize(9);
+      doc.setTextColor(purple[0], purple[1], purple[2]);
+      doc.text(ticket.ticket_type_title, margin + 8, cursorY + 20);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(gray[0], gray[1], gray[2]);
+      doc.text(
+        i18n.language === 'en' ? `Attendee: ${ticket.full_name}` : `Asistente: ${ticket.full_name}`,
+        margin + 8,
+        cursorY + 28
+      );
+      doc.text(i18n.language === 'en' ? `Email: ${ticket.email}` : `Correo: ${ticket.email}`, margin + 8, cursorY + 35);
+
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(purple[0], purple[1], purple[2]);
+      doc.text(ticket.ticket_code, margin + 8, cursorY + infoHeight - 8);
+
+      cursorY += infoHeight + 8;
+
+      // Ticket metadata row compacto
+      const detailHeight = 22;
+      doc.setFillColor(248, 248, 250);
+      doc.setDrawColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(margin, cursorY, cardWidth, detailHeight, 3, 3, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(gray[0], gray[1], gray[2]);
+      const detailY = cursorY + 7;
+      const detailValuesY = cursorY + 15;
+      doc.text('Ticket ID', margin + 8, detailY);
+      doc.text(
+        i18n.language === 'en' ? 'Purchase Date' : 'Fecha de compra',
+        margin + cardWidth / 3 + 3,
+        detailY
+      );
+      doc.text(i18n.language === 'en' ? 'Price' : 'Precio', margin + (cardWidth / 3) * 2 + 3, detailY);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(dark[0], dark[1], dark[2]);
+      doc.text(`#${ticket.id}`, margin + 8, detailValuesY);
+      doc.text(formatDate(ticket.purchase_date), margin + cardWidth / 3 + 3, detailValuesY);
+      doc.text(formatPrice(ticket.purchase_price, ticket.purchase_currency), margin + (cardWidth / 3) * 2 + 3, detailValuesY);
+
+      cursorY += detailHeight + 8;
+
+      // Important info box compacto
+      const infoText =
+        i18n.language === 'en'
+          ? 'Present this ticket and QR code at the venue entrance. Arrive early to guarantee access and follow the team instructions at all times.'
+          : 'Presenta esta entrada y el código QR en la entrada del evento. Llega con tiempo para garantizar el acceso y sigue las indicaciones del equipo en todo momento.';
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      const infoLines = doc.splitTextToSize(infoText, cardWidth - 16);
+      const infoTitleHeight = 8;
+      const infoTextHeight = infoLines.length * 4;
+      const infoPadding = 12;
+      const infoBoxHeight = infoTitleHeight + infoTextHeight + infoPadding;
+      
+      const remainingSpace = pageHeight - cursorY - margin - 10;
+      const finalInfoBoxHeight = Math.min(infoBoxHeight, remainingSpace - 5);
+
+      doc.setFillColor(250, 248, 255);
+      doc.roundedRect(margin, cursorY, cardWidth, finalInfoBoxHeight, 4, 4, 'F');
+      doc.setDrawColor(purple[0], purple[1], purple[2]);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, cursorY, cardWidth, finalInfoBoxHeight, 4, 4, 'D');
+
+      doc.setTextColor(purple[0], purple[1], purple[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(
+        i18n.language === 'en' ? 'Important information' : 'Información importante',
+        margin + 8,
+        cursorY + 8
+      );
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(dark[0], dark[1], dark[2]);
+      doc.text(infoLines, margin + 8, cursorY + 8 + infoTitleHeight + 3);
+
+      // Footer note compacto
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(gray[0], gray[1], gray[2]);
+      doc.text(
+        i18n.language === 'en'
+          ? 'Valid only for the specified event and date. Non-transferable.'
+          : 'Válida solo para el evento y fecha indicados. Personal e intransferible.',
+        pageWidth / 2,
+        pageHeight - 8,
+        { align: 'center' }
+      );
+
+      const fileName = `ticket-${ticket.ticket_code}-${ticket.event_title
+        .substring(0, 20)
+        .replace(/[^a-z0-9]/gi, '_')
+        .toLowerCase()}.pdf`;
+      doc.save(fileName);
+
+      toast({
+        title: i18n.language === 'en' ? 'PDF downloaded!' : '¡PDF descargado!',
+        description:
+          i18n.language === 'en' ? 'Your ticket has been downloaded' : 'Tu entrada ha sido descargada',
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: i18n.language === 'en' ? 'Error' : 'Error',
+        description:
+          i18n.language === 'en' ? 'Could not generate PDF' : 'No se pudo generar el PDF',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const statusBadge = (status?: TicketStatus) => {
     if (!status) return null;
     const className = STATUS_COLORS[status] || 'bg-gray-200 text-gray-900';
@@ -243,6 +548,18 @@ const TicketHashLookup = () => {
                   <Button size="sm" variant="secondary" onClick={handleCopyLink}>
                     <Copy className="h-4 w-4 mr-2" />
                     {i18n.language === 'en' ? 'Copy link' : 'Copiar enlace'}
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="default" 
+                    onClick={generateTicketPDF}
+                    disabled={downloading}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {downloading 
+                      ? (i18n.language === 'en' ? 'Generating...' : 'Generando...')
+                      : (i18n.language === 'en' ? 'Download PDF' : 'Descargar PDF')
+                    }
                   </Button>
                   {ticket.event_slug && (
                     <Button
