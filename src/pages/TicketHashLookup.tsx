@@ -504,7 +504,7 @@ const TicketHashLookup = () => {
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
+        <Button variant="outline" onClick={() => navigate(-1)} className="mb-6 text-gray-900 border-gray-300 hover:bg-gray-50">
           <ArrowLeft className="mr-2 h-4 w-4" />
           {i18n.language === 'en' ? 'Back' : 'Volver'}
         </Button>
