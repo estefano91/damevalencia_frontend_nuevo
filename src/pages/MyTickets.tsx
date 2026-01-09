@@ -222,70 +222,51 @@ const MyTickets = () => {
       });
 
       const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 18;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
       const purple = [98, 47, 141];
       const dark = [18, 18, 18];
       const gray = [80, 80, 80];
+      const lightGray = [240, 240, 240];
 
-      // Header
-      const headerHeight = 20;
-      doc.setFillColor(0, 0, 0);
+      // Header compacto
+      const headerHeight = 16;
+      doc.setFillColor(dark[0], dark[1], dark[2]);
       doc.rect(0, 0, pageWidth, headerHeight, 'F');
-      const logoHeight = headerHeight - 6;
+      const logoHeight = headerHeight - 4;
       const ratio = logoData.width / logoData.height;
       const logoWidth = logoHeight * ratio;
       doc.addImage(logoData.dataUrl, 'PNG', margin, (headerHeight - logoHeight) / 2, logoWidth, logoHeight);
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       doc.text(
         i18n.language === 'en' ? 'Digital Access Ticket' : 'Entrada digital de acceso',
         pageWidth - margin,
-        headerHeight / 2 + 3,
+        headerHeight / 2 + 2,
         { align: 'right' }
       );
 
-      let cursorY = headerHeight + 20;
+      let cursorY = headerHeight + 12;
       const cardWidth = pageWidth - margin * 2;
 
-      // Hero card
-      const heroHeight = 70;
+      // Hero card compacto
+      const heroHeight = 50;
       doc.setFillColor(dark[0], dark[1], dark[2]);
-      doc.roundedRect(margin, cursorY, cardWidth, heroHeight, 5, 5, 'F');
+      doc.roundedRect(margin, cursorY, cardWidth, heroHeight, 4, 4, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(20);
-      const titleLines = doc.splitTextToSize(ticket.event_title, cardWidth - 80);
-      doc.text(titleLines, margin + 15, cursorY + 18);
+      doc.setFontSize(16);
+      const titleLines = doc.splitTextToSize(ticket.event_title, cardWidth - 20);
+      doc.text(titleLines, margin + 10, cursorY + 12);
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
+      doc.setFontSize(9);
       const eventDate = formatDate(ticket.event_date);
-      const dateY = cursorY + 18 + (titleLines.length * 7) + 5;
-      doc.text(eventDate, margin + 15, dateY);
+      const dateY = cursorY + 12 + (titleLines.length * 5.5) + 4;
+      doc.text(eventDate, margin + 10, dateY);
 
-      // Decorative panel
-      const accentPanelWidth = 58;
-      const accentPanelHeight = heroHeight - 20;
-      const accentPanelX = margin + cardWidth - accentPanelWidth - 12;
-      const accentPanelY = cursorY + 10;
-      doc.setFillColor(purple[0], purple[1], purple[2]);
-      doc.roundedRect(accentPanelX, accentPanelY, accentPanelWidth, accentPanelHeight, 4, 4, 'F');
-      const accentPadding = 4;
-      const accentLogoWidth = accentPanelWidth - accentPadding * 2;
-      const accentLogoHeight = accentPanelHeight - accentPadding * 2;
-      const accentLogoRatio = logoData.width / logoData.height;
-      let drawLogoWidth = accentLogoWidth;
-      let drawLogoHeight = accentLogoWidth / accentLogoRatio;
-      if (drawLogoHeight > accentLogoHeight) {
-        drawLogoHeight = accentLogoHeight;
-        drawLogoWidth = accentLogoHeight * accentLogoRatio;
-      }
-      const accentLogoX = accentPanelX + (accentPanelWidth - drawLogoWidth) / 2;
-      const accentLogoY = accentPanelY + (accentPanelHeight - drawLogoHeight) / 2;
-      doc.addImage(logoData.dataUrl, 'PNG', accentLogoX, accentLogoY, drawLogoWidth, drawLogoHeight);
-
-      cursorY += heroHeight + 18;
+      cursorY += heroHeight + 10;
 
       // Location box - Recuadro destacado para ubicación
       const eventPlace =
@@ -308,181 +289,167 @@ const MyTickets = () => {
         placeName = eventPlace;
       }
 
-      // Calcular altura dinámica del recuadro de ubicación
+      // Location box compacto
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      const placeNameLines = placeName ? doc.splitTextToSize(placeName, cardWidth - 30) : [];
-      const placeAddressLines = placeAddress && placeAddress !== placeName ? doc.splitTextToSize(placeAddress, cardWidth - 30) : [];
-      const titleHeight = 12;
-      const nameHeight = placeNameLines.length * 6;
-      const addressHeight = placeAddressLines.length * 5;
-      const padding = 20;
-      const locationBoxHeight = titleHeight + nameHeight + addressHeight + padding;
+      doc.setFontSize(9);
+      const placeNameLines = placeName ? doc.splitTextToSize(placeName, cardWidth / 2 - 15) : [];
+      const placeAddressLines = placeAddress && placeAddress !== placeName ? doc.splitTextToSize(placeAddress, cardWidth / 2 - 15) : [];
+      const locationBoxHeight = Math.max(28, 8 + (placeNameLines.length * 4.5) + (placeAddressLines.length * 4) + 8);
       
-      doc.setFillColor(240, 240, 255); // Fondo lila claro
-      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 5, 5, 'F');
-      
-      // Borde morado más visible
+      doc.setFillColor(250, 248, 255);
+      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 4, 4, 'F');
       doc.setDrawColor(purple[0], purple[1], purple[2]);
-      doc.setLineWidth(0.8);
-      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 5, 5, 'D');
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 4, 4, 'D');
       
       // Título "Ubicación"
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
+      doc.setFontSize(8);
       doc.setTextColor(purple[0], purple[1], purple[2]);
       doc.text(
         i18n.language === 'en' ? 'Location' : 'Ubicación',
-        margin + 12,
-        cursorY + 12
+        margin + 8,
+        cursorY + 8
       );
       
-      // Nombre del lugar (si existe)
+      // Nombre y dirección lado a lado si hay espacio
       if (placeName) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
+        doc.setFontSize(10);
         doc.setTextColor(dark[0], dark[1], dark[2]);
-        const nameY = cursorY + 12 + titleHeight + 3;
-        doc.text(placeNameLines, margin + 12, nameY);
+        const nameY = cursorY + 8 + 6;
+        doc.text(placeNameLines, margin + 8, nameY);
         
-        // Dirección (si existe y es diferente del nombre)
         if (placeAddress && placeAddress !== placeName) {
           doc.setFont('helvetica', 'normal');
-          doc.setFontSize(9);
+          doc.setFontSize(8);
           doc.setTextColor(gray[0], gray[1], gray[2]);
-          const addressY = nameY + nameHeight + 3;
-          doc.text(placeAddressLines, margin + 12, addressY);
+          const addressY = nameY + (placeNameLines.length * 4.5) + 2;
+          doc.text(placeAddressLines, margin + 8, addressY);
         }
       }
 
-      cursorY += locationBoxHeight + 15;
+      cursorY += locationBoxHeight + 8;
 
-      // Ticket info block
-      const infoHeight = 75;
+      // Ticket info block - diseño horizontal compacto
+      const infoHeight = 50;
       doc.setFillColor(255, 255, 255);
-      doc.setDrawColor(220, 220, 220);
+      doc.setDrawColor(lightGray[0], lightGray[1], lightGray[2]);
       doc.setLineWidth(0.3);
-      doc.roundedRect(margin, cursorY, cardWidth, infoHeight, 5, 5, 'FD');
+      doc.roundedRect(margin, cursorY, cardWidth, infoHeight, 4, 4, 'FD');
 
+      // QR Code a la derecha
+      if (qrDataUrl) {
+        const qrSize = 35;
+        doc.addImage(qrDataUrl, 'PNG', margin + cardWidth - qrSize - 8, cursorY + 7, qrSize, qrSize);
+      }
+
+      // Información del ticket a la izquierda
+      const leftWidth = cardWidth - (qrDataUrl ? 45 : 0) - 16;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
+      doc.setFontSize(11);
       doc.setTextColor(dark[0], dark[1], dark[2]);
-      doc.text(i18n.language === 'en' ? 'Ticket' : 'Entrada', margin + 15, cursorY + 18);
-      doc.setFontSize(10);
+      doc.text(i18n.language === 'en' ? 'Ticket' : 'Entrada', margin + 8, cursorY + 12);
+      doc.setFontSize(9);
       doc.setTextColor(purple[0], purple[1], purple[2]);
-      doc.text(ticket.ticket_type_title, margin + 15, cursorY + 30);
+      doc.text(ticket.ticket_type_title, margin + 8, cursorY + 20);
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       doc.setTextColor(gray[0], gray[1], gray[2]);
       doc.text(
         i18n.language === 'en' ? `Attendee: ${ticket.full_name}` : `Asistente: ${ticket.full_name}`,
-        margin + 15,
-        cursorY + 43
+        margin + 8,
+        cursorY + 28
       );
-      doc.text(i18n.language === 'en' ? `Email: ${ticket.email}` : `Correo: ${ticket.email}`, margin + 15, cursorY + 52);
-
-      if (qrDataUrl) {
-        const qrSize = 40;
-        doc.addImage(qrDataUrl, 'PNG', margin + cardWidth - qrSize - 15, cursorY + 12, qrSize, qrSize);
-      }
+      doc.text(i18n.language === 'en' ? `Email: ${ticket.email}` : `Correo: ${ticket.email}`, margin + 8, cursorY + 35);
 
       doc.setFont('courier', 'bold');
-      doc.setFontSize(12);
+      doc.setFontSize(10);
       doc.setTextColor(purple[0], purple[1], purple[2]);
-      doc.text(ticket.ticket_code, margin + 15, cursorY + infoHeight - 10);
+      doc.text(ticket.ticket_code, margin + 8, cursorY + infoHeight - 8);
 
-      cursorY += infoHeight + 15;
+      cursorY += infoHeight + 8;
 
-      // Ticket metadata row
-      const detailHeight = 28;
+      // Ticket metadata row compacto
+      const detailHeight = 22;
       doc.setFillColor(248, 248, 250);
-      doc.setDrawColor(220, 220, 220);
+      doc.setDrawColor(lightGray[0], lightGray[1], lightGray[2]);
       doc.setLineWidth(0.3);
-      doc.roundedRect(margin, cursorY, cardWidth, detailHeight, 4, 4, 'FD');
+      doc.roundedRect(margin, cursorY, cardWidth, detailHeight, 3, 3, 'FD');
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(7);
       doc.setTextColor(gray[0], gray[1], gray[2]);
-      const detailY = cursorY + 9;
-      const detailValuesY = cursorY + 19;
-      doc.text('Ticket ID', margin + 10, detailY);
+      const detailY = cursorY + 7;
+      const detailValuesY = cursorY + 15;
+      doc.text('Ticket ID', margin + 8, detailY);
       doc.text(
         i18n.language === 'en' ? 'Purchase Date' : 'Fecha de compra',
-        margin + cardWidth / 3 + 5,
+        margin + cardWidth / 3 + 3,
         detailY
       );
-      doc.text(i18n.language === 'en' ? 'Price' : 'Precio', margin + (cardWidth / 3) * 2 + 5, detailY);
+      doc.text(i18n.language === 'en' ? 'Price' : 'Precio', margin + (cardWidth / 3) * 2 + 3, detailY);
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setTextColor(dark[0], dark[1], dark[2]);
-      doc.text(`#${ticket.id}`, margin + 10, detailValuesY);
-      doc.text(formatDate(ticket.purchase_date), margin + cardWidth / 3 + 5, detailValuesY);
-      doc.text(formatPrice(ticket.purchase_price, ticket.purchase_currency), margin + (cardWidth / 3) * 2 + 5, detailValuesY);
+      doc.text(`#${ticket.id}`, margin + 8, detailValuesY);
+      doc.text(formatDate(ticket.purchase_date), margin + cardWidth / 3 + 3, detailValuesY);
+      doc.text(formatPrice(ticket.purchase_price, ticket.purchase_currency), margin + (cardWidth / 3) * 2 + 3, detailValuesY);
 
-      cursorY += detailHeight + 15;
+      cursorY += detailHeight + 8;
 
-      // Verificar si hay espacio suficiente en la página
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const remainingSpace = pageHeight - cursorY - margin;
-      const minSpaceNeeded = 50; // Espacio mínimo necesario para el recuadro de información
-
-      // Important info box - Calcular altura dinámicamente
+      // Important info box compacto - ajustar para que quepa en una página
       const infoText =
         i18n.language === 'en'
           ? 'Present this ticket and QR code at the venue entrance. Arrive early to guarantee access and follow the team instructions at all times.'
           : 'Presenta esta entrada y el código QR en la entrada del evento. Llega con tiempo para garantizar el acceso y sigue las indicaciones del equipo en todo momento.';
       
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      const infoLines = doc.splitTextToSize(infoText, cardWidth - 24);
-      const infoTitleHeight = 12;
-      const infoTextHeight = infoLines.length * 5;
-      const infoPadding = 20;
+      doc.setFontSize(8);
+      const infoLines = doc.splitTextToSize(infoText, cardWidth - 16);
+      const infoTitleHeight = 8;
+      const infoTextHeight = infoLines.length * 4;
+      const infoPadding = 12;
       const infoBoxHeight = infoTitleHeight + infoTextHeight + infoPadding;
       
-      // Si no hay espacio suficiente, agregar nueva página
-      if (remainingSpace < infoBoxHeight + 20) {
-        doc.addPage();
-        cursorY = margin;
-      }
+      // Ajustar altura si no cabe
+      const remainingSpace = pageHeight - cursorY - margin - 10;
+      const finalInfoBoxHeight = Math.min(infoBoxHeight, remainingSpace - 5);
 
-      // Fondo con color suave
-      doc.setFillColor(250, 248, 255); // Fondo lila muy claro
-      doc.roundedRect(margin, cursorY, cardWidth, infoBoxHeight, 4, 4, 'F');
-      
-      // Borde morado
+      doc.setFillColor(250, 248, 255);
+      doc.roundedRect(margin, cursorY, cardWidth, finalInfoBoxHeight, 4, 4, 'F');
       doc.setDrawColor(purple[0], purple[1], purple[2]);
       doc.setLineWidth(0.5);
-      doc.roundedRect(margin, cursorY, cardWidth, infoBoxHeight, 4, 4, 'D');
+      doc.roundedRect(margin, cursorY, cardWidth, finalInfoBoxHeight, 4, 4, 'D');
 
       doc.setTextColor(purple[0], purple[1], purple[2]);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
+      doc.setFontSize(9);
       doc.text(
         i18n.language === 'en' ? 'Important information' : 'Información importante',
-        margin + 12,
-        cursorY + 15
+        margin + 8,
+        cursorY + 8
       );
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(dark[0], dark[1], dark[2]);
-      doc.text(infoLines, margin + 12, cursorY + 28);
-
-      cursorY += infoBoxHeight + 12;
-
-      // Footer note
-      doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
+      doc.setTextColor(dark[0], dark[1], dark[2]);
+      doc.text(infoLines, margin + 8, cursorY + 8 + infoTitleHeight + 3);
+
+      cursorY += finalInfoBoxHeight + 6;
+
+      // Footer note compacto
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
       doc.setTextColor(gray[0], gray[1], gray[2]);
       doc.text(
         i18n.language === 'en'
           ? 'Valid only for the specified event and date. Non-transferable.'
           : 'Válida solo para el evento y fecha indicados. Personal e intransferible.',
         pageWidth / 2,
-        cursorY,
+        pageHeight - 8,
         { align: 'center' }
       );
 
