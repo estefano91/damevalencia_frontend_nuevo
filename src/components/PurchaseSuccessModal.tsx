@@ -128,22 +128,24 @@ export const PurchaseSuccessModal = ({
         { align: 'right' }
       );
 
-      let cursorY = headerHeight + 15;
+      let cursorY = headerHeight + 20;
       const cardWidth = pageWidth - margin * 2;
 
       // Hero card
-      const heroHeight = 65;
+      const heroHeight = 70;
       doc.setFillColor(dark[0], dark[1], dark[2]);
-      doc.roundedRect(margin, cursorY, cardWidth, heroHeight, 4, 4, 'F');
+      doc.roundedRect(margin, cursorY, cardWidth, heroHeight, 5, 5, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(18);
-      doc.text(ticket.event_title, margin + 12, cursorY + 16, { maxWidth: cardWidth - 70 });
+      doc.setFontSize(20);
+      const titleLines = doc.splitTextToSize(ticket.event_title, cardWidth - 80);
+      doc.text(titleLines, margin + 15, cursorY + 18);
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
+      doc.setFontSize(11);
       const eventDate = formatDate(ticket.event_date);
-      doc.text(eventDate, margin + 12, cursorY + 32);
+      const dateY = cursorY + 18 + (titleLines.length * 7) + 5;
+      doc.text(eventDate, margin + 15, dateY);
 
       // Decorative panel
       const accentPanelWidth = 58;
@@ -166,7 +168,7 @@ export const PurchaseSuccessModal = ({
       const accentLogoY = accentPanelY + (accentPanelHeight - drawLogoHeight) / 2;
       doc.addImage(logoData.dataUrl, 'PNG', accentLogoX, accentLogoY, drawLogoWidth, drawLogoHeight);
 
-      cursorY += heroHeight + 12;
+      cursorY += heroHeight + 18;
 
       // Location box - Recuadro destacado para ubicación
       const eventPlace =
@@ -189,91 +191,104 @@ export const PurchaseSuccessModal = ({
         placeName = eventPlace;
       }
 
-      const locationBoxHeight = placeAddress ? 35 : 25;
-      doc.setFillColor(240, 240, 255); // Fondo lila claro
-      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 4, 4, 'F');
+      // Calcular altura dinámica del recuadro de ubicación
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      const placeNameLines = placeName ? doc.splitTextToSize(placeName, cardWidth - 30) : [];
+      const placeAddressLines = placeAddress && placeAddress !== placeName ? doc.splitTextToSize(placeAddress, cardWidth - 30) : [];
+      const titleHeight = 12;
+      const nameHeight = placeNameLines.length * 6;
+      const addressHeight = placeAddressLines.length * 5;
+      const padding = 20;
+      const locationBoxHeight = titleHeight + nameHeight + addressHeight + padding;
       
-      // Borde morado
+      doc.setFillColor(240, 240, 255); // Fondo lila claro
+      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 5, 5, 'F');
+      
+      // Borde morado más visible
       doc.setDrawColor(purple[0], purple[1], purple[2]);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 4, 4, 'D');
+      doc.setLineWidth(0.8);
+      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 5, 5, 'D');
       
       // Título "Ubicación"
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(gray[0], gray[1], gray[2]);
+      doc.setFontSize(10);
+      doc.setTextColor(purple[0], purple[1], purple[2]);
       doc.text(
         i18n.language === 'en' ? 'Location' : 'Ubicación',
-        margin + 10,
-        cursorY + 10
+        margin + 12,
+        cursorY + 12
       );
       
       // Nombre del lugar (si existe)
       if (placeName) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
+        doc.setFontSize(12);
         doc.setTextColor(dark[0], dark[1], dark[2]);
-        const nameY = placeAddress ? cursorY + 20 : cursorY + 18;
-        const nameLines = doc.splitTextToSize(placeName, cardWidth - 30);
-        doc.text(nameLines, margin + 10, nameY);
+        const nameY = cursorY + 12 + titleHeight + 3;
+        doc.text(placeNameLines, margin + 12, nameY);
         
         // Dirección (si existe y es diferente del nombre)
         if (placeAddress && placeAddress !== placeName) {
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(9);
           doc.setTextColor(gray[0], gray[1], gray[2]);
-          const addressY = nameY + (nameLines.length * 5) + 2;
-          const addressLines = doc.splitTextToSize(placeAddress, cardWidth - 30);
-          doc.text(addressLines, margin + 10, addressY);
+          const addressY = nameY + nameHeight + 3;
+          doc.text(placeAddressLines, margin + 12, addressY);
         }
       }
 
-      cursorY += locationBoxHeight + 12;
+      cursorY += locationBoxHeight + 15;
 
       // Ticket info block
-      const infoHeight = 70;
+      const infoHeight = 75;
       doc.setFillColor(255, 255, 255);
-      doc.roundedRect(margin, cursorY, cardWidth, infoHeight, 4, 4, 'FD');
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(margin, cursorY, cardWidth, infoHeight, 5, 5, 'FD');
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
+      doc.setFontSize(13);
       doc.setTextColor(dark[0], dark[1], dark[2]);
-      doc.text(i18n.language === 'en' ? 'Ticket' : 'Entrada', margin + 12, cursorY + 16);
+      doc.text(i18n.language === 'en' ? 'Ticket' : 'Entrada', margin + 15, cursorY + 18);
       doc.setFontSize(10);
-      doc.text(ticket.ticket_type_title, margin + 12, cursorY + 28);
+      doc.setTextColor(purple[0], purple[1], purple[2]);
+      doc.text(ticket.ticket_type_title, margin + 15, cursorY + 30);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(gray[0], gray[1], gray[2]);
       doc.text(
         i18n.language === 'en' ? `Attendee: ${ticket.full_name}` : `Asistente: ${ticket.full_name}`,
-        margin + 12,
-        cursorY + 40
+        margin + 15,
+        cursorY + 43
       );
-      doc.text(i18n.language === 'en' ? `Email: ${ticket.email}` : `Correo: ${ticket.email}`, margin + 12, cursorY + 48);
+      doc.text(i18n.language === 'en' ? `Email: ${ticket.email}` : `Correo: ${ticket.email}`, margin + 15, cursorY + 52);
 
       if (qrDataUrl) {
-        const qrSize = 38;
-        doc.addImage(qrDataUrl, 'PNG', margin + cardWidth - qrSize - 14, cursorY + 10, qrSize, qrSize);
+        const qrSize = 40;
+        doc.addImage(qrDataUrl, 'PNG', margin + cardWidth - qrSize - 15, cursorY + 12, qrSize, qrSize);
       }
 
       doc.setFont('courier', 'bold');
-      doc.setFontSize(11);
+      doc.setFontSize(12);
       doc.setTextColor(purple[0], purple[1], purple[2]);
-      doc.text(ticket.ticket_code, margin + 12, cursorY + infoHeight - 12);
+      doc.text(ticket.ticket_code, margin + 15, cursorY + infoHeight - 10);
 
-      cursorY += infoHeight + 10;
+      cursorY += infoHeight + 15;
 
       // Ticket metadata row
-      const detailHeight = 24;
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(margin, cursorY, cardWidth, detailHeight, 3, 3, 'FD');
+      const detailHeight = 28;
+      doc.setFillColor(248, 248, 250);
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(margin, cursorY, cardWidth, detailHeight, 4, 4, 'FD');
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(gray[0], gray[1], gray[2]);
-      const detailY = cursorY + 7;
-      const detailValuesY = cursorY + 16;
+      const detailY = cursorY + 9;
+      const detailValuesY = cursorY + 19;
       doc.text('Ticket ID', margin + 10, detailY);
       doc.text(
         i18n.language === 'en' ? 'Purchase Date' : 'Fecha de compra',
@@ -289,12 +304,41 @@ export const PurchaseSuccessModal = ({
       doc.text(formatDate(ticket.purchase_date), margin + cardWidth / 3 + 5, detailValuesY);
       doc.text(formatPrice(ticket.purchase_price, ticket.purchase_currency), margin + (cardWidth / 3) * 2 + 5, detailValuesY);
 
-      cursorY += detailHeight + 12;
+      cursorY += detailHeight + 15;
 
-      // Important info box
-      const infoBoxHeight = 60;
-      doc.setFillColor(255, 255, 255);
-      doc.roundedRect(margin, cursorY, cardWidth, infoBoxHeight, 4, 4, 'FD');
+      // Verificar si hay espacio suficiente en la página
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const remainingSpace = pageHeight - cursorY - margin;
+      const minSpaceNeeded = 50; // Espacio mínimo necesario para el recuadro de información
+
+      // Important info box - Calcular altura dinámicamente
+      const infoText =
+        i18n.language === 'en'
+          ? 'Present this ticket and QR code at the venue entrance. Arrive early to guarantee access and follow the team instructions at all times.'
+          : 'Presenta esta entrada y el código QR en la entrada del evento. Llega con tiempo para garantizar el acceso y sigue las indicaciones del equipo en todo momento.';
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const infoLines = doc.splitTextToSize(infoText, cardWidth - 24);
+      const titleHeight = 12;
+      const textHeight = infoLines.length * 5;
+      const padding = 20;
+      const infoBoxHeight = titleHeight + textHeight + padding;
+      
+      // Si no hay espacio suficiente, agregar nueva página
+      if (remainingSpace < infoBoxHeight + 20) {
+        doc.addPage();
+        cursorY = margin;
+      }
+
+      // Fondo con color suave
+      doc.setFillColor(250, 248, 255); // Fondo lila muy claro
+      doc.roundedRect(margin, cursorY, cardWidth, infoBoxHeight, 4, 4, 'F');
+      
+      // Borde morado
+      doc.setDrawColor(purple[0], purple[1], purple[2]);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, cursorY, cardWidth, infoBoxHeight, 4, 4, 'D');
 
       doc.setTextColor(purple[0], purple[1], purple[2]);
       doc.setFont('helvetica', 'bold');
@@ -308,11 +352,6 @@ export const PurchaseSuccessModal = ({
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(dark[0], dark[1], dark[2]);
-      const infoText =
-        i18n.language === 'en'
-          ? 'Present this ticket and QR code at the venue entrance. Arrive early to guarantee access and follow the team instructions at all times.'
-          : 'Presenta esta entrada y el código QR en la entrada del evento. Llega con tiempo para garantizar el acceso y sigue las indicaciones del equipo en todo momento.';
-      const infoLines = doc.splitTextToSize(infoText, cardWidth - 24);
       doc.text(infoLines, margin + 12, cursorY + 28);
 
       cursorY += infoBoxHeight + 12;
