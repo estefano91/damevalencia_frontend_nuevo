@@ -504,10 +504,10 @@ const TicketHashLookup = () => {
 
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-3xl font-bold text-gray-900">
               {i18n.language === 'en' ? 'Ticket Viewer' : 'Visualizador de Ticket'}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-gray-600">
               {i18n.language === 'en'
                 ? 'Access your ticket securely with the unique hash sent to your email.'
                 : 'Accede a tu ticket de forma segura con el hash único enviado a tu correo.'}
@@ -537,10 +537,10 @@ const TicketHashLookup = () => {
               <CardHeader className="space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
-                    <CardTitle className="text-2xl">
+                    <CardTitle className="text-2xl text-gray-900">
                       {ticket.event_title}
                     </CardTitle>
-                    <p className="text-muted-foreground">{ticket.ticket_type_title}</p>
+                    <p className="text-gray-600">{ticket.ticket_type_title}</p>
                   </div>
                   {statusBadge(ticket.status)}
                 </div>
@@ -576,21 +576,21 @@ const TicketHashLookup = () => {
               <CardContent className="space-y-6">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="h-4 w-4 text-gray-500" />
                     <div>
-                      <span className="text-xs text-muted-foreground block">
+                      <span className="text-xs text-gray-500 block">
                         {i18n.language === 'en' ? 'Event date' : 'Fecha del evento'}
                       </span>
-                      <span className="font-medium">{formatDate(ticket.event_date)}</span>
+                      <span className="font-medium text-gray-900">{formatDate(ticket.event_date)}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <MapPin className="h-4 w-4 text-gray-500" />
                     <div>
-                      <span className="text-xs text-muted-foreground block">
+                      <span className="text-xs text-gray-500 block">
                         {i18n.language === 'en' ? 'Location' : 'Ubicación'}
                       </span>
-                      <span className="font-medium">
+                      <span className="font-medium text-gray-900">
                         {ticket.ticket_metadata?.event_place || '--'}
                       </span>
                     </div>
@@ -599,44 +599,44 @@ const TicketHashLookup = () => {
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <span className="text-xs text-muted-foreground block">
+                    <span className="text-xs text-gray-500 block">
                       {i18n.language === 'en' ? 'Attendee' : 'Asistente'}
                     </span>
-                    <p className="font-semibold">{ticket.full_name}</p>
-                    <p className="text-sm text-muted-foreground">{ticket.email}</p>
+                    <p className="font-semibold text-gray-900">{ticket.full_name}</p>
+                    <p className="text-sm text-gray-600">{ticket.email}</p>
                   </div>
                   <div>
-                    <span className="text-xs text-muted-foreground block">
+                    <span className="text-xs text-gray-500 block">
                       {i18n.language === 'en' ? 'Ticket code' : 'Código del ticket'}
                     </span>
-                    <p className="font-mono text-lg font-semibold">{ticket.ticket_code}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-mono text-lg font-semibold text-gray-900">{ticket.ticket_code}</p>
+                    <p className="text-xs text-gray-500">
                       {i18n.language === 'en' ? 'Hash' : 'Hash'}:{' '}
-                      <span className="font-mono break-all">{effectiveHash}</span>
+                      <span className="font-mono break-all text-gray-700">{effectiveHash}</span>
                     </p>
                   </div>
                 </div>
 
                 <div className="grid sm:grid-cols-3 gap-4">
                   <div>
-                    <span className="text-xs text-muted-foreground block">
+                    <span className="text-xs text-gray-500 block">
                       {i18n.language === 'en' ? 'Price' : 'Precio'}
                     </span>
-                    <p className="font-semibold">
+                    <p className="font-semibold text-gray-900">
                       {formatPrice(ticket.purchase_price, ticket.purchase_currency)}
                     </p>
                   </div>
                   <div>
-                    <span className="text-xs text-muted-foreground block">
+                    <span className="text-xs text-gray-500 block">
                       {i18n.language === 'en' ? 'Purchase date' : 'Fecha de compra'}
                     </span>
-                    <p className="font-medium">{formatDate(ticket.purchase_date)}</p>
+                    <p className="font-medium text-gray-900">{formatDate(ticket.purchase_date)}</p>
                   </div>
                   <div>
-                    <span className="text-xs text-muted-foreground block">
+                    <span className="text-xs text-gray-500 block">
                       {i18n.language === 'en' ? 'Status' : 'Estado'}
                     </span>
-                    <p className="font-medium">
+                    <p className="font-medium text-gray-900">
                       {ticket.status === 'PURCHASED'
                         ? i18n.language === 'en'
                           ? 'Confirmed'
@@ -651,13 +651,13 @@ const TicketHashLookup = () => {
                 </div>
 
                 {qrDataUrl && (
-                  <div className="pt-4 border-t flex flex-col items-center gap-3">
+                  <div className="pt-4 border-t border-gray-200 flex flex-col items-center gap-3">
                     <img
                       src={qrDataUrl}
                       alt="Ticket QR"
                       className="w-48 h-48"
                     />
-                    <p className="text-xs text-muted-foreground text-center max-w-sm">
+                    <p className="text-xs text-gray-600 text-center max-w-sm">
                       {i18n.language === 'en'
                         ? 'Present this QR code at the entrance to validate your ticket.'
                         : 'Presenta este código QR en la entrada para validar tu ticket.'}
