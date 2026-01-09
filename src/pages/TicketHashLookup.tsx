@@ -495,7 +495,7 @@ const TicketHashLookup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900">
+    <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
         <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -515,7 +515,7 @@ const TicketHashLookup = () => {
           </div>
 
           {loading && (
-            <Card className="p-6">
+            <Card className="p-6 bg-white border-gray-200">
               <div className="space-y-4">
                 <Skeleton className="h-6 w-1/3" />
                 <Skeleton className="h-4 w-1/2" />
@@ -533,7 +533,7 @@ const TicketHashLookup = () => {
           )}
 
           {!loading && ticket && (
-            <Card className="shadow-xl">
+            <Card className="shadow-xl bg-white border-gray-200">
               <CardHeader className="space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
