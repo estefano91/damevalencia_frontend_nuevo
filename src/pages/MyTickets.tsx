@@ -23,7 +23,8 @@ import {
   ArrowLeft,
   Copy,
   Check,
-  Download
+  Download,
+  Eye
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import jsPDF from 'jspdf';
@@ -536,15 +537,38 @@ const MyTickets = () => {
             </div>
           )}
 
-          <div className="pt-2 border-t">
+          <div className="pt-2 border-t flex gap-2">
             <Button 
               variant="outline" 
               size="sm" 
-              className="w-full"
+              className="flex-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                const ticketHash = ticket.hash || ticket.ticket_hash || ticket.ticket_metadata?.hash || ticket.ticket_metadata?.ticket_hash;
+                if (ticketHash) {
+                  navigate(`/tickets/hash/${ticketHash}`);
+                } else {
+                  toast({
+                    title: i18n.language === 'en' ? 'Error' : 'Error',
+                    description: i18n.language === 'en' 
+                      ? 'Ticket hash not available' 
+                      : 'Hash del ticket no disponible',
+                    variant: 'destructive',
+                  });
+                }
+              }}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              {i18n.language === 'en' ? 'View' : 'Ver'}
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
               onClick={(e) => generateTicketPDF(ticket, e)}
             >
               <Download className="mr-2 h-4 w-4" />
-              {i18n.language === 'en' ? 'Download PDF' : 'Descargar PDF'}
+              {i18n.language === 'en' ? 'PDF' : 'PDF'}
             </Button>
           </div>
         </div>
