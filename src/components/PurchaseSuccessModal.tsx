@@ -198,19 +198,13 @@ export const PurchaseSuccessModal = ({
       doc.setLineWidth(0.5);
       doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 4, 4, 'D');
       
-      // Icono de ubicación (texto)
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(purple[0], purple[1], purple[2]);
-      doc.text('📍', margin + 10, cursorY + 10);
-      
       // Título "Ubicación"
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       doc.setTextColor(gray[0], gray[1], gray[2]);
       doc.text(
         i18n.language === 'en' ? 'Location' : 'Ubicación',
-        margin + 18,
+        margin + 10,
         cursorY + 10
       );
       
