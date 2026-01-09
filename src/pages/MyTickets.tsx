@@ -230,14 +230,10 @@ const MyTickets = () => {
       const gray = [80, 80, 80];
       const lightGray = [240, 240, 240];
 
-      // Header compacto
-      const headerHeight = 20;
+      // Header compacto (sin logo)
+      const headerHeight = 12;
       doc.setFillColor(dark[0], dark[1], dark[2]);
       doc.rect(0, 0, pageWidth, headerHeight, 'F');
-      const logoHeight = headerHeight - 2;
-      const ratio = logoData.width / logoData.height;
-      const logoWidth = logoHeight * ratio;
-      doc.addImage(logoData.dataUrl, 'PNG', margin, (headerHeight - logoHeight) / 2, logoWidth, logoHeight);
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
@@ -251,14 +247,25 @@ const MyTickets = () => {
       let cursorY = headerHeight + 10;
       const cardWidth = pageWidth - margin * 2;
 
-      // Hero card compacto
-      const heroHeight = 50;
+      // Hero card compacto con logo grande a la derecha
+      const heroHeight = 55;
       doc.setFillColor(dark[0], dark[1], dark[2]);
       doc.roundedRect(margin, cursorY, cardWidth, heroHeight, 4, 4, 'F');
+      
+      // Logo grande a la derecha del hero card
+      const logoHeight = heroHeight - 10;
+      const ratio = logoData.width / logoData.height;
+      const logoWidth = logoHeight * ratio;
+      const logoX = margin + cardWidth - logoWidth - 10;
+      const logoY = cursorY + 5;
+      doc.addImage(logoData.dataUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
+      
+      // Título del evento a la izquierda (con espacio para el logo)
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
-      const titleLines = doc.splitTextToSize(ticket.event_title, cardWidth - 20);
+      const titleMaxWidth = cardWidth - logoWidth - 25;
+      const titleLines = doc.splitTextToSize(ticket.event_title, titleMaxWidth);
       doc.text(titleLines, margin + 10, cursorY + 12);
 
       doc.setFont('helvetica', 'normal');
