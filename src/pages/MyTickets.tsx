@@ -259,13 +259,8 @@ const MyTickets = () => {
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
-      const eventPlace =
-        ticket.ticket_metadata?.event_place ||
-        (i18n.language === 'en' ? 'Location to be confirmed' : 'Ubicación por confirmar');
-      doc.text(eventPlace, margin + 12, cursorY + 32);
-
       const eventDate = formatDate(ticket.event_date);
-      doc.text(eventDate, margin + 12, cursorY + 42);
+      doc.text(eventDate, margin + 12, cursorY + 32);
 
       // Decorative panel
       const accentPanelWidth = 58;
@@ -289,6 +284,74 @@ const MyTickets = () => {
       doc.addImage(logoData.dataUrl, 'PNG', accentLogoX, accentLogoY, drawLogoWidth, drawLogoHeight);
 
       cursorY += heroHeight + 12;
+
+      // Location box - Recuadro destacado para ubicación
+      const eventPlace =
+        ticket.ticket_metadata?.event_place ||
+        (i18n.language === 'en' ? 'Location to be confirmed' : 'Ubicación por confirmar');
+      
+      // Separar nombre y dirección si están en el string (formato: "Nombre, Dirección" o similar)
+      let placeName = '';
+      let placeAddress = '';
+      if (eventPlace && eventPlace !== (i18n.language === 'en' ? 'Location to be confirmed' : 'Ubicación por confirmar')) {
+        // Intentar separar por comas
+        const parts = eventPlace.split(',').map(p => p.trim()).filter(p => p);
+        if (parts.length >= 2) {
+          placeName = parts[0];
+          placeAddress = parts.slice(1).join(', ');
+        } else {
+          placeName = eventPlace;
+        }
+      } else {
+        placeName = eventPlace;
+      }
+
+      const locationBoxHeight = placeAddress ? 35 : 25;
+      doc.setFillColor(240, 240, 255); // Fondo lila claro
+      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 4, 4, 'F');
+      
+      // Borde morado
+      doc.setDrawColor(purple[0], purple[1], purple[2]);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, cursorY, cardWidth, locationBoxHeight, 4, 4, 'D');
+      
+      // Icono de ubicación (texto)
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(purple[0], purple[1], purple[2]);
+      doc.text('📍', margin + 10, cursorY + 10);
+      
+      // Título "Ubicación"
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(gray[0], gray[1], gray[2]);
+      doc.text(
+        i18n.language === 'en' ? 'Location' : 'Ubicación',
+        margin + 18,
+        cursorY + 10
+      );
+      
+      // Nombre del lugar (si existe)
+      if (placeName) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(dark[0], dark[1], dark[2]);
+        const nameY = placeAddress ? cursorY + 20 : cursorY + 18;
+        const nameLines = doc.splitTextToSize(placeName, cardWidth - 30);
+        doc.text(nameLines, margin + 10, nameY);
+        
+        // Dirección (si existe y es diferente del nombre)
+        if (placeAddress && placeAddress !== placeName) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(gray[0], gray[1], gray[2]);
+          const addressY = nameY + (nameLines.length * 5) + 2;
+          const addressLines = doc.splitTextToSize(placeAddress, cardWidth - 30);
+          doc.text(addressLines, margin + 10, addressY);
+        }
+      }
+
+      cursorY += locationBoxHeight + 12;
 
       // Ticket info block
       const infoHeight = 70;
