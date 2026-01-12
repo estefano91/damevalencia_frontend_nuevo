@@ -10,7 +10,8 @@ import {
   LogIn,
   Plus,
   IdCard,
-  Ticket
+  Ticket,
+  Tag
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/providers/ThemeProvider";
@@ -146,6 +147,10 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                   <DropdownMenuItem onClick={() => navigate("/mis-entradas")}>
                     <Ticket className="mr-2 h-4 w-4" />
                     {i18n.language === 'en' ? 'My Tickets' : 'Mis Entradas'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/mis-promociones")}>
+                    <Tag className="mr-2 h-4 w-4" />
+                    {i18n.language === 'en' ? 'My Promotions' : 'Mis Promociones'}
                   </DropdownMenuItem>
                   {!user.member && (
                     <DropdownMenuItem 
