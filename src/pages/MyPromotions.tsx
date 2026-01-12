@@ -11,13 +11,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Tag,
-  Calendar, 
   Percent,
   DollarSign,
   AlertCircle,
   CheckCircle,
   XCircle,
-  Clock,
   ArrowLeft,
   Info,
   Users,
@@ -82,34 +80,6 @@ const MyPromotions = () => {
 
     fetchPromotions();
   }, [user, navigate, i18n.language, toast]);
-
-  const formatDate = (dateString: string): string => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'es-ES', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    } catch {
-      return dateString;
-    }
-  };
-
-  const formatDateTime = (dateString: string): string => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleString(i18n.language === 'en' ? 'en-US' : 'es-ES', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return dateString;
-    }
-  };
 
   const getDiscountDisplay = (promotion: Promotion): string => {
     const lang = i18n.language === 'en' ? 'en' : 'es';
@@ -188,19 +158,6 @@ const MyPromotions = () => {
                         {lang === 'en' ? promotion.event.title_en : promotion.event.title_es}
                       </Badge>
                     )}
-                    {promotion.applies_to_all_segments ? (
-                      <Badge variant="secondary">
-                        <Users className="mr-1 h-3 w-3" />
-                        {i18n.language === 'en' ? 'All segments' : 'Todos los segmentos'}
-                      </Badge>
-                    ) : (
-                      promotion.segments.length > 0 && (
-                        <Badge variant="secondary">
-                          <Users className="mr-1 h-3 w-3" />
-                          {promotion.segments.map(s => s.name).join(', ')}
-                        </Badge>
-                      )
-                    )}
                   </div>
                 </div>
                 <div className="text-right">
@@ -219,37 +176,6 @@ const MyPromotions = () => {
               <p className="text-muted-foreground mb-4 line-clamp-2">
                 {description}
               </p>
-              
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    {i18n.language === 'en' ? 'Valid from' : 'Válida desde'}: {formatDate(promotion.start_date)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>
-                    {i18n.language === 'en' ? 'Until' : 'Hasta'}: {formatDate(promotion.end_date)}
-                  </span>
-                </div>
-                {promotion.available_stock !== null && (
-                  <div className="flex items-center gap-1">
-                    <Tag className="h-4 w-4" />
-                    <span>
-                      {i18n.language === 'en' ? 'Available' : 'Disponibles'}: {promotion.available_stock}
-                    </span>
-                  </div>
-                )}
-                {promotion.max_uses !== null && (
-                  <div className="flex items-center gap-1">
-                    <Info className="h-4 w-4" />
-                    <span>
-                      {i18n.language === 'en' ? 'Max uses' : 'Usos máx'}: {promotion.max_uses}
-                    </span>
-                  </div>
-                )}
-              </div>
 
               <div className="flex gap-2">
                 <Button
@@ -413,25 +339,6 @@ const MyPromotions = () => {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-sm font-semibold mb-1">
-                        {i18n.language === 'en' ? 'Valid from' : 'Válida desde'}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatDateTime(selectedPromotion.start_date)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold mb-1">
-                        {i18n.language === 'en' ? 'Valid until' : 'Válida hasta'}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatDateTime(selectedPromotion.end_date)}
-                      </div>
-                    </div>
-                  </div>
-
                   {selectedPromotion.event && (
                     <div className="p-4 bg-muted rounded-lg">
                       <div className="text-sm font-semibold mb-2">
@@ -502,18 +409,6 @@ const MyPromotions = () => {
                       </p>
                     </div>
                   </div>
-
-                  {selectedPromotion.available_stock !== null && (
-                    <div className="text-sm text-muted-foreground">
-                      {i18n.language === 'en' ? 'Available stock' : 'Stock disponible'}: {selectedPromotion.available_stock}
-                    </div>
-                  )}
-
-                  {selectedPromotion.max_uses !== null && (
-                    <div className="text-sm text-muted-foreground">
-                      {i18n.language === 'en' ? 'Maximum uses per user' : 'Usos máximos por usuario'}: {selectedPromotion.max_uses}
-                    </div>
-                  )}
                 </div>
                 </>
               );
