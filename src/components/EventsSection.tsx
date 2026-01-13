@@ -551,7 +551,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
       {/* Barra de membresía para usuarios no miembros */}
       {user && !user.member && !membershipBannerClosed && (
         <div 
-          className="fixed z-30 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg transition-all duration-300"
+          className="fixed z-20 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg transition-all duration-300"
           style={{
             top: isMobile ? '140px' : '168px', // Debajo de la barra de filtro (top-20/24/28 + h-14)
             left: isMobile ? '48px' : `${sidebarWidth}px`,
