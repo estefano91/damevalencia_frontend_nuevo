@@ -1,14 +1,20 @@
+import { useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import EventsSection from "@/components/EventsSection";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Calendar } from "lucide-react";
 
 const Demo = () => {
   const { user } = useAuth();
   const { i18n } = useTranslation();
   const navigate = useNavigate();
+  const eventsSectionRef = useRef<HTMLDivElement>(null);
+
+  const scrollToEvents = () => {
+    eventsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div className="min-h-screen">
@@ -45,8 +51,8 @@ const Demo = () => {
                   )}
                 </p>
 
-                {/* CTA Button */}
-                <div className="pt-4">
+                {/* CTA Buttons */}
+                <div className="pt-4 flex flex-col sm:flex-row gap-4">
                   <Button
                     size="lg"
                     onClick={() => navigate("/auth")}
@@ -54,6 +60,15 @@ const Demo = () => {
                   >
                     {i18n.language === 'en' ? 'Join DAME Valencia' : 'Únete a DAME Valencia'}
                     <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={scrollToEvents}
+                    className="border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 text-base font-semibold px-8 py-6 rounded-lg transition-all duration-200"
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {i18n.language === 'en' ? 'Check Events' : 'Checa los eventos'}
                   </Button>
                 </div>
               </div>
@@ -74,7 +89,7 @@ const Demo = () => {
       )}
 
       {/* Eventos DAME por Categoría */}
-      <div className="container mx-auto px-4 pt-0 pb-6">
+      <div ref={eventsSectionRef} className="container mx-auto px-4 pt-0 pb-6">
         <EventsSection maxEventsPerCategory={4} />
       </div>
     </div>
