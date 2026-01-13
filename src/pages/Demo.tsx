@@ -14,45 +14,72 @@ const Demo = () => {
     <div className="min-h-screen">
       {/* Hero Section - Solo para usuarios no logueados */}
       {!user && (
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-          <div className="container mx-auto px-4 py-8 md:py-12 pb-4 md:pb-6">
-            <div className="max-w-3xl mx-auto text-center space-y-4">
-              {/* Headline */}
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white leading-[1.1] tracking-tight">
-                {i18n.language === 'en' ? (
-                  <>
-                    We show you <span className="text-purple-600 dark:text-purple-400">WHY</span> Valencia is the best city of the world
-                  </>
-                ) : (
-                  <>
-                    Te mostramos <span className="text-purple-600 dark:text-purple-400">POR QUÉ</span> Valencia es la mejor ciudad del mundo
-                  </>
-                )}
-              </h1>
+        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+          <div className="container mx-auto px-4 py-12 md:py-16 lg:py-20 pb-4 md:pb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center max-w-7xl mx-auto">
+              {/* Left Section - Text Content */}
+              <div className="space-y-6 text-left">
+                {/* Small Headline */}
+                <p className="text-sm md:text-base font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                  {i18n.language === 'en' ? 'Hello, we are the Association' : 'Hola, somos la Asociación'}
+                </p>
 
-              {/* Body Text */}
-              <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto leading-relaxed pt-2">
-                {i18n.language === 'en' ? (
-                  <>
-                    Discover amazing events and connect with thousands of people in Valencia. Join us today!
-                  </>
-                ) : (
-                  <>
-                    Descubre eventos increíbles y conéctate con miles de personas en Valencia. ¡Únete hoy!
-                  </>
-                )}
-              </p>
+                {/* Main Title */}
+                <div className="relative">
+                  <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white leading-none">
+                    DAME
+                  </h1>
+                  <div className="h-1 w-24 bg-purple-600 dark:bg-purple-400 mt-2"></div>
+                </div>
 
-              {/* CTA Button */}
-              <div className="flex justify-center pt-4">
-                <Button
-                  size="lg"
-                  onClick={() => navigate("/auth")}
-                  className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 text-base font-semibold px-8 py-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
-                >
-                  {i18n.language === 'en' ? 'Join DAME Valencia' : 'Únete a DAME Valencia'}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                {/* Description Paragraph 1 */}
+                <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed pt-4">
+                  {i18n.language === 'en' ? (
+                    <>
+                      We are a vibrant and diverse community, united by the love of art, culture, and movement. Through workshops, events, and innovative projects, we seek to foster creativity, inclusion, and the well-being of all our members.
+                    </>
+                  ) : (
+                    <>
+                      Somos una comunidad vibrante y diversa, unida por el amor al arte, la cultura y el movimiento. A través de talleres, eventos y proyectos innovadores, buscamos fomentar la creatividad, la inclusión y el bienestar de todos nuestros miembros.
+                    </>
+                  )}
+                </p>
+
+                {/* Description Paragraph 2 (Italicized) */}
+                <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 italic leading-relaxed">
+                  {i18n.language === 'en' ? (
+                    <>
+                      Our association is a space where minds expand, hearts connect, and dreams come to life.
+                    </>
+                  ) : (
+                    <>
+                      Nuestra asociación es un espacio donde las mentes se expanden, los corazones se conectan y los sueños cobran vida.
+                    </>
+                  )}
+                </p>
+
+                {/* CTA Button */}
+                <div className="pt-4">
+                  <Button
+                    size="lg"
+                    onClick={() => navigate("/auth")}
+                    className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 text-base font-semibold px-8 py-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                  >
+                    {i18n.language === 'en' ? 'Join DAME Valencia' : 'Únete a DAME Valencia'}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Right Section - Image */}
+              <div className="relative flex items-center justify-center lg:justify-end">
+                <div className="relative w-full max-w-lg">
+                  <img
+                    src="/dame.png"
+                    alt="DAME Valencia Community"
+                    className="w-full h-auto rounded-lg shadow-2xl object-cover"
+                  />
+                </div>
               </div>
             </div>
           </div>
