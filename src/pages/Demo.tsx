@@ -15,7 +15,7 @@ const Demo = () => {
       {/* Hero Section - Solo para usuarios no logueados */}
       {!user && (
         <div className="bg-white dark:bg-gray-900">
-          <div className="container mx-auto px-4 py-12 md:py-16">
+          <div className="container mx-auto px-4 py-12 md:py-16 pb-6 md:pb-8">
             <div className="max-w-4xl mx-auto text-center space-y-6">
               {/* Headline */}
               <h1 className="text-3xl md:text-5xl font-bold text-gray-900 dark:text-white leading-tight">
@@ -60,7 +60,7 @@ const Demo = () => {
       )}
 
       {/* Eventos DAME por Categoría */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 pt-0 pb-6">
         <EventsSection maxEventsPerCategory={4} />
       </div>
     </div>
