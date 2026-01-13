@@ -20,68 +20,54 @@ const Demo = () => {
     <div className="min-h-screen">
       {/* Hero Section - Solo para usuarios no logueados */}
       {!user && (
-        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-          <div className="container mx-auto px-4 py-12 md:py-16 lg:py-20 pb-4 md:pb-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center max-w-7xl mx-auto">
-              {/* Left Section - Text Content */}
-              <div className="space-y-6 text-left">
-                {/* Small Headline */}
-                <p className="text-sm md:text-base font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                  {i18n.language === 'en' ? 'Hello, we are the Association' : 'Hola, somos la Asociación'}
-                </p>
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+          <div className="container mx-auto px-4 py-8 md:py-12 pb-4 md:pb-6">
+            <div className="max-w-2xl mx-auto text-center space-y-4">
+              {/* Main Title */}
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white leading-tight">
+                {i18n.language === 'en' ? (
+                  <>
+                    We show you <span className="text-purple-600 dark:text-purple-400">WHY</span> Valencia is the best city of the world
+                  </>
+                ) : (
+                  <>
+                    Te mostramos <span className="text-purple-600 dark:text-purple-400">POR QUÉ</span> Valencia es la mejor ciudad del mundo
+                  </>
+                )}
+              </h1>
 
-                {/* Main Title */}
-                <div className="relative">
-                  <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white leading-none">
-                    DAME
-                  </h1>
-                  <div className="h-1 w-24 bg-purple-600 dark:bg-purple-400 mt-2"></div>
-                </div>
+              {/* Description */}
+              <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
+                {i18n.language === 'en' ? (
+                  <>
+                    Discover amazing events and connect with thousands of people in Valencia.
+                  </>
+                ) : (
+                  <>
+                    Descubre eventos increíbles y conéctate con miles de personas en Valencia.
+                  </>
+                )}
+              </p>
 
-                {/* Description */}
-                <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed pt-4">
-                  {i18n.language === 'en' ? (
-                    <>
-                      A vibrant community united by art, culture, and movement. Join us and discover amazing events in Valencia.
-                    </>
-                  ) : (
-                    <>
-                      Una comunidad vibrante unida por el arte, la cultura y el movimiento. Únete y descubre eventos increíbles en Valencia.
-                    </>
-                  )}
-                </p>
-
-                {/* CTA Buttons */}
-                <div className="pt-4 flex flex-col sm:flex-row gap-4">
-                  <Button
-                    size="lg"
-                    onClick={() => navigate("/auth")}
-                    className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 text-base font-semibold px-8 py-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
-                  >
-                    {i18n.language === 'en' ? 'Join DAME Valencia' : 'Únete a DAME Valencia'}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={scrollToEvents}
-                    className="border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 text-base font-semibold px-8 py-6 rounded-lg transition-all duration-200"
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {i18n.language === 'en' ? 'Check Events' : 'Checa los eventos'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Right Section - Image */}
-              <div className="relative flex items-center justify-center lg:justify-end">
-                <div className="relative w-full max-w-lg">
-                  <img
-                    src="/dame.png"
-                    alt="DAME Valencia Community"
-                    className="w-full h-auto rounded-lg shadow-2xl object-cover"
-                  />
-                </div>
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                <Button
+                  size="lg"
+                  onClick={() => navigate("/auth")}
+                  className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 text-base font-semibold px-8 py-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  {i18n.language === 'en' ? 'Join DAME' : 'Únete a DAME'}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={scrollToEvents}
+                  className="border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 text-base font-semibold px-8 py-6 rounded-lg transition-all duration-200"
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {i18n.language === 'en' ? 'Check Events' : 'Checa los eventos'}
+                </Button>
               </div>
             </div>
           </div>
