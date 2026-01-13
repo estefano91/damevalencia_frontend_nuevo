@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import EventsSection from "@/components/EventsSection";
 import { Button } from "@/components/ui/button";
-import { Users, Calendar, Heart, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const Demo = () => {
   const { user } = useAuth();
@@ -17,15 +17,15 @@ const Demo = () => {
         <div className="bg-white dark:bg-gray-900">
           <div className="container mx-auto px-4 py-16 md:py-24">
             <div className="max-w-4xl mx-auto text-center space-y-8">
-              {/* Headline con emojis */}
+              {/* Headline */}
               <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white leading-tight">
                 {i18n.language === 'en' ? (
                   <>
-                    The <span className="text-purple-600">👥</span> people platform. Where <span className="text-orange-500">🎭</span> interests become <span className="text-pink-500">💕</span> friendships.
+                    We show you <span className="text-purple-600">WHY</span> Valencia is the best city of the world
                   </>
                 ) : (
                   <>
-                    La plataforma de <span className="text-purple-600">👥</span> personas. Donde los <span className="text-orange-500">🎭</span> intereses se convierten en <span className="text-pink-500">💕</span> amistades.
+                    Te mostramos <span className="text-purple-600">POR QUÉ</span> Valencia es la mejor ciudad del mundo
                   </>
                 )}
               </h1>
@@ -53,34 +53,6 @@ const Demo = () => {
                   {i18n.language === 'en' ? 'Join DAME Valencia' : 'Únete a DAME Valencia'}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-              </div>
-
-              {/* Features Icons */}
-              <div className="flex flex-wrap justify-center gap-8 pt-8 text-gray-500 dark:text-gray-400">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30">
-                    <Users className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <span className="text-sm font-medium">
-                    {i18n.language === 'en' ? 'Community' : 'Comunidad'}
-                  </span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="p-3 rounded-full bg-orange-100 dark:bg-orange-900/30">
-                    <Calendar className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                  </div>
-                  <span className="text-sm font-medium">
-                    {i18n.language === 'en' ? 'Events' : 'Eventos'}
-                  </span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="p-3 rounded-full bg-pink-100 dark:bg-pink-900/30">
-                    <Heart className="h-6 w-6 text-pink-600 dark:text-pink-400" />
-                  </div>
-                  <span className="text-sm font-medium">
-                    {i18n.language === 'en' ? 'Connections' : 'Conexiones'}
-                  </span>
-                </div>
               </div>
             </div>
           </div>
