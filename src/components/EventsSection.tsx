@@ -623,7 +623,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
       )}
 
       {/* Contenido con padding superior para la barra fija */}
-      <div className={`space-y-8 ${user && !user.member && !membershipBannerClosed ? 'pt-20 sm:pt-24' : 'pt-14'}`}>
+      <div className={`space-y-8 ${user && !user.member && !membershipBannerClosed ? 'pt-32 sm:pt-36' : 'pt-14'}`}>
 
       {/* Eventos por categoría (incluye recurrentes y únicos) - Filtrados por sidebar */}
       {filteredEventsByCategory.length > 0 ? (
