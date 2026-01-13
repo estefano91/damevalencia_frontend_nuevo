@@ -34,7 +34,9 @@ import {
   RefreshCw,
   Repeat,
   CheckCircle,
-  Filter
+  Filter,
+  X,
+  Crown
 } from 'lucide-react';
 import { 
   dameEventsAPI, 
@@ -60,6 +62,7 @@ interface EventsSectionProps {
 const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const { i18n } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [, forceUpdate] = useState({});
   const [eventsByCategory, setEventsByCategory] = useState<EventsByCategory[]>([]);
@@ -73,6 +76,16 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   
   // Inicializar dateFilter en 'all' por defecto
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend'>('all');
+
+  // Estado para controlar si la barra de membresía está cerrada
+  const [membershipBannerClosed, setMembershipBannerClosed] = useState(() => {
+    return localStorage.getItem('membershipBannerClosed') === 'true';
+  });
+
+  const handleCloseMembershipBanner = () => {
+    setMembershipBannerClosed(true);
+    localStorage.setItem('membershipBannerClosed', 'true');
+  };
 
   // Guardar el filtro cuando cambie y hacer scroll al inicio
   const handleDateFilterChange = (value: 'all' | 'today' | 'tomorrow' | 'weekend') => {
@@ -530,8 +543,53 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
         </div>
       </div>
 
+      {/* Barra de membresía para usuarios no miembros */}
+      {user && !user.member && !membershipBannerClosed && (
+        <div 
+          className="fixed z-30 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg transition-all duration-300"
+          style={{
+            top: isMobile ? '140px' : '168px', // Debajo de la barra de filtro (top-20/24/28 + h-14)
+            left: isMobile ? '48px' : `${sidebarWidth}px`,
+            right: '0'
+          }}
+        >
+          <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <Crown className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <p className="text-xs sm:text-sm font-medium flex-1">
+                  {i18n.language === 'en' ? (
+                    <>
+                      Become a member and enjoy exclusive benefits, discounts, and priority access to events!
+                    </>
+                  ) : (
+                    <>
+                      ¡Hazte miembro y disfruta de beneficios exclusivos, descuentos y acceso prioritario a eventos!
+                    </>
+                  )}
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => navigate('/membership')}
+                  className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-3 sm:px-4 py-1.5 h-auto text-xs sm:text-sm flex-shrink-0"
+                >
+                  {i18n.language === 'en' ? 'Join Now' : 'Únete Ahora'}
+                </Button>
+              </div>
+              <button
+                onClick={handleCloseMembershipBanner}
+                className="flex-shrink-0 p-1 hover:bg-white/20 rounded-full transition-colors"
+                aria-label={i18n.language === 'en' ? 'Close' : 'Cerrar'}
+              >
+                <X className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Contenido con padding superior para la barra fija */}
-      <div className="pt-14 space-y-8">
+      <div className={`space-y-8 ${user && !user.member && !membershipBannerClosed ? 'pt-20 sm:pt-24' : 'pt-14'}`}>
 
       {/* Eventos por categoría (incluye recurrentes y únicos) - Filtrados por sidebar */}
       {filteredEventsByCategory.length > 0 ? (
