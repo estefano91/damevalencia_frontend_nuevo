@@ -15,10 +15,10 @@ const Demo = () => {
       {/* Hero Section - Solo para usuarios no logueados */}
       {!user && (
         <div className="bg-white dark:bg-gray-900">
-          <div className="container mx-auto px-4 py-16 md:py-24">
-            <div className="max-w-4xl mx-auto text-center space-y-8">
+          <div className="container mx-auto px-4 py-12 md:py-16">
+            <div className="max-w-4xl mx-auto text-center space-y-6">
               {/* Headline */}
-              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white leading-tight">
+              <h1 className="text-3xl md:text-5xl font-bold text-gray-900 dark:text-white leading-tight">
                 {i18n.language === 'en' ? (
                   <>
                     We show you <span className="text-purple-600">WHY</span> Valencia is the best city of the world
@@ -31,7 +31,7 @@ const Demo = () => {
               </h1>
 
               {/* Body Text */}
-              <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
                 {i18n.language === 'en' ? (
                   <>
                     Whatever your interest, from concerts and cultural events to networking and skill sharing, there are thousands of people who share it on DAME Valencia. Events are happening every day—sign up to join the fun.
@@ -44,11 +44,11 @@ const Demo = () => {
               </p>
 
               {/* CTA Button */}
-              <div className="flex justify-center pt-4">
+              <div className="flex justify-center pt-2">
                 <Button
                   size="lg"
                   onClick={() => navigate("/auth")}
-                  className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 text-lg px-8 py-6 rounded-lg shadow-lg transition-all duration-200 hover:scale-105"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg font-semibold px-10 py-7 rounded-xl shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-purple-500/50"
                 >
                   {i18n.language === 'en' ? 'Join DAME Valencia' : 'Únete a DAME Valencia'}
                   <ArrowRight className="ml-2 h-5 w-5" />
