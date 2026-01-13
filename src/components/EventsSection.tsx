@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCategoryFilter } from './AppLayout';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -63,6 +63,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const { i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const [, forceUpdate] = useState({});
   const [eventsByCategory, setEventsByCategory] = useState<EventsByCategory[]>([]);
@@ -78,13 +79,17 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend'>('all');
 
   // Estado para controlar si la barra de membresía está cerrada
-  const [membershipBannerClosed, setMembershipBannerClosed] = useState(() => {
-    return localStorage.getItem('membershipBannerClosed') === 'true';
-  });
+  // Se resetea en cada cambio de página, refrescar o nuevo login
+  const [membershipBannerClosed, setMembershipBannerClosed] = useState(false);
+
+  // Resetear el estado en cada cambio de página, refrescar o nuevo login
+  useEffect(() => {
+    // Resetear siempre que cambie la ruta o el usuario
+    setMembershipBannerClosed(false);
+  }, [location.pathname, user?.id]);
 
   const handleCloseMembershipBanner = () => {
     setMembershipBannerClosed(true);
-    localStorage.setItem('membershipBannerClosed', 'true');
   };
 
   // Guardar el filtro cuando cambie y hacer scroll al inicio
