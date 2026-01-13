@@ -81,12 +81,39 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   // Estado para controlar si la barra de membresía está cerrada
   // Se resetea en cada cambio de página, refrescar o nuevo login
   const [membershipBannerClosed, setMembershipBannerClosed] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [showMembershipBanner, setShowMembershipBanner] = useState(true);
 
   // Resetear el estado en cada cambio de página, refrescar o nuevo login
   useEffect(() => {
     // Resetear siempre que cambie la ruta o el usuario
     setMembershipBannerClosed(false);
+    setShowMembershipBanner(true);
+    setLastScrollY(0);
   }, [location.pathname, user?.id]);
+
+  // Controlar visibilidad de la barra basado en scroll (igual que la barra de filtro)
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Mostrar cuando se hace scroll hacia arriba o está cerca del top
+      if (currentScrollY < 100) {
+        setShowMembershipBanner(true);
+      } else if (currentScrollY < lastScrollY) {
+        // Scroll hacia arriba - mostrar
+        setShowMembershipBanner(true);
+      } else if (currentScrollY > lastScrollY) {
+        // Scroll hacia abajo - ocultar
+        setShowMembershipBanner(false);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   const handleCloseMembershipBanner = () => {
     setMembershipBannerClosed(true);
@@ -551,7 +578,9 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
       {/* Barra de membresía para usuarios no miembros */}
       {user && !user.member && !membershipBannerClosed && (
         <div 
-          className="fixed z-20 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg transition-all duration-300"
+          className={`fixed z-20 bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg transition-all duration-300 ${
+            showMembershipBanner ? 'translate-y-0' : '-translate-y-full'
+          }`}
           style={{
             top: isMobile ? '140px' : '168px', // Debajo de la barra de filtro (top-20/24/28 + h-14)
             left: isMobile ? '48px' : `${sidebarWidth}px`,
