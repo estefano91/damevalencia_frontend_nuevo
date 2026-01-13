@@ -34,11 +34,11 @@ const Demo = () => {
               <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
                 {i18n.language === 'en' ? (
                   <>
-                    Whatever your interest, from concerts and cultural events to networking and skill sharing, there are thousands of people who share it on DAME Valencia. Events are happening every day—sign up to join the fun.
+                    Discover amazing events and connect with thousands of people in Valencia. Join us today!
                   </>
                 ) : (
                   <>
-                    Cualquiera que sea tu interés, desde conciertos y eventos culturales hasta networking e intercambio de habilidades, hay miles de personas que lo comparten en DAME Valencia. Los eventos ocurren todos los días—regístrate para unirte a la diversión.
+                    Descubre eventos increíbles y conéctate con miles de personas en Valencia. ¡Únete hoy!
                   </>
                 )}
               </p>
@@ -48,7 +48,7 @@ const Demo = () => {
                 <Button
                   size="lg"
                   onClick={() => navigate("/auth")}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg font-semibold px-10 py-7 rounded-xl shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-purple-500/50"
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-lg font-bold px-12 py-8 rounded-xl shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-orange-500/60 ring-4 ring-orange-200 dark:ring-orange-900/30"
                 >
                   {i18n.language === 'en' ? 'Join DAME Valencia' : 'Únete a DAME Valencia'}
                   <ArrowRight className="ml-2 h-5 w-5" />
