@@ -32,28 +32,15 @@ const Demo = () => {
                   <div className="h-1 w-24 bg-purple-600 dark:bg-purple-400 mt-2"></div>
                 </div>
 
-                {/* Description Paragraph 1 */}
+                {/* Description */}
                 <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed pt-4">
                   {i18n.language === 'en' ? (
                     <>
-                      We are a vibrant and diverse community, united by the love of art, culture, and movement. Through workshops, events, and innovative projects, we seek to foster creativity, inclusion, and the well-being of all our members.
+                      A vibrant community united by art, culture, and movement. Join us and discover amazing events in Valencia.
                     </>
                   ) : (
                     <>
-                      Somos una comunidad vibrante y diversa, unida por el amor al arte, la cultura y el movimiento. A través de talleres, eventos y proyectos innovadores, buscamos fomentar la creatividad, la inclusión y el bienestar de todos nuestros miembros.
-                    </>
-                  )}
-                </p>
-
-                {/* Description Paragraph 2 (Italicized) */}
-                <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 italic leading-relaxed">
-                  {i18n.language === 'en' ? (
-                    <>
-                      Our association is a space where minds expand, hearts connect, and dreams come to life.
-                    </>
-                  ) : (
-                    <>
-                      Nuestra asociación es un espacio donde las mentes se expanden, los corazones se conectan y los sueños cobran vida.
+                      Una comunidad vibrante unida por el arte, la cultura y el movimiento. Únete y descubre eventos increíbles en Valencia.
                     </>
                   )}
                 </p>
