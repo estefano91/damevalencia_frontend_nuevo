@@ -575,7 +575,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
                 </p>
                 <Button
                   size="sm"
-                  onClick={() => navigate('/membership')}
+                  onClick={() => navigate('/afiliarse')}
                   className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-3 sm:px-4 py-1.5 h-auto text-xs sm:text-sm flex-shrink-0"
                 >
                   {i18n.language === 'en' ? 'Join Now' : 'Únete Ahora'}
