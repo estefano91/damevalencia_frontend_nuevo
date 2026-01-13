@@ -30,10 +30,10 @@ const Demo = () => {
       {/* Hero Section - Solo para usuarios no logueados */}
       {!user && (
         <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-          <div className="container mx-auto px-4 py-6 sm:py-8 md:py-12 pb-4 md:pb-6">
+          <div className="container mx-auto px-4 pt-12 sm:pt-16 md:pt-20 pb-4 md:pb-6">
             <div className="max-w-2xl mx-auto text-center space-y-3 sm:space-y-4">
               {/* Main Title */}
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white leading-tight px-2">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white leading-tight px-2 pt-2">
                 {i18n.language === 'en' ? (
                   <>
                     We show you <span className="text-purple-600 dark:text-purple-400">WHY</span> Valencia is the best city of the world
