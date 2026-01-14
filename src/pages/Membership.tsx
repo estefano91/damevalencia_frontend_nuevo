@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, IdCard, AlertCircle, CheckCircle } from "lucide-react";
 import type { CreateMemberPayload } from "@types/auth";
@@ -25,6 +26,7 @@ const Membership = () => {
     birth_date: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [acceptedPrivacyPolicy, setAcceptedPrivacyPolicy] = useState(false);
 
   // Validaciones de formato de documento
   const validateDocument = (type: string, number: string): string | null => {
@@ -86,6 +88,23 @@ const Membership = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+
+    // Validar aceptación de política de privacidad
+    if (!acceptedPrivacyPolicy) {
+      setErrors({
+        privacy_policy: i18n.language === 'en' 
+          ? 'You must accept the Privacy Policy to become a member'
+          : 'Debes aceptar la Política de Privacidad para hacerte miembro'
+      });
+      toast({
+        title: i18n.language === 'en' ? 'Required' : 'Requerido',
+        description: i18n.language === 'en'
+          ? 'Please accept the Privacy Policy to continue'
+          : 'Por favor acepta la Política de Privacidad para continuar',
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Validaciones
     const docError = validateDocument(formData.document_type, formData.document_number);
@@ -327,10 +346,63 @@ const Membership = () => {
             )}
           </div>
 
+          <div className="space-y-2">
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="privacy_policy"
+                checked={acceptedPrivacyPolicy}
+                onCheckedChange={(checked) => {
+                  setAcceptedPrivacyPolicy(checked === true);
+                  if (errors.privacy_policy) {
+                    setErrors({ ...errors, privacy_policy: '' });
+                  }
+                }}
+                className={errors.privacy_policy ? "border-red-500" : ""}
+              />
+              <div className="grid gap-1.5 leading-none">
+                <label
+                  htmlFor="privacy_policy"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  {i18n.language === 'en' ? (
+                    <>
+                      I accept the{' '}
+                      <a
+                        href="/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-600 hover:underline font-semibold"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Privacy Policy
+                      </a>
+                    </>
+                  ) : (
+                    <>
+                      Acepto la{' '}
+                      <a
+                        href="/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-600 hover:underline font-semibold"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Política de Privacidad
+                      </a>
+                    </>
+                  )}
+                </label>
+              </div>
+            </div>
+            {errors.privacy_policy && (
+              <p className="text-xs text-red-500">{errors.privacy_policy}</p>
+            )}
+          </div>
+
           <Button
             type="submit"
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-            disabled={loading}
+            disabled={loading || !acceptedPrivacyPolicy}
           >
             {loading ? (
               <>

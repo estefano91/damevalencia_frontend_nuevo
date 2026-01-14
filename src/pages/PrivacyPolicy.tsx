@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, Lock, Eye, User, Mail, MessageCircle, Users, Calendar, MapPin } from "lucide-react";
+import { Shield, Lock, Eye, User, Mail, MessageCircle, Users, Calendar, MapPin, Phone } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const PrivacyPolicy = () => {
@@ -63,9 +63,25 @@ const PrivacyPolicy = () => {
                   <Mail className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium">Email de contacto</p>
-                    <a href="mailto:privacidad@damevalencia.es" className="text-sm text-purple-600 hover:underline">
-                      privacidad@damevalencia.es
+                    <a href="mailto:admin@organizaciondame.org" className="text-sm text-purple-600 hover:underline">
+                      admin@organizaciondame.org
                     </a>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Phone className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Teléfono</p>
+                    <a href="tel:+34644070282" className="text-sm text-purple-600 hover:underline">
+                      (+34) 64 40 70 282
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Shield className="h-4 w-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">CIF</p>
+                    <p className="text-sm text-muted-foreground">G56138217</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
@@ -352,8 +368,8 @@ const PrivacyPolicy = () => {
             <div className="mt-4 p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
               <p className="text-sm text-muted-foreground">
                 Para ejercer tus derechos, contacta con nosotros en{" "}
-                <a href="mailto:privacidad@damevalencia.es" className="text-purple-600 hover:underline font-medium">
-                  privacidad@damevalencia.es
+                <a href="mailto:admin@organizaciondame.org" className="text-purple-600 hover:underline font-medium">
+                  admin@organizaciondame.org
                 </a>
                 . Responderemos en un plazo máximo de 30 días.
               </p>
@@ -399,8 +415,8 @@ const PrivacyPolicy = () => {
           <CardContent>
             <p className="text-muted-foreground">
               Nuestros servicios están dirigidos a personas mayores de 18 años. Si tienes conocimiento de que un menor nos ha proporcionado información personal, contacta con nosotros inmediatamente en{" "}
-              <a href="mailto:privacidad@damevalencia.es" className="text-purple-600 hover:underline font-medium">
-                privacidad@damevalencia.es
+              <a href="mailto:admin@organizaciondame.org" className="text-purple-600 hover:underline font-medium">
+                admin@organizaciondame.org
               </a>
               {" "}para eliminarla.
             </p>
@@ -445,9 +461,25 @@ const PrivacyPolicy = () => {
                 <Mail className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-semibold">Email</p>
-                  <a href="mailto:privacidad@damevalencia.es" className="text-purple-600 hover:underline">
-                    privacidad@damevalencia.es
+                  <a href="mailto:admin@organizaciondame.org" className="text-purple-600 hover:underline">
+                    admin@organizaciondame.org
                   </a>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Phone className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold">Teléfono</p>
+                  <a href="tel:+34644070282" className="text-purple-600 hover:underline">
+                    (+34) 64 40 70 282
+                  </a>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Shield className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold">CIF</p>
+                  <p className="text-muted-foreground">G56138217</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">

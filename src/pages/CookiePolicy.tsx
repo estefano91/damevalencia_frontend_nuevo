@@ -223,8 +223,8 @@ const CookiePolicy = () => {
             </ul>
             <p className="text-sm text-muted-foreground mt-4">
               Para ejercer estos derechos, puedes contactarnos en:{" "}
-              <a href="mailto:privacidad@damevalencia.es" className="text-purple-600 hover:underline font-medium">
-                privacidad@damevalencia.es
+              <a href="mailto:admin@organizaciondame.org" className="text-purple-600 hover:underline font-medium">
+                admin@organizaciondame.org
               </a>
             </p>
           </CardContent>
@@ -253,8 +253,8 @@ const CookiePolicy = () => {
             </p>
             <div className="space-y-2 text-sm">
               <p><strong>Email:</strong>{" "}
-                <a href="mailto:privacidad@damevalencia.es" className="text-purple-600 hover:underline">
-                  privacidad@damevalencia.es
+                <a href="mailto:admin@organizaciondame.org" className="text-purple-600 hover:underline">
+                  admin@organizaciondame.org
                 </a>
               </p>
               <p><strong>Sitio web:</strong>{" "}
