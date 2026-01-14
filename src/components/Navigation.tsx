@@ -148,10 +148,12 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                     <Ticket className="mr-2 h-4 w-4" />
                     {i18n.language === 'en' ? 'My Tickets' : 'Mis Entradas'}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/mis-promociones")}>
-                    <Tag className="mr-2 h-4 w-4" />
-                    {i18n.language === 'en' ? 'My Promotions' : 'Mis Promociones'}
-                  </DropdownMenuItem>
+                  {user.member && (
+                    <DropdownMenuItem onClick={() => navigate("/mis-promociones")}>
+                      <Tag className="mr-2 h-4 w-4" />
+                      {i18n.language === 'en' ? 'My Promotions' : 'Mis Promociones'}
+                    </DropdownMenuItem>
+                  )}
                   {!user.member && (
                     <DropdownMenuItem 
                       onClick={() => navigate("/afiliarse")}

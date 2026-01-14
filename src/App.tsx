@@ -111,7 +111,7 @@ const App = () => (
                   <Route
                     path="/mis-promociones"
                     element={
-                      <ProtectedRoute hideSidebar requireAuth>
+                      <ProtectedRoute hideSidebar requireAuth requireMember>
                         <MyPromotions />
                       </ProtectedRoute>
                     }

@@ -47,6 +47,11 @@ const MyPromotions = () => {
       return;
     }
 
+    if (!user.member) {
+      navigate('/afiliarse');
+      return;
+    }
+
     const fetchPromotions = async () => {
       setLoading(true);
       setError(null);
