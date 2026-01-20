@@ -12,10 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   Crown,
   Tag,
-  Percent,
-  Star,
-  Gift,
-  Sparkles,
   CheckCircle,
   XCircle,
   ArrowLeft,
@@ -181,63 +177,6 @@ const ClubDame = () => {
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Benefits Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card className="border-orange-200 dark:border-orange-800">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Gift className="h-5 w-5 text-orange-600" />
-                <CardTitle className="text-lg">
-                  {i18n.language === 'en' ? 'Exclusive Promotions' : 'Promociones Exclusivas'}
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {i18n.language === 'en' 
-                  ? 'Access to special discounts and offers only for members'
-                  : 'Acceso a descuentos y ofertas especiales solo para miembros'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-orange-200 dark:border-orange-800">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Star className="h-5 w-5 text-orange-600" />
-                <CardTitle className="text-lg">
-                  {i18n.language === 'en' ? 'Priority Access' : 'Acceso Prioritario'}
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {i18n.language === 'en' 
-                  ? 'Be the first to know about new events and activities'
-                  : 'Sé el primero en conocer nuevos eventos y actividades'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-orange-200 dark:border-orange-800">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-orange-600" />
-                <CardTitle className="text-lg">
-                  {i18n.language === 'en' ? 'VIP Benefits' : 'Beneficios VIP'}
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {i18n.language === 'en' 
-                  ? 'Special treatment and exclusive experiences'
-                  : 'Trato especial y experiencias exclusivas'}
-              </p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Promotions Section */}
