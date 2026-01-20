@@ -277,36 +277,54 @@ const ClubDame = () => {
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-orange-600">
-                              {getDiscountDisplay(promotion)}
+                            <div className="relative inline-block">
+                              <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg blur-sm opacity-30"></div>
+                              <div className="relative bg-gradient-to-br from-orange-600 to-red-600 text-white px-4 py-3 rounded-lg shadow-lg">
+                                <div className="text-xs font-medium opacity-90 mb-0.5">
+                                  {i18n.language === 'en' ? 'DISCOUNT' : 'DESCUENTO'}
+                                </div>
+                                <div className="text-3xl font-extrabold leading-none">
+                                  {getDiscountDisplay(promotion)}
+                                </div>
+                              </div>
                             </div>
                             {promotion.actual_price && (
-                              <div className="mt-1 space-y-0.5">
-                                <div className="text-xs text-muted-foreground line-through">
-                                  {parseFloat(promotion.actual_price).toFixed(2)}€
+                              <div className="mt-3 space-y-1.5">
+                                <div className="flex items-center justify-end gap-2">
+                                  <span className="text-xs text-muted-foreground">
+                                    {i18n.language === 'en' ? 'Original' : 'Original'}
+                                  </span>
+                                  <div className="text-sm font-medium text-muted-foreground line-through">
+                                    {parseFloat(promotion.actual_price).toFixed(2)}€
+                                  </div>
                                 </div>
-                                <div className="text-sm font-semibold text-green-600">
-                                  {i18n.language === 'en' ? 'Final price' : 'Precio final'}: {(() => {
-                                    const originalPrice = parseFloat(promotion.actual_price);
-                                    let discountedPrice = 0;
-                                    
-                                    if (promotion.discount_type === 'AMOUNT') {
-                                      discountedPrice = Math.max(0, originalPrice - parseFloat(promotion.discount_value));
-                                    } else if (promotion.discount_type === 'PERCENTAGE') {
-                                      const discountPercent = parseFloat(promotion.discount_value);
-                                      const discountAmount = originalPrice * (discountPercent / 100);
-                                      const maxDiscount = promotion.max_discount_amount ? parseFloat(promotion.max_discount_amount) : null;
-                                      const finalDiscount = maxDiscount ? Math.min(discountAmount, maxDiscount) : discountAmount;
-                                      discountedPrice = Math.max(0, originalPrice - finalDiscount);
-                                    }
-                                    
-                                    return discountedPrice.toFixed(2);
-                                  })()}€
+                                <div className="flex items-center justify-end gap-2">
+                                  <span className="text-xs font-semibold text-green-600">
+                                    {i18n.language === 'en' ? 'Final' : 'Final'}
+                                  </span>
+                                  <div className="text-lg font-bold text-green-600">
+                                    {(() => {
+                                      const originalPrice = parseFloat(promotion.actual_price);
+                                      let discountedPrice = 0;
+                                      
+                                      if (promotion.discount_type === 'AMOUNT') {
+                                        discountedPrice = Math.max(0, originalPrice - parseFloat(promotion.discount_value));
+                                      } else if (promotion.discount_type === 'PERCENTAGE') {
+                                        const discountPercent = parseFloat(promotion.discount_value);
+                                        const discountAmount = originalPrice * (discountPercent / 100);
+                                        const maxDiscount = promotion.max_discount_amount ? parseFloat(promotion.max_discount_amount) : null;
+                                        const finalDiscount = maxDiscount ? Math.min(discountAmount, maxDiscount) : discountAmount;
+                                        discountedPrice = Math.max(0, originalPrice - finalDiscount);
+                                      }
+                                      
+                                      return discountedPrice.toFixed(2);
+                                    })()}€
+                                  </div>
                                 </div>
                               </div>
                             )}
                             {promotion.discount_type === 'PERCENTAGE' && promotion.max_discount_amount && !promotion.actual_price && (
-                              <div className="text-xs text-muted-foreground">
+                              <div className="mt-2 text-xs font-medium text-orange-600 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded">
                                 {i18n.language === 'en' ? 'Max' : 'Máx'}: €{promotion.max_discount_amount}
                               </div>
                             )}
@@ -391,30 +409,51 @@ const ClubDame = () => {
                   )}
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                    <div className="flex-1">
-                      <div className="text-sm text-muted-foreground mb-1">
-                        {i18n.language === 'en' ? 'Discount' : 'Descuento'}
-                      </div>
-                      <div className="text-3xl font-bold text-orange-600">
-                        {getDiscountDisplay(selectedPromotion)}
-                      </div>
-                      {selectedPromotion.actual_price && eventPrice && (
-                        <div className="mt-2 space-y-1">
-                          <div className="text-sm text-muted-foreground line-through">
-                            {i18n.language === 'en' ? 'Original price' : 'Precio original'}: {eventPrice.original.toFixed(2)}€
-                          </div>
-                          <div className="text-lg font-semibold text-green-600">
-                            {i18n.language === 'en' ? 'Final price with discount' : 'Precio final con descuento'}: {eventPrice.discounted.toFixed(2)}€
+                  <div className="relative overflow-hidden p-6 bg-gradient-to-br from-orange-50 via-red-50 to-orange-50 dark:from-orange-900/30 dark:via-red-900/20 dark:to-orange-900/30 rounded-xl border-2 border-orange-200 dark:border-orange-800">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200 dark:bg-orange-800 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-red-200 dark:bg-red-800 rounded-full -ml-12 -mb-12 opacity-20"></div>
+                    <div className="relative flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wide mb-2">
+                          {i18n.language === 'en' ? 'Special Offer' : 'Oferta Especial'}
+                        </div>
+                        <div className="relative inline-block mb-3">
+                          <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl blur-md opacity-40"></div>
+                          <div className="relative bg-gradient-to-br from-orange-600 to-red-600 text-white px-6 py-4 rounded-xl shadow-xl">
+                            <div className="text-xs font-bold opacity-90 mb-1 tracking-wider">
+                              {i18n.language === 'en' ? 'DISCOUNT' : 'DESCUENTO'}
+                            </div>
+                            <div className="text-4xl font-extrabold leading-none">
+                              {getDiscountDisplay(selectedPromotion)}
+                            </div>
                           </div>
                         </div>
-                      )}
-                      {selectedPromotion.discount_type === 'PERCENTAGE' && selectedPromotion.max_discount_amount && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {i18n.language === 'en' ? 'Maximum discount' : 'Descuento máximo'}: €{selectedPromotion.max_discount_amount}
-                        </div>
-                      )}
-                    </div>
+                        {selectedPromotion.actual_price && eventPrice && (
+                          <div className="space-y-2 mt-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium text-muted-foreground">
+                                {i18n.language === 'en' ? 'Original price' : 'Precio original'}
+                              </span>
+                              <div className="text-base font-semibold text-muted-foreground line-through">
+                                {eventPrice.original.toFixed(2)}€
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-bold text-green-600">
+                                {i18n.language === 'en' ? 'Final price' : 'Precio final'}
+                              </span>
+                              <div className="text-2xl font-bold text-green-600">
+                                {eventPrice.discounted.toFixed(2)}€
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {selectedPromotion.discount_type === 'PERCENTAGE' && selectedPromotion.max_discount_amount && (
+                          <div className="mt-3 inline-block text-xs font-semibold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/40 px-3 py-1.5 rounded-full">
+                            {i18n.language === 'en' ? 'Maximum discount' : 'Descuento máximo'}: €{selectedPromotion.max_discount_amount}
+                          </div>
+                        )}
+                      </div>
                     {(selectedPromotion.is_active !== undefined ? selectedPromotion.is_active : (selectedPromotion.is_valid ?? true)) ? (
                       <Badge variant="default" className="bg-green-600 text-lg px-4 py-2">
                         <CheckCircle className="mr-2 h-4 w-4" />
