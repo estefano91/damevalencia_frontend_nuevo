@@ -436,17 +436,18 @@ const MyPromotions = () => {
                           </div>
                         )}
                       </div>
-                    {(selectedPromotion.is_active !== undefined ? selectedPromotion.is_active : (selectedPromotion.is_valid ?? true)) ? (
-                      <Badge variant="default" className="bg-green-600 text-lg px-4 py-2">
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        {i18n.language === 'en' ? 'Valid' : 'Válida'}
-                      </Badge>
-                    ) : (
-                      <Badge variant="destructive" className="text-lg px-4 py-2">
-                        <XCircle className="mr-2 h-4 w-4" />
-                        {i18n.language === 'en' ? 'Invalid' : 'Inválida'}
-                      </Badge>
-                    )}
+                      {(selectedPromotion.is_active !== undefined ? selectedPromotion.is_active : (selectedPromotion.is_valid ?? true)) ? (
+                        <Badge variant="default" className="bg-green-600 text-lg px-4 py-2">
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          {i18n.language === 'en' ? 'Valid' : 'Válida'}
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive" className="text-lg px-4 py-2">
+                          <XCircle className="mr-2 h-4 w-4" />
+                          {i18n.language === 'en' ? 'Invalid' : 'Inválida'}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
                   {selectedPromotion.event && (
