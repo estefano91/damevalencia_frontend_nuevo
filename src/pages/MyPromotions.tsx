@@ -301,7 +301,7 @@ const MyPromotions = () => {
                     <DialogTitle className="text-2xl">
                       {detailTitle}
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="whitespace-pre-line">
                       {detailDescription}
                     </DialogDescription>
                   </DialogHeader>
@@ -398,7 +398,7 @@ const MyPromotions = () => {
                       {i18n.language === 'en' ? 'How to use' : 'Cómo usar'}
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <p className="text-sm">
+                      <p className="text-sm whitespace-pre-line">
                         {detailHowToUse}
                       </p>
                     </div>
