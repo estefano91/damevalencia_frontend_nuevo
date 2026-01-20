@@ -466,6 +466,7 @@ const ClubDame = () => {
                         </Badge>
                       )}
                     </div>
+                  </div>
 
                   {selectedPromotion.event && (
                     <div className="p-4 bg-muted rounded-lg">
