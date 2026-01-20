@@ -43,13 +43,8 @@ const MyPromotions = () => {
   const [eventPrice, setEventPrice] = useState<{ original: number; discounted: number } | null>(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-
-    if (!user.member) {
-      navigate('/afiliarse');
+    // ProtectedRoute ya maneja las redirecciones de autenticación y membresía
+    if (!user || !user.member) {
       return;
     }
 
@@ -291,7 +286,7 @@ const MyPromotions = () => {
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/perfil')}
           className="mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
