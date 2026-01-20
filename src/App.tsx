@@ -27,6 +27,7 @@ import EditMember from "./pages/EditMember";
 import MyTickets from "./pages/MyTickets";
 import MyPromotions from "./pages/MyPromotions";
 import MyUpcomingEvents from "./pages/MyUpcomingEvents";
+import ClubDame from "./pages/ClubDame";
 import TicketHashLookup from "./pages/TicketHashLookup";
 import MonthlyEvents from "./pages/MonthlyEvents";
 import Alquiler from "./pages/Alquiler";
@@ -113,6 +114,15 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar requireAuth requireMember>
                         <MyPromotions />
+                      </ProtectedRoute>
+                    }
+                  />
+                  {/* Club DAME */}
+                  <Route
+                    path="/club-dame"
+                    element={
+                      <ProtectedRoute hideSidebar requireAuth requireMember>
+                        <ClubDame />
                       </ProtectedRoute>
                     }
                   />

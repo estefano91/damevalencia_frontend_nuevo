@@ -11,7 +11,11 @@ import {
   Plus,
   IdCard,
   Ticket,
-  Tag
+  Tag,
+  Moon,
+  Sun,
+  Globe,
+  Crown
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/providers/ThemeProvider";
@@ -24,8 +28,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import LanguageSelector from "./LanguageSelector";
-import ThemeToggle from "./ThemeToggle";
 // Logos DAME para light y dark mode
 import logoDameLight from "@/assets/1.png";
 import logoDameDark from "@/assets/2.png";
@@ -37,8 +39,16 @@ interface NavigationProps {
 const Navigation = ({ isMobile }: NavigationProps) => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+
+  const isEnglish = i18n.language === 'en' || i18n.language?.startsWith('en');
+  const currentLang = isEnglish ? { code: 'en', name: 'English', flag: '🇬🇧' } : { code: 'es', name: 'Español', flag: '🇪🇸' };
+  const nextLang = isEnglish ? { code: 'es', name: 'Español', flag: '🇪🇸' } : { code: 'en', name: 'English', flag: '🇬🇧' };
+
+  const toggleLanguage = () => {
+    i18n.changeLanguage(nextLang.code);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -95,15 +105,57 @@ const Navigation = ({ isMobile }: NavigationProps) => {
               <Users className="h-4 w-4" />
               <span className="hidden lg:inline">{i18n.language === 'en' ? 'Community' : 'Comunidad'}</span>
             </Button>
+
+            {/* Club DAME - Botón destacado */}
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => navigate("/club-dame")}
+              className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              title={i18n.language === 'en' ? 'DAME Club' : 'Club DAME'}
+              aria-label={i18n.language === 'en' ? 'DAME Club' : 'Club DAME'}
+            >
+              <Crown className="h-4 w-4" />
+              <span className="hidden lg:inline">{i18n.language === 'en' ? 'DAME Club' : 'Club DAME'}</span>
+            </Button>
           </div>
 
-          {/* Right side - Theme + Language + Profile */}
+          {/* Right side - Configuración + Profile */}
           <div className="flex items-center space-x-2">
-            {/* Theme Toggle */}
-            <ThemeToggle />
-
-            {/* Language Selector */}
-            <LanguageSelector />
+            {/* Botón Configuración */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2"
+                  title={i18n.language === 'en' ? 'Settings' : 'Configuración'}
+                  aria-label={i18n.language === 'en' ? 'Settings' : 'Configuración'}
+                >
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden sm:inline">{i18n.language === 'en' ? 'Settings' : 'Configuración'}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={toggleTheme}>
+                  {theme === 'dark' ? (
+                    <>
+                      <Sun className="mr-2 h-4 w-4" />
+                      {i18n.language === 'en' ? 'Light Mode' : 'Modo Claro'}
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="mr-2 h-4 w-4" />
+                      {i18n.language === 'en' ? 'Dark Mode' : 'Modo Oscuro'}
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={toggleLanguage}>
+                  <Globe className="mr-2 h-4 w-4" />
+                  {i18n.language === 'en' ? 'Language' : 'Idioma'}: {nextLang.flag} {nextLang.name}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             {/* Mi Perfil / Invitado */}
             {user ? (
@@ -163,10 +215,6 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                       {i18n.language === 'en' ? 'Become DAME Member' : 'Hazte Miembro DAME'}
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={() => navigate("/configuracion")}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    {i18n.language === 'en' ? 'Settings' : 'Configuración'}
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
