@@ -25,7 +25,6 @@ import UserProfile from "./pages/UserProfile";
 import Membership from "./pages/Membership";
 import EditMember from "./pages/EditMember";
 import MyTickets from "./pages/MyTickets";
-import MyPromotions from "./pages/MyPromotions";
 import MyUpcomingEvents from "./pages/MyUpcomingEvents";
 import ClubDame from "./pages/ClubDame";
 import TicketHashLookup from "./pages/TicketHashLookup";
@@ -105,15 +104,6 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar requireAuth>
                         <MyTickets />
-                      </ProtectedRoute>
-                    }
-                  />
-                  {/* Mis promociones */}
-                  <Route
-                    path="/mis-promociones"
-                    element={
-                      <ProtectedRoute hideSidebar requireAuth requireMember>
-                        <MyPromotions />
                       </ProtectedRoute>
                     }
                   />

@@ -201,7 +201,7 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                     {i18n.language === 'en' ? 'My Tickets' : 'Mis Entradas'}
                   </DropdownMenuItem>
                   {user.member && (
-                    <DropdownMenuItem onClick={() => navigate("/mis-promociones")}>
+                    <DropdownMenuItem onClick={() => navigate("/club-dame")}>
                       <Tag className="mr-2 h-4 w-4" />
                       {i18n.language === 'en' ? 'My Promotions' : 'Mis Promociones'}
                     </DropdownMenuItem>
