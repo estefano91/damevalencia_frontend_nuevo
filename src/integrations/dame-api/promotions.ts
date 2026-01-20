@@ -36,26 +36,31 @@ export interface PromotionEvent {
 export interface Promotion {
   id: number;
   title_es: string;
-  title_en: string;
-  description_es: string;
-  description_en: string;
-  image_url: string | null;
-  event: PromotionEvent | null;
-  discount_type: 'PERCENTAGE' | 'FIXED' | 'ACTUAL_PRICE';
-  discount_value: string;
-  max_discount_amount: string | null;
-  actual_price: string | null;
-  terms_and_conditions_es: string;
-  terms_and_conditions_en: string;
-  how_to_use_es: string;
-  how_to_use_en: string;
-  is_valid: boolean;
-  available_stock: number | null;
+  title_en?: string; // Opcional según docs
+  description_es?: string; // Opcional según docs
+  description_en?: string; // Opcional según docs
+  image_url?: string | null; // Opcional según docs
+  // La API puede devolver event_id o event expandido (objeto completo)
+  event_id?: number | null; // ID del evento según docs
+  event?: PromotionEvent | null; // Objeto expandido cuando la API lo incluye
+  discount_type: 'PERCENTAGE' | 'AMOUNT'; // Solo estos dos según docs
+  discount_value: string; // decimal según docs
+  max_discount_amount?: string | null; // Opcional según docs
+  actual_price?: string | null; // Opcional según docs
+  terms_and_conditions_es?: string; // Opcional según docs
+  terms_and_conditions_en?: string; // Opcional según docs
+  how_to_use_es?: string; // Opcional según docs
+  how_to_use_en?: string; // Opcional según docs
+  is_active?: boolean; // Según docs (default: true)
+  is_valid?: boolean; // Alias para compatibilidad con código existente
+  stock?: number | null; // Según docs (default: 0)
+  available_stock?: number | null; // Alias para compatibilidad
   applies_to_all_segments: boolean;
-  segments: PromotionSegment[];
-  start_date: string;
-  end_date: string;
-  max_uses: number | null;
+  segments_ids?: number[]; // IDs según docs (solo si applies_to_all_segments=false)
+  segments?: PromotionSegment[]; // Objetos expandidos cuando la API los incluye
+  start_date: string; // datetime ISO 8601 según docs
+  end_date: string; // datetime ISO 8601 según docs
+  max_uses?: number | null; // Opcional según docs (default: 1)
   created_at?: string;
   updated_at?: string;
 }
@@ -156,4 +161,8 @@ export class DamePromotionsAPI {
 
 // Instancia singleton para usar en la aplicación
 export const damePromotionsAPI = new DamePromotionsAPI();
+
+
+
+
 

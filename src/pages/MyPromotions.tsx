@@ -40,6 +40,7 @@ const MyPromotions = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPromotion, setSelectedPromotion] = useState<Promotion | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [eventPrice, setEventPrice] = useState<{ original: number; discounted: number } | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -87,14 +88,10 @@ const MyPromotions = () => {
   }, [user, navigate, i18n.language, toast]);
 
   const getDiscountDisplay = (promotion: Promotion): string => {
-    const lang = i18n.language === 'en' ? 'en' : 'es';
-    
     if (promotion.discount_type === 'PERCENTAGE') {
       return `${promotion.discount_value}%`;
-    } else if (promotion.discount_type === 'FIXED') {
+    } else if (promotion.discount_type === 'AMOUNT') {
       return `€${promotion.discount_value}`;
-    } else if (promotion.discount_type === 'ACTUAL_PRICE' && promotion.actual_price) {
-      return `€${promotion.actual_price}`;
     }
     return '';
   };
@@ -102,17 +99,38 @@ const MyPromotions = () => {
   const handleViewDetails = async (promotion: Promotion) => {
     try {
       const response = await damePromotionsAPI.getPromotionDetail(promotion.id);
-      if (response.success && response.data) {
-        setSelectedPromotion(response.data.promotion);
-        setDetailDialogOpen(true);
+      const promotionData = response.success && response.data ? response.data.promotion : promotion;
+      setSelectedPromotion(promotionData);
+      
+      // Calcular precio original y con descuento si existe actual_price
+      if (promotionData.actual_price) {
+        const originalPrice = parseFloat(promotionData.actual_price);
+        let discountedPrice = 0;
+        
+        if (promotionData.discount_type === 'AMOUNT') {
+          const discountAmount = parseFloat(promotionData.discount_value);
+          discountedPrice = Math.max(0, originalPrice - discountAmount);
+        } else if (promotionData.discount_type === 'PERCENTAGE') {
+          const discountPercent = parseFloat(promotionData.discount_value);
+          const discountAmount = originalPrice * (discountPercent / 100);
+          const maxDiscount = promotionData.max_discount_amount ? parseFloat(promotionData.max_discount_amount) : null;
+          const finalDiscount = maxDiscount ? Math.min(discountAmount, maxDiscount) : discountAmount;
+          discountedPrice = Math.max(0, originalPrice - finalDiscount);
+        }
+        
+        setEventPrice({
+          original: originalPrice,
+          discounted: discountedPrice
+        });
       } else {
-        // Si falla, usar la promoción de la lista
-        setSelectedPromotion(promotion);
-        setDetailDialogOpen(true);
+        setEventPrice(null);
       }
+      
+      setDetailDialogOpen(true);
     } catch (err) {
       console.error('Error fetching promotion detail:', err);
       setSelectedPromotion(promotion);
+      setEventPrice(null);
       setDetailDialogOpen(true);
     }
   };
@@ -121,10 +139,12 @@ const MyPromotions = () => {
     const lang = i18n.language === 'en' ? 'en' : 'es';
     const isExpired = new Date(promotion.end_date) < new Date();
     const isNotStarted = new Date(promotion.start_date) > new Date();
-    const isValid = promotion.is_valid && !isExpired && !isNotStarted;
+    // Usar is_active si está disponible, sino is_valid para compatibilidad
+    const isActive = promotion.is_active !== undefined ? promotion.is_active : (promotion.is_valid ?? true);
+    const isValid = isActive && !isExpired && !isNotStarted;
     
-    const title = lang === 'en' ? promotion.title_en : promotion.title_es;
-    const description = lang === 'en' ? promotion.description_en : promotion.description_es;
+    const title = lang === 'en' ? (promotion.title_en || promotion.title_es) : promotion.title_es;
+    const description = lang === 'en' ? (promotion.description_en || promotion.description_es || '') : (promotion.description_es || '');
 
     return (
       <Card key={promotion.id} className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -169,7 +189,32 @@ const MyPromotions = () => {
                   <div className="text-2xl font-bold text-purple-600">
                     {getDiscountDisplay(promotion)}
                   </div>
-                  {promotion.discount_type === 'PERCENTAGE' && promotion.max_discount_amount && (
+                  {promotion.actual_price && (
+                    <div className="mt-1 space-y-0.5">
+                      <div className="text-xs text-muted-foreground line-through">
+                        {parseFloat(promotion.actual_price).toFixed(2)}€
+                      </div>
+                      <div className="text-sm font-semibold text-green-600">
+                        {i18n.language === 'en' ? 'Final price' : 'Precio final'}: {(() => {
+                          const originalPrice = parseFloat(promotion.actual_price);
+                          let discountedPrice = 0;
+                          
+                          if (promotion.discount_type === 'AMOUNT') {
+                            discountedPrice = Math.max(0, originalPrice - parseFloat(promotion.discount_value));
+                          } else if (promotion.discount_type === 'PERCENTAGE') {
+                            const discountPercent = parseFloat(promotion.discount_value);
+                            const discountAmount = originalPrice * (discountPercent / 100);
+                            const maxDiscount = promotion.max_discount_amount ? parseFloat(promotion.max_discount_amount) : null;
+                            const finalDiscount = maxDiscount ? Math.min(discountAmount, maxDiscount) : discountAmount;
+                            discountedPrice = Math.max(0, originalPrice - finalDiscount);
+                          }
+                          
+                          return discountedPrice.toFixed(2);
+                        })()}€
+                      </div>
+                    </div>
+                  )}
+                  {promotion.discount_type === 'PERCENTAGE' && promotion.max_discount_amount && !promotion.actual_price && (
                     <div className="text-xs text-muted-foreground">
                       {i18n.language === 'en' ? 'Max' : 'Máx'}: €{promotion.max_discount_amount}
                     </div>
@@ -285,15 +330,21 @@ const MyPromotions = () => {
         )}
 
         {/* Dialog para detalles de promoción */}
-        <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <Dialog open={detailDialogOpen} onOpenChange={(open) => {
+          setDetailDialogOpen(open);
+          if (!open) {
+            // Limpiar estados cuando se cierra el diálogo
+            setEventPrice(null);
+          }
+        }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             {selectedPromotion && (() => {
               const detailLang = i18n.language === 'en' ? 'en' : 'es';
-              const detailTitle = detailLang === 'en' ? selectedPromotion.title_en : selectedPromotion.title_es;
-              const detailDescription = detailLang === 'en' ? selectedPromotion.description_en : selectedPromotion.description_es;
-              const detailHowToUse = detailLang === 'en' ? selectedPromotion.how_to_use_en : selectedPromotion.how_to_use_es;
-              const detailTerms = detailLang === 'en' ? selectedPromotion.terms_and_conditions_en : selectedPromotion.terms_and_conditions_es;
-              const eventTitle = selectedPromotion.event ? (detailLang === 'en' ? selectedPromotion.event.title_en : selectedPromotion.event.title_es) : '';
+              const detailTitle = detailLang === 'en' ? (selectedPromotion.title_en || selectedPromotion.title_es) : selectedPromotion.title_es;
+              const detailDescription = detailLang === 'en' ? (selectedPromotion.description_en || selectedPromotion.description_es || '') : (selectedPromotion.description_es || '');
+              const detailHowToUse = detailLang === 'en' ? (selectedPromotion.how_to_use_en || selectedPromotion.how_to_use_es || '') : (selectedPromotion.how_to_use_es || '');
+              const detailTerms = detailLang === 'en' ? (selectedPromotion.terms_and_conditions_en || selectedPromotion.terms_and_conditions_es || '') : (selectedPromotion.terms_and_conditions_es || '');
+              const eventTitle = selectedPromotion.event ? (detailLang === 'en' ? (selectedPromotion.event.title_en || selectedPromotion.event.title_es) : selectedPromotion.event.title_es) : '';
               
               return (
                 <>
@@ -323,20 +374,30 @@ const MyPromotions = () => {
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <div>
+                    <div className="flex-1">
                       <div className="text-sm text-muted-foreground mb-1">
                         {i18n.language === 'en' ? 'Discount' : 'Descuento'}
                       </div>
                       <div className="text-3xl font-bold text-purple-600">
                         {getDiscountDisplay(selectedPromotion)}
                       </div>
+                      {selectedPromotion.actual_price && eventPrice && (
+                        <div className="mt-2 space-y-1">
+                          <div className="text-sm text-muted-foreground line-through">
+                            {i18n.language === 'en' ? 'Original price' : 'Precio original'}: {eventPrice.original.toFixed(2)}€
+                          </div>
+                          <div className="text-lg font-semibold text-green-600">
+                            {i18n.language === 'en' ? 'Final price with discount' : 'Precio final con descuento'}: {eventPrice.discounted.toFixed(2)}€
+                          </div>
+                        </div>
+                      )}
                       {selectedPromotion.discount_type === 'PERCENTAGE' && selectedPromotion.max_discount_amount && (
                         <div className="text-xs text-muted-foreground mt-1">
                           {i18n.language === 'en' ? 'Maximum discount' : 'Descuento máximo'}: €{selectedPromotion.max_discount_amount}
                         </div>
                       )}
                     </div>
-                    {selectedPromotion.is_valid ? (
+                    {(selectedPromotion.is_active !== undefined ? selectedPromotion.is_active : (selectedPromotion.is_valid ?? true)) ? (
                       <Badge variant="default" className="bg-green-600 text-lg px-4 py-2">
                         <CheckCircle className="mr-2 h-4 w-4" />
                         {i18n.language === 'en' ? 'Valid' : 'Válida'}
@@ -382,7 +443,7 @@ const MyPromotions = () => {
                     </div>
                   )}
 
-                  {!selectedPromotion.applies_to_all_segments && selectedPromotion.segments.length > 0 && (
+                  {!selectedPromotion.applies_to_all_segments && selectedPromotion.segments && selectedPromotion.segments.length > 0 && (
                     <div>
                       <div className="text-sm font-semibold mb-2">
                         {i18n.language === 'en' ? 'Applies to segments' : 'Aplica a segmentos'}
