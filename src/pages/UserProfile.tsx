@@ -302,20 +302,6 @@ const UserProfile = () => {
                                 )}
                               </Button>
                             </div>
-                            
-                            <div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
-                              <p className="text-xs text-muted-foreground">
-                                <strong>{i18n.language === 'en' ? 'Format:' : 'Formato:'}</strong> {i18n.language === 'en' 
-                                  ? 'ID-DOCUMENT_TYPE-DOCUMENT_NUMBER'
-                                  : 'ID-TIPO_DOCUMENTO-NÚMERO_DOCUMENTO'}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                <strong>{i18n.language === 'en' ? 'Document types:' : 'Tipos de documento:'}</strong> 
-                                {i18n.language === 'en' 
-                                  ? ' N = NIE, D = DNI, P = PASSPORT'
-                                  : ' N = NIE, D = DNI, P = PASAPORTE'}
-                              </p>
-                            </div>
                           </div>
                         </div>
                       </div>
