@@ -106,12 +106,12 @@ const Navigation = ({ isMobile }: NavigationProps) => {
               <span className="hidden lg:inline">{i18n.language === 'en' ? 'Community' : 'Comunidad'}</span>
             </Button>
 
-            {/* Club DAME - Botón destacado */}
+            {/* Club DAME */}
             <Button
-              variant="default"
+              variant="outline"
               size="sm"
               onClick={() => navigate("/club-dame")}
-              className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              className="flex items-center gap-2"
               title={i18n.language === 'en' ? 'DAME Club' : 'Club DAME'}
               aria-label={i18n.language === 'en' ? 'DAME Club' : 'Club DAME'}
             >
