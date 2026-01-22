@@ -831,6 +831,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
                 isRecommended={isRecommended}
                 attendedEvents={userTickets}
                 userTicketsLoaded={userTicketsLoaded}
+                onOpenInterestsModal={() => setInterestsModalOpen(true)}
               />
             ))}
           </div>
@@ -892,6 +893,7 @@ interface EventCardProps {
   isRecommended?: boolean;
   attendedEvents: UserAttendance[];
   userTicketsLoaded: boolean;
+  onOpenInterestsModal?: () => void;
 }
 
 const hasUserTicket = (event: DameEvent, attendedEvents: UserAttendance[]): boolean => {
@@ -939,9 +941,9 @@ const hasUserTicket = (event: DameEvent, attendedEvents: UserAttendance[]): bool
   return hasMatch;
 };
 
-const EventCard = ({ event, categoryColor, categoryName, isRecommended = false, attendedEvents, userTicketsLoaded }: EventCardProps) => {
+const EventCard = ({ event, categoryColor, categoryName, isRecommended = false, attendedEvents, userTicketsLoaded, onOpenInterestsModal }: EventCardProps) => {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   if (!event) return null;
 
@@ -1009,14 +1011,47 @@ const EventCard = ({ event, categoryColor, categoryName, isRecommended = false, 
                   className="w-64 p-3 text-sm"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <p className="font-semibold text-purple-600 dark:text-purple-400">
                       {i18n.language === 'en' ? 'Why is this recommended?' : '¿Por qué está recomendado?'}
                     </p>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {i18n.language === 'en' 
-                        ? 'This event matches your interests. You can edit your interests in your profile page.'
-                        : 'Este evento coincide con tus intereses. Puedes editar tus intereses en tu página de perfil.'}
+                        ? 'This event matches your interests. You can edit your interests '
+                        : 'Este evento coincide con tus intereses. Puedes editar tus intereses '}
+                      {onOpenInterestsModal ? (
+                        <>
+                          {i18n.language === 'en' ? (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenInterestsModal();
+                                }}
+                                className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 underline decoration-2 underline-offset-2 font-medium transition-colors"
+                              >
+                                here
+                              </button>
+                              .
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenInterestsModal();
+                                }}
+                                className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 underline decoration-2 underline-offset-2 font-medium transition-colors"
+                              >
+                                aquí
+                              </button>
+                              .
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        i18n.language === 'en' ? 'in your profile page.' : 'en tu página de perfil.'
+                      )}
                     </p>
                   </div>
                 </PopoverContent>
