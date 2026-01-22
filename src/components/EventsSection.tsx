@@ -753,12 +753,18 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
         // Combinar eventos recomendados con eventos de categorías
         const allEvents: Array<{ event: DameEvent; categoryColor: string; categoryName?: string; isRecommended: boolean }> = [];
         
-        // Agregar eventos recomendados primero
-        if (user && userInterests.length > 0 && recommendedEvents.length > 0 && selectedCategoryId === null) {
+        // Agregar eventos recomendados primero (filtrados por categoría si hay una seleccionada)
+        if (user && userInterests.length > 0 && recommendedEvents.length > 0) {
           recommendedEvents.forEach((event) => {
             const eventCategory = eventsByCategory.find(cat => 
               cat.events.some(e => e.event_slug === event.event_slug)
             );
+            
+            // Si hay una categoría seleccionada, solo incluir eventos recomendados de esa categoría
+            if (selectedCategoryId !== null && eventCategory?.category.id !== selectedCategoryId) {
+              return; // Saltar este evento recomendado si no pertenece a la categoría seleccionada
+            }
+            
             const categoryName = eventCategory 
               ? (i18n.language === 'en' ? eventCategory.category.name_en : eventCategory.category.name_es)
               : undefined;
