@@ -31,6 +31,7 @@ import TicketHashLookup from "./pages/TicketHashLookup";
 import MonthlyEvents from "./pages/MonthlyEvents";
 import Alquiler from "./pages/Alquiler";
 import Subscription from "./pages/Subscription";
+import { InterestsModalWrapper } from "./components/InterestsModalWrapper";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
       <BrowserRouter>
         <ScrollToTop />
         <AuthProvider>
+          <InterestsModalWrapper />
           <Routes>
                   {/* Redirigir directamente al dashboard para desarrollo */}
                   <Route path="/" element={<ProtectedRoute><Demo /></ProtectedRoute>} />

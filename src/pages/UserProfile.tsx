@@ -24,10 +24,14 @@ import {
   Star,
   Sparkles,
   ArrowRight,
+  Tag,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import QRCode from "qrcode";
 import { useToast } from "@/hooks/use-toast";
+import { interestsApi } from "@/api/interests";
+import type { UserInterest } from "@/types/interests";
+import { InterestsModal } from "@/components/InterestsModal";
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -37,6 +41,9 @@ const UserProfile = () => {
   const [syncing, setSyncing] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [interests, setInterests] = useState<UserInterest[]>([]);
+  const [loadingInterests, setLoadingInterests] = useState(false);
+  const [interestsModalOpen, setInterestsModalOpen] = useState(false);
 
   const formatDate = (value?: string) => {
     if (!value) return "—";
@@ -55,7 +62,43 @@ const UserProfile = () => {
   const handleSync = async () => {
     setSyncing(true);
     await refreshUser();
+    await loadInterests();
     setSyncing(false);
+  };
+
+  // Load user interests
+  const loadInterests = async () => {
+    const accessToken = localStorage.getItem("dame_access_token");
+    if (!accessToken) return;
+
+    try {
+      setLoadingInterests(true);
+      const result = await interestsApi.getInterests(accessToken);
+
+      if (result.ok && result.data) {
+        setInterests(result.data.interests);
+      }
+    } catch (error) {
+      console.error("Error loading interests:", error);
+    } finally {
+      setLoadingInterests(false);
+    }
+  };
+
+  // Load interests on mount
+  useEffect(() => {
+    if (user) {
+      loadInterests();
+    }
+  }, [user]);
+
+  const handleInterestsUpdated = () => {
+    loadInterests();
+    refreshUser();
+  };
+
+  const getTagName = (interest: UserInterest) => {
+    return i18n.language === "en" ? interest.tag_name_en : interest.tag_name_es;
   };
 
   if (loading && !user) {
@@ -444,7 +487,82 @@ const UserProfile = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Intereses */}
+        <Card className="shadow-md border border-purple-100 dark:border-primary/20">
+          <CardHeader className="pb-3 sm:pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Tag className="h-5 w-5 text-primary flex-shrink-0" />
+                  <span>
+                    {i18n.language === "en" ? "My Interests" : "Mis Intereses"}
+                  </span>
+                </CardTitle>
+              </div>
+              <Button
+                onClick={() => setInterestsModalOpen(true)}
+                className="bg-purple-600 text-white hover:bg-purple-700 focus:bg-purple-700 w-full sm:w-auto"
+                size="sm"
+              >
+                <Edit2 className="mr-2 h-4 w-4" />
+                <span className="text-xs sm:text-sm">
+                  {i18n.language === "en" ? "Edit Interests" : "Editar Intereses"}
+                </span>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {loadingInterests ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : interests.length === 0 ? (
+              <Alert variant="secondary">
+                <Tag className="h-4 w-4" />
+                <AlertTitle className="text-sm sm:text-base">
+                  {i18n.language === "en" ? "No interests selected" : "Sin intereses seleccionados"}
+                </AlertTitle>
+                <AlertDescription className="mt-2">
+                  <p className="text-sm mb-3">
+                    {i18n.language === "en"
+                      ? "Select your interests to personalize your experience"
+                      : "Selecciona tus intereses para personalizar tu experiencia"}
+                  </p>
+                  <Button
+                    onClick={() => setInterestsModalOpen(true)}
+                    size="sm"
+                    className="w-full sm:w-auto"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {i18n.language === "en" ? "Add Interests" : "Agregar Intereses"}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {interests.map((interest) => (
+                  <Badge
+                    key={interest.id}
+                    variant="default"
+                    className="px-3 py-1.5 text-sm bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                  >
+                    {getTagName(interest)}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Interests Modal */}
+      <InterestsModal
+        open={interestsModalOpen}
+        onOpenChange={setInterestsModalOpen}
+        onSuccess={handleInterestsUpdated}
+        isFirstTime={false}
+      />
     </div>
   );
 };

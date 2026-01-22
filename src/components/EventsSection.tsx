@@ -36,7 +36,9 @@ import {
   CheckCircle,
   Filter,
   X,
-  Crown
+  Crown,
+  Sparkles,
+  Edit2
 } from 'lucide-react';
 import { 
   dameEventsAPI, 
@@ -49,6 +51,9 @@ import {
 } from '@/integrations/dame-api/events';
 import { useAuth } from '@/contexts/AuthContext';
 import { dameTicketsAPI } from '@/integrations/dame-api/tickets';
+import { interestsApi } from '@/api/interests';
+import type { UserInterest } from '@/types/interests';
+import { InterestsModal } from '@/components/InterestsModal';
 
 interface UserAttendance {
   event_slug?: string;
@@ -74,6 +79,9 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const [userTickets, setUserTickets] = useState<UserAttendance[]>([]);
   const [userTicketsLoaded, setUserTicketsLoaded] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(0);
+  const [userInterests, setUserInterests] = useState<UserInterest[]>([]);
+  const [recommendedEvents, setRecommendedEvents] = useState<DameEvent[]>([]);
+  const [interestsModalOpen, setInterestsModalOpen] = useState(false);
   
   // Inicializar dateFilter en 'all' por defecto
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'tomorrow' | 'weekend'>('all');
@@ -341,6 +349,103 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
 
     fetchUserTickets();
   }, [user]);
+
+  // Load user interests
+  const loadUserInterests = async () => {
+    if (!user) {
+      setUserInterests([]);
+      return;
+    }
+
+    const accessToken = localStorage.getItem("dame_access_token");
+    if (!accessToken) {
+      return;
+    }
+
+    try {
+      const result = await interestsApi.getInterests(accessToken);
+      if (result.ok && result.data) {
+        setUserInterests(result.data.interests);
+      }
+    } catch (error) {
+      console.error("Error loading user interests:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadUserInterests();
+  }, [user]);
+
+  const handleInterestsUpdated = () => {
+    loadUserInterests();
+  };
+
+  // Calculate recommended events based on user interests
+  useEffect(() => {
+    if (userInterests.length === 0 || eventsByCategory.length === 0) {
+      setRecommendedEvents([]);
+      return;
+    }
+
+    // Get user interest tag slugs and IDs
+    const userInterestSlugs = userInterests.map(interest => interest.tag_slug.toLowerCase());
+    const userInterestIds = userInterests.map(interest => interest.tag.id);
+
+    // Function to fetch event details and check if it matches user interests
+    const fetchRecommendedEvents = async () => {
+      const allEvents: DameEvent[] = [];
+      eventsByCategory.forEach(categoryData => {
+        allEvents.push(...categoryData.events);
+      });
+
+      // Remove duplicates
+      const seenSlugs = new Set<string>();
+      const uniqueEvents = allEvents.filter(event => {
+        if (seenSlugs.has(event.event_slug)) {
+          return false;
+        }
+        seenSlugs.add(event.event_slug);
+        return true;
+      });
+
+      // Fetch details for each event to get tags
+      const eventsWithTags = await Promise.all(
+        uniqueEvents.map(async (event) => {
+          try {
+            const detailResponse = await dameEventsAPI.getEventBySlug(event.event_slug);
+            if (detailResponse.success && detailResponse.data) {
+              const eventDetail = detailResponse.data;
+              // Check if event has any tag that matches user interests
+              const hasMatchingTag = eventDetail.tags.some(tag => 
+                userInterestIds.includes(tag.id) || 
+                userInterestSlugs.includes(tag.slug.toLowerCase())
+              );
+              return hasMatchingTag ? event : null;
+            }
+          } catch (error) {
+            console.error(`Error fetching details for event ${event.event_slug}:`, error);
+          }
+          return null;
+        })
+      );
+
+      // Filter out nulls and sort by date
+      let recommended = eventsWithTags
+        .filter((event): event is DameEvent => event !== null)
+        .sort((a, b) => {
+          const dateA = new Date(a.start).getTime();
+          const dateB = new Date(b.start).getTime();
+          return dateA - dateB;
+        });
+
+      // Apply date filter to recommended events
+      recommended = filterEventsByDate(recommended, dateFilter);
+
+      setRecommendedEvents(recommended);
+    };
+
+    fetchRecommendedEvents();
+  }, [userInterests, eventsByCategory, dateFilter, i18n.language]);
 
   const loadEvents = async () => {
     setLoading(true);
@@ -625,35 +730,104 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
       {/* Contenido con padding superior para la barra fija */}
       <div className={`space-y-8 ${user && !user.member && !membershipBannerClosed ? 'pt-32 sm:pt-36' : 'pt-14'}`}>
 
-      {/* Eventos por categoría (incluye recurrentes y únicos) - Filtrados por sidebar */}
-      {filteredEventsByCategory.length > 0 ? (
-        filteredEventsByCategory.map((categoryData) => (
-          <CategorySection 
-            key={categoryData.category.id}
-            categoryData={categoryData}
-            categoryColor={getCategoryColor(categoryData.category.id, categoryData.category.name_es)}
-            categoryIcon={getCategoryIcon(categoryData.category.icon, categoryData.category.name_es)}
-            maxEvents={maxEventsPerCategory}
-            attendedEvents={userTickets}
-            userTicketsLoaded={userTicketsLoaded}
-          />
-        ))
-      ) : selectedCategoryId !== null ? (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🎭</div>
-          <h3 className="text-xl font-semibold mb-2">No hay eventos en esta categoría</h3>
-          <p className="text-muted-foreground">
-            Próximamente tendremos más eventos para ti. 
-            <br />Mientras tanto, explora otras categorías.
-          </p>
-        </div>
-      ) : (
+      {/* Modal de intereses */}
+      {user && (
+        <InterestsModal
+          open={interestsModalOpen}
+          onOpenChange={setInterestsModalOpen}
+          onSuccess={handleInterestsUpdated}
+          isFirstTime={false}
+        />
+      )}
+
+      {/* Grid unificado de todos los eventos (recomendados + otros) sin separación */}
+      {loading ? (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🎪</div>
           <h3 className="text-xl font-semibold mb-2">Cargando eventos...</h3>
           <p className="text-muted-foreground">Un momento por favor</p>
         </div>
-      )}
+      ) : (() => {
+        // Combinar eventos recomendados con eventos de categorías
+        const allEvents: Array<{ event: DameEvent; categoryColor: string; categoryName?: string; isRecommended: boolean }> = [];
+        
+        // Agregar eventos recomendados primero
+        if (user && userInterests.length > 0 && recommendedEvents.length > 0 && selectedCategoryId === null) {
+          recommendedEvents.forEach((event) => {
+            const eventCategory = eventsByCategory.find(cat => 
+              cat.events.some(e => e.event_slug === event.event_slug)
+            );
+            const categoryName = eventCategory 
+              ? (i18n.language === 'en' ? eventCategory.category.name_en : eventCategory.category.name_es)
+              : undefined;
+            const categoryColor = eventCategory 
+              ? getCategoryColor(eventCategory.category.id, eventCategory.category.name_es)
+              : 'from-purple-600 to-pink-600';
+            
+            allEvents.push({
+              event,
+              categoryColor,
+              categoryName,
+              isRecommended: true
+            });
+          });
+        }
+        
+        // Agregar eventos de categorías (excluyendo los que ya están en recomendados)
+        if (filteredEventsByCategory.length > 0) {
+          const recommendedSlugs = new Set(recommendedEvents.map(e => e.event_slug));
+          filteredEventsByCategory.forEach((categoryData) => {
+            categoryData.events.forEach((event) => {
+              // Solo agregar si no está en recomendados
+              if (!recommendedSlugs.has(event.event_slug)) {
+                const categoryColor = getCategoryColor(categoryData.category.id, categoryData.category.name_es);
+                const categoryName = i18n.language === 'en' 
+                  ? categoryData.category.name_en 
+                  : categoryData.category.name_es;
+                
+                allEvents.push({
+                  event,
+                  categoryColor,
+                  categoryName,
+                  isRecommended: false
+                });
+              }
+            });
+          });
+        }
+        
+        if (allEvents.length === 0) {
+          if (selectedCategoryId !== null) {
+            return (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🎭</div>
+                <h3 className="text-xl font-semibold mb-2">No hay eventos en esta categoría</h3>
+                <p className="text-muted-foreground">
+                  Próximamente tendremos más eventos para ti. 
+                  <br />Mientras tanto, explora otras categorías.
+                </p>
+              </div>
+            );
+          }
+          return null;
+        }
+        
+        return (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {allEvents.map(({ event, categoryColor, categoryName, isRecommended }, index) => (
+              <EventCard 
+                key={`${event.event_slug}-${index}`} 
+                event={event} 
+                categoryColor={categoryColor}
+                categoryName={categoryName}
+                isRecommended={isRecommended}
+                attendedEvents={userTickets}
+                userTicketsLoaded={userTicketsLoaded}
+              />
+            ))}
+          </div>
+        );
+      })()}
     </div>
     </>
   );
@@ -686,23 +860,6 @@ const CategorySection = ({
 
   return (
     <div className="space-y-4">
-      {/* Título de categoría */}
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg bg-gradient-to-r ${categoryColor}`}>
-          <div className="text-white">
-            {categoryIcon}
-          </div>
-        </div>
-        <div>
-          <h3 className="text-2xl font-bold">{getLocalizedText(category.name_es, category.name_en)}</h3>
-          <p className="text-sm text-muted-foreground">
-            {i18n.language === 'en'
-              ? `${events.length} upcoming event${events.length !== 1 ? 's' : ''}`
-              : `${events.length} evento${events.length !== 1 ? 's' : ''} próximo${events.length !== 1 ? 's' : ''}`}
-          </p>
-        </div>
-      </div>
-
       {/* Grid de eventos */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {events.map((event, index) => (
@@ -710,6 +867,7 @@ const CategorySection = ({
             key={`${event.event_slug}-${index}`} 
             event={event} 
             categoryColor={categoryColor}
+            categoryName={getLocalizedText(category.name_es, category.name_en)}
             attendedEvents={attendedEvents}
             userTicketsLoaded={userTicketsLoaded}
           />
@@ -722,6 +880,8 @@ const CategorySection = ({
 interface EventCardProps {
   event: DameEvent;
   categoryColor: string;
+  categoryName?: string;
+  isRecommended?: boolean;
   attendedEvents: UserAttendance[];
   userTicketsLoaded: boolean;
 }
@@ -771,7 +931,7 @@ const hasUserTicket = (event: DameEvent, attendedEvents: UserAttendance[]): bool
   return hasMatch;
 };
 
-const EventCard = ({ event, categoryColor, attendedEvents, userTicketsLoaded }: EventCardProps) => {
+const EventCard = ({ event, categoryColor, categoryName, isRecommended = false, attendedEvents, userTicketsLoaded }: EventCardProps) => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
 
@@ -818,6 +978,22 @@ const EventCard = ({ event, categoryColor, attendedEvents, userTicketsLoaded }: 
             </div>
           </div>
         )}
+        {/* Badges en la esquina superior izquierda */}
+        <div className="absolute top-3 left-3 flex flex-col gap-2 items-start">
+          {/* Badge de recomendado (más vistoso) */}
+          {isRecommended && (
+            <Badge className="bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 text-white backdrop-blur-sm font-bold border-0 shadow-lg ring-2 ring-purple-300 dark:ring-purple-500">
+              <Sparkles className="h-3 w-3 mr-1" />
+              {i18n.language === 'en' ? 'Recommended' : 'Recomendado'}
+            </Badge>
+          )}
+          {/* Badge de categoría */}
+          {categoryName && (
+            <Badge className={`bg-gradient-to-r ${categoryColor} text-white backdrop-blur-sm font-bold border-0 ${isRecommended ? '' : ''}`}>
+              {categoryName}
+            </Badge>
+          )}
+        </div>
         {/* Badge de precio sobre la imagen */}
         <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
           {isFree ? (
@@ -857,12 +1033,18 @@ const EventCard = ({ event, categoryColor, attendedEvents, userTicketsLoaded }: 
       </div>
       
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg leading-tight group-hover:text-purple-600 transition-colors">
+        <CardTitle className="text-base sm:text-lg leading-tight group-hover:text-purple-600 transition-colors line-clamp-2">
           {getLocalizedText(event.title_es, event.title_en)}
         </CardTitle>
+        {/* Organizador - discreto debajo del título */}
+        {(event as any).organizers && (event as any).organizers.length > 0 && (
+          <p className="text-xs text-muted-foreground mt-1 truncate">
+            {(event as any).organizers.map((org: any) => org.name).join(', ')}
+          </p>
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-3 flex-1 flex flex-col">
+      <CardContent className="space-y-2 flex-1 flex flex-col">
         {/* Resumen del evento visible y consistente */}
         {(() => {
           // Usar directamente la información que viene de by-category
@@ -870,50 +1052,35 @@ const EventCard = ({ event, categoryColor, attendedEvents, userTicketsLoaded }: 
             || getLocalizedText(event.summary_es, event.summary_en, (event as any).summary)
             || getLocalizedText(event.description_es, event.description_en, (event as any).description);
           const summary = rawSummary ? String(rawSummary) : '';
-          const trimmed = summary.length > 240 ? summary.slice(0, 240) + '…' : summary;
+          const trimmed = summary.length > 160 ? summary.slice(0, 160) + '…' : summary;
           return (
-            <div className="h-16 overflow-hidden">
-              <p className="text-sm text-muted-foreground line-clamp-3">{trimmed}</p>
+            <div className="h-10 overflow-hidden">
+              <p className="text-sm text-muted-foreground line-clamp-2">{trimmed}</p>
             </div>
           );
         })()}
 
         {/* Fecha y hora */}
         <div className="flex items-center gap-2 text-sm">
-          <Calendar className="h-4 w-4 text-purple-600" />
-          <div className="flex-1">
-            <span className="font-medium">
+          <Calendar className="h-3.5 w-3.5 text-purple-600 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <span className="font-medium text-xs sm:text-sm">
               {formatEventDate(event.start, i18n.language === 'en' ? 'en-US' : 'es-ES')}
             </span>
             {event.is_recurring_weekly && (
-              <p className="text-xs text-blue-600 mt-1 font-medium">
-                <Repeat className="inline h-3 w-3 mr-1" />
-                {i18n.language === 'en' ? 'Repeats weekly' : 'Se repite semanalmente'}
-              </p>
+              <span className="text-xs text-blue-600 ml-1.5 font-medium">
+                <Repeat className="inline h-3 w-3 mr-0.5" />
+                {i18n.language === 'en' ? 'Weekly' : 'Semanal'}
+              </span>
             )}
           </div>
         </div>
 
         {/* Ubicación */}
         {event.place && (
-          <div className="flex flex-col gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-pink-600 flex-shrink-0" />
-              <span className="truncate">{event.place.name}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Organizador */}
-        {(event as any).organizers && (event as any).organizers.length > 0 && (
           <div className="flex items-center gap-2 text-sm">
-            <User className="h-4 w-4 text-purple-600 flex-shrink-0" />
-            <span className="text-muted-foreground truncate">
-              {i18n.language === 'en' ? 'Organized by' : 'Organizado por'}{' '}
-              <span className="font-medium text-foreground">
-                {(event as any).organizers.map((org: any) => org.name).join(', ')}
-              </span>
-            </span>
+            <MapPin className="h-3.5 w-3.5 text-pink-600 flex-shrink-0" />
+            <span className="truncate text-xs sm:text-sm">{event.place.name}</span>
           </div>
         )}
 

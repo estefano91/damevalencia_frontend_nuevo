@@ -91,7 +91,28 @@
     "noAffiliation": "Sin afiliación registrada",
     "noAffiliationDesc": "Tu cuenta aún no está vinculada a un miembro activo. Contacta con la organización para completar tu registro.",
     "sessionUnavailable": "Sesión no disponible",
-    "sessionUnavailableDesc": "No pudimos cargar tu perfil. Inicia sesión nuevamente para continuar."
+    "sessionUnavailableDesc": "No pudimos cargar tu perfil. Inicia sesión nuevamente para continuar.",
+    "interests": "Intereses",
+    "myInterests": "Mis Intereses",
+    "editInterests": "Editar Intereses",
+    "noInterests": "Sin intereses seleccionados",
+    "noInterestsDesc": "Selecciona tus intereses para personalizar tu experiencia",
+    "addInterests": "Agregar Intereses"
+  },
+  "interests": {
+    "title": "Selecciona Tus Intereses",
+    "editTitle": "Edita Tus Intereses",
+    "description": "Elige los temas que te interesan para personalizar tu experiencia",
+    "editDescription": "Actualiza tus intereses para ver contenido más relevante",
+    "selectAtLeastOne": "Por favor selecciona al menos un interés",
+    "saving": "Guardando...",
+    "saved": "Intereses actualizados",
+    "savedDesc": "Tus intereses se han guardado exitosamente",
+    "error": "Error",
+    "errorLoading": "No se pudieron cargar los tags disponibles",
+    "errorSaving": "No se pudieron actualizar los intereses",
+    "noTagsAvailable": "No hay tags disponibles",
+    "skip": "Omitir por ahora"
   },
   "discover": {
     "title": "Descubrir Talentos",
@@ -121,7 +142,10 @@
   "events": {
     "title": "Eventos de Networking",
     "upcoming": "Próximos Eventos",
-    "register": "Registrarse"
+    "register": "Registrarse",
+    "recommendedForYou": "Recomendados para Ti",
+    "recommendedDescription": "Eventos basados en tus intereses",
+    "attending": "Asistirás"
   },
   "premium": {
     "title": "Premium y Monetización",

@@ -91,7 +91,28 @@
     "noAffiliation": "No Affiliation Registered",
     "noAffiliationDesc": "Your account is not yet linked to an active member. Contact the organization to complete your registration.",
     "sessionUnavailable": "Session Unavailable",
-    "sessionUnavailableDesc": "We couldn't load your profile. Please sign in again to continue."
+    "sessionUnavailableDesc": "We couldn't load your profile. Please sign in again to continue.",
+    "interests": "Interests",
+    "myInterests": "My Interests",
+    "editInterests": "Edit Interests",
+    "noInterests": "No interests selected",
+    "noInterestsDesc": "Select your interests to personalize your experience",
+    "addInterests": "Add Interests"
+  },
+  "interests": {
+    "title": "Select Your Interests",
+    "editTitle": "Edit Your Interests",
+    "description": "Choose the topics that interest you to personalize your experience",
+    "editDescription": "Update your interests to see more relevant content",
+    "selectAtLeastOne": "Please select at least one interest",
+    "saving": "Saving...",
+    "saved": "Interests updated",
+    "savedDesc": "Your interests have been saved successfully",
+    "error": "Error",
+    "errorLoading": "Could not load available tags",
+    "errorSaving": "Could not update interests",
+    "noTagsAvailable": "No tags available",
+    "skip": "Skip for now"
   },
   "discover": {
     "title": "Discover Talents",
@@ -121,7 +142,10 @@
   "events": {
     "title": "Networking Events",
     "upcoming": "Upcoming Events",
-    "register": "Register"
+    "register": "Register",
+    "recommendedForYou": "Recommended for You",
+    "recommendedDescription": "Events based on your interests",
+    "attending": "Attending"
   },
   "premium": {
     "title": "Premium & Monetization",
