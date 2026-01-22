@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -38,7 +39,8 @@ import {
   X,
   Crown,
   Sparkles,
-  Edit2
+  Edit2,
+  HelpCircle
 } from 'lucide-react';
 import { 
   dameEventsAPI, 
@@ -982,10 +984,38 @@ const EventCard = ({ event, categoryColor, categoryName, isRecommended = false, 
         <div className="absolute top-3 left-3 flex flex-col gap-2 items-start">
           {/* Badge de recomendado (más vistoso) */}
           {isRecommended && (
-            <Badge className="bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 text-white backdrop-blur-sm font-bold border-0 shadow-lg ring-2 ring-purple-300 dark:ring-purple-500">
-              <Sparkles className="h-3 w-3 mr-1" />
-              {i18n.language === 'en' ? 'Recommended' : 'Recomendado'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 text-white backdrop-blur-sm font-bold border-0 shadow-lg ring-2 ring-purple-300 dark:ring-purple-500">
+                <Sparkles className="h-3 w-3 mr-1" />
+                {i18n.language === 'en' ? 'Recommended for You' : 'Recomendado para Ti'}
+              </Badge>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    className="text-white hover:text-purple-200 dark:hover:text-purple-300 cursor-pointer transition-colors p-0.5"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={i18n.language === 'en' ? 'Why is this recommended?' : '¿Por qué está recomendado?'}
+                  >
+                    <HelpCircle className="h-5 w-5 font-bold" strokeWidth={2.5} />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-64 p-3 text-sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="space-y-2">
+                    <p className="font-semibold text-purple-600 dark:text-purple-400">
+                      {i18n.language === 'en' ? 'Why is this recommended?' : '¿Por qué está recomendado?'}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {i18n.language === 'en' 
+                        ? 'This event matches your interests. You can edit your interests in your profile page.'
+                        : 'Este evento coincide con tus intereses. Puedes editar tus intereses en tu página de perfil.'}
+                    </p>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           )}
           {/* Badge de categoría */}
           {categoryName && (
