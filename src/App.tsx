@@ -32,6 +32,8 @@ import MonthlyEvents from "./pages/MonthlyEvents";
 import Alquiler from "./pages/Alquiler";
 import Subscription from "./pages/Subscription";
 import { InterestsModalWrapper } from "./components/InterestsModalWrapper";
+import { MembershipModalWrapper } from "./components/MembershipModalWrapper";
+import RegisterPopup from "./components/RegisterPopup";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +47,8 @@ const App = () => (
         <ScrollToTop />
         <AuthProvider>
           <InterestsModalWrapper />
+          <MembershipModalWrapper />
+          <RegisterPopup />
           <Routes>
                   {/* Redirigir directamente al dashboard para desarrollo */}
                   <Route path="/" element={<ProtectedRoute><Demo /></ProtectedRoute>} />

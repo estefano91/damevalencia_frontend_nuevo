@@ -183,19 +183,21 @@ export const InterestsModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Sparkles className="h-5 w-5 text-primary" />
-            {isFirstTime
-              ? i18n.language === "en"
-                ? "Select Your Interests"
-                : "Selecciona Tus Intereses"
-              : i18n.language === "en"
-              ? "Edit Your Interests"
-              : "Edita Tus Intereses"}
+      <DialogContent className="max-w-md sm:max-w-lg max-h-[85vh] sm:max-h-[80vh] overflow-hidden flex flex-col p-0 w-[calc(100vw-2rem)] sm:w-full">
+        <DialogHeader className="px-4 sm:px-5 md:px-6 pt-4 sm:pt-5 md:pt-6 pb-3 sm:pb-4 flex-shrink-0">
+          <DialogTitle className="flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg md:text-xl">
+            <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
+            <span className="leading-tight">
+              {isFirstTime
+                ? i18n.language === "en"
+                  ? "Select Your Interests"
+                  : "Selecciona Tus Intereses"
+                : i18n.language === "en"
+                ? "Edit Your Interests"
+                : "Edita Tus Intereses"}
+            </span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm pt-1 leading-relaxed">
             {isFirstTime
               ? i18n.language === "en"
                 ? "Choose the topics that interest you to personalize your experience"
@@ -206,13 +208,13 @@ export const InterestsModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-2 sm:space-y-3 px-4 sm:px-5 md:px-6 py-2 sm:py-3 overflow-y-auto flex-1 min-h-0">
           {loadingTags ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <div className="flex items-center justify-center py-6 sm:py-8">
+              <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-primary" />
             </div>
           ) : availableTags.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-6 sm:py-8 text-muted-foreground text-xs sm:text-sm">
               {i18n.language === "en"
                 ? "No tags available"
                 : "No hay tags disponibles"}
@@ -225,7 +227,7 @@ export const InterestsModal = ({
                   <Badge
                     key={tag.id}
                     variant={isSelected ? "default" : "outline"}
-                    className={`cursor-pointer px-4 py-2 text-sm transition-all ${
+                    className={`cursor-pointer px-3 py-1.5 text-sm transition-all ${
                       isSelected
                         ? "bg-primary text-primary-foreground hover:bg-primary/90"
                         : "hover:bg-muted"
@@ -240,22 +242,27 @@ export const InterestsModal = ({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="px-4 sm:px-5 md:px-6 pb-3 sm:pb-4 pt-3 sm:pt-4 border-t flex-shrink-0 gap-2">
           {isFirstTime ? (
             <>
               <Button
-                variant="ghost"
+                variant="outline"
                 onClick={handleSkip}
                 disabled={loading}
-                className="text-muted-foreground"
+                className="flex-1 text-xs sm:text-sm py-2 sm:py-2.5"
               >
-                {i18n.language === "en" ? "Skip for now" : "Omitir por ahora"}
+                {i18n.language === "en" ? "Skip" : "Omitir"}
               </Button>
-              <Button onClick={handleSave} disabled={loading || loadingTags}>
+              <Button 
+                onClick={handleSave} 
+                disabled={loading || loadingTags}
+                className="flex-1 text-xs sm:text-sm py-2 sm:py-2.5"
+              >
                 {loading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {i18n.language === "en" ? "Saving..." : "Guardando..."}
+                    <Loader2 className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                    <span className="hidden sm:inline">{i18n.language === "en" ? "Saving..." : "Guardando..."}</span>
+                    <span className="sm:hidden">{i18n.language === "en" ? "Saving" : "Guardando"}</span>
                   </>
                 ) : (
                   t("common.save")
@@ -268,14 +275,20 @@ export const InterestsModal = ({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={loading}
+                className="flex-1 text-xs sm:text-sm py-2 sm:py-2.5"
               >
                 {t("common.cancel")}
               </Button>
-              <Button onClick={handleSave} disabled={loading || loadingTags}>
+              <Button 
+                onClick={handleSave} 
+                disabled={loading || loadingTags}
+                className="flex-1 text-xs sm:text-sm py-2 sm:py-2.5"
+              >
                 {loading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {i18n.language === "en" ? "Saving..." : "Guardando..."}
+                    <Loader2 className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                    <span className="hidden sm:inline">{i18n.language === "en" ? "Saving..." : "Guardando..."}</span>
+                    <span className="sm:hidden">{i18n.language === "en" ? "Saving" : "Guardando"}</span>
                   </>
                 ) : (
                   t("common.save")

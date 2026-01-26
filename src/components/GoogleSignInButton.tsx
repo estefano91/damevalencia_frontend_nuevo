@@ -35,11 +35,12 @@ interface GoogleSignInButtonProps {
   onToken: (idToken: string) => void;
   onError?: (message: string) => void;
   className?: string;
+  buttonText?: "signin_with" | "signup_with" | "continue_with" | "signin";
 }
 
 const GOOGLE_SCRIPT_ID = "google-identity-services-sdk";
 
-const GoogleSignInButton = ({ disabled, onToken, onError, className }: GoogleSignInButtonProps) => {
+const GoogleSignInButton = ({ disabled, onToken, onError, className, buttonText = "continue_with" }: GoogleSignInButtonProps) => {
   // Solo consideramos "ready" cuando realmente existe google.accounts.id,
   // no simplemente cuando window.google está definido (p.ej. por Google Maps)
   const [scriptReady, setScriptReady] = useState<boolean>(
@@ -116,12 +117,12 @@ const GoogleSignInButton = ({ disabled, onToken, onError, className }: GoogleSig
       type: "standard",
       theme: "filled_blue",
       size: "large",
-      text: "continue_with",
+      text: buttonText,
       width: "100%",
     });
 
     setButtonRendered(true);
-  }, [buttonRendered, clientId, onError, onToken, scriptReady]);
+  }, [buttonRendered, clientId, onError, onToken, scriptReady, buttonText]);
 
   if (!clientId) {
     return (

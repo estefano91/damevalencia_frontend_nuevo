@@ -62,7 +62,7 @@ const Demo = () => {
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center pt-2 sm:pt-3">
                 <Button
                   size="lg"
-                  onClick={() => navigate("/auth")}
+                  onClick={() => navigate("/register")}
                   className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 text-sm sm:text-base font-semibold px-6 sm:px-8 py-5 sm:py-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 w-full sm:w-auto"
                 >
                   {i18n.language === 'en' ? 'Join DAME' : 'Únete a DAME'}

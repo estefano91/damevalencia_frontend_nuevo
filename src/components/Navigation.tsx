@@ -52,7 +52,7 @@ const Navigation = ({ isMobile }: NavigationProps) => {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/auth");
+    navigate("/register");
   };
 
   return (

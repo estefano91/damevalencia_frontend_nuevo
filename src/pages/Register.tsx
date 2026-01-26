@@ -3,18 +3,20 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Palette, Music, Heart, Mail, Lock, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Mail, Lock, Eye, EyeOff, CheckCircle2, XCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
+import logoDame from "@/assets/1.png";
 
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { i18n } = useTranslation();
-  const { user, register } = useAuth();
+  const { user, register, login, loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   
   // Estados del formulario
   const [email, setEmail] = useState("");
@@ -131,7 +133,37 @@ const Register = () => {
         });
         navigate("/");
       } else {
-        throw new Error(result.error || (i18n.language === 'en' ? "Error registering user" : "Error al registrar usuario"));
+        // Verificar si el error indica que el usuario ya existe
+        const errorMessage = result.error?.toLowerCase() || '';
+        const isUserExists = 
+          errorMessage.includes('already exists') ||
+          errorMessage.includes('ya existe') ||
+          errorMessage.includes('already registered') ||
+          errorMessage.includes('ya registrado') ||
+          errorMessage.includes('email') && (errorMessage.includes('taken') || errorMessage.includes('ocupado') || errorMessage.includes('en uso')) ||
+          errorMessage.includes('username') && (errorMessage.includes('taken') || errorMessage.includes('ocupado') || errorMessage.includes('en uso'));
+
+        if (isUserExists) {
+          // Intentar hacer login automáticamente
+          const loginResult = await login(email, password);
+          
+          if (loginResult.success) {
+            toast({ 
+              title: i18n.language === 'en' ? "Welcome back! ✨" : "¡Bienvenido de nuevo! ✨",
+              description: i18n.language === 'en' 
+                ? "You've been logged in successfully" 
+                : "Has iniciado sesión exitosamente"
+            });
+            navigate("/");
+            return;
+          } else {
+            // Si el login falla, mostrar el error del login
+            throw new Error(loginResult.error || (i18n.language === 'en' ? "Invalid credentials" : "Credenciales inválidas"));
+          }
+        } else {
+          // Si no es un error de usuario existente, mostrar el error original
+          throw new Error(result.error || (i18n.language === 'en' ? "Error registering user" : "Error al registrar usuario"));
+        }
       }
     } catch (error: any) {
       toast({
@@ -144,48 +176,106 @@ const Register = () => {
     }
   };
 
+  const handleGoogleToken = async (idToken: string) => {
+    if (!idToken || googleLoading) return;
+
+    setGoogleLoading(true);
+    try {
+      const result = await loginWithGoogle(idToken);
+      if (result.success) {
+        toast({ 
+          title: result.isNewUser 
+            ? (i18n.language === 'en' ? "Account created successfully! ✨" : "¡Cuenta creada exitosamente! ✨")
+            : (i18n.language === 'en' ? "Welcome back! ✨" : "¡Bienvenido de nuevo! ✨"),
+          description: i18n.language === 'en' 
+            ? "Welcome to DAME Valencia!" 
+            : "¡Bienvenido/a a DAME Valencia!"
+        });
+        navigate("/");
+      } else {
+        throw new Error(result.error || (i18n.language === 'en' ? "Error registering with Google" : "Error al registrar con Google"));
+      }
+    } catch (error: any) {
+      toast({
+        title: i18n.language === 'en' ? "Error" : "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = (message: string) => {
+    toast({
+      title: i18n.language === 'en' ? "Google Sign-In Error" : "Error de Google Sign-In",
+      description: message,
+      variant: "destructive",
+    });
+  };
+
   // Criterios de contraseña
   const passwordCriteria = {
     minLength: password.length >= 6,
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900 p-4">
-      <Card className="w-full max-w-md p-8 space-y-6 shadow-xl">
-        <CardHeader className="space-y-4">
-          <div className="flex justify-center space-x-2 text-4xl mb-2">
-            <Palette className="text-purple-600" />
-            <Music className="text-pink-600" />
-            <Heart className="text-red-500" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 dark:from-gray-900 dark:via-purple-900 dark:to-gray-900 p-4">
+      <Card className="w-full max-w-md p-5 space-y-4 shadow-2xl border-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm relative overflow-hidden">
+        {/* Decorative gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-transparent pointer-events-none" />
+        
+        <div className="text-center space-y-2 pt-1 relative z-10">
+          <div className="flex justify-center mb-1">
+            <img 
+              src={logoDame} 
+              alt="DAME Logo" 
+              className="h-14 w-auto object-contain drop-shadow-sm"
+            />
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent text-center">
+          <h1 className="text-lg font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
             {i18n.language === 'en' ? 'Join DAME' : 'Únete a DAME'}
-          </CardTitle>
-          <CardDescription className="text-center">
-            {i18n.language === 'en' 
-              ? "Create your profile in the DAME Association - Art, Culture and Wellbeing" 
-              : "Crea tu perfil en la Asociación DAME - Arte, Cultura y Bienestar"}
-          </CardDescription>
-        </CardHeader>
+          </h1>
+        </div>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="pt-2 relative z-10">
+          {/* Google Sign In Button - First */}
+          <div className="space-y-2 mb-4">
+            <GoogleSignInButton
+              onToken={handleGoogleToken}
+              onError={handleGoogleError}
+              disabled={loading || googleLoading}
+              buttonText="signup_with"
+            />
+            {googleLoading && (
+              <p className="text-xs text-center text-muted-foreground">
+                {i18n.language === 'en' ? 'Verifying with Google...' : 'Verificando con Google...'}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 my-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent dark:via-gray-600" />
+            <span className="text-xs uppercase text-muted-foreground font-medium px-2">{i18n.language === 'en' ? 'OR' : 'O'}</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent dark:via-gray-600" />
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-3">
             {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                {i18n.language === 'en' ? 'Email' : 'Email'}
-              </Label>
+            <div className="space-y-1">
               <Input
                 id="email"
                 type="email"
-                placeholder={i18n.language === 'en' ? 'your@email.com' : 'tu@email.com'}
+                placeholder={i18n.language === 'en' ? 'Email' : 'Email'}
                 value={email}
                 onChange={(e) => handleEmailChange(e.target.value)}
                 autoComplete="off"
                 required
-                className={errors.email ? "border-red-500" : ""}
-                disabled={loading}
+                className={`transition-all duration-200 ${
+                  errors.email 
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" 
+                    : "border-gray-300 dark:border-gray-600 focus:border-purple-500 focus:ring-purple-500/20"
+                }`}
+                disabled={loading || googleLoading}
               />
               {errors.email && (
                 <p className="text-xs text-red-500 flex items-center gap-1">
@@ -193,44 +283,37 @@ const Register = () => {
                   {errors.email}
                 </p>
               )}
-              {!errors.email && email && (
-                <p className="text-xs text-muted-foreground">
-                  {i18n.language === 'en' 
-                    ? 'Username will be generated automatically from your email' 
-                    : 'El username se generará automáticamente a partir de tu email'}
-                </p>
-              )}
             </div>
 
             {/* Password */}
-            <div className="space-y-2">
-              <Label htmlFor="password" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                {i18n.language === 'en' ? 'Password' : 'Contraseña'}
-              </Label>
+            <div className="space-y-1">
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder={i18n.language === 'en' ? '••••••••' : '••••••••'}
+                  placeholder={i18n.language === 'en' ? 'Password' : 'Contraseña'}
                   value={password}
                   onChange={(e) => handlePasswordChange(e.target.value)}
                   required
-                  className={errors.password ? "border-red-500 pr-10" : "pr-10"}
-                  disabled={loading}
+                  className={`transition-all duration-200 pr-10 ${
+                    errors.password 
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" 
+                      : "border-gray-300 dark:border-gray-600 focus:border-purple-500 focus:ring-purple-500/20"
+                  }`}
+                  disabled={loading || googleLoading}
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
+                  disabled={loading || googleLoading}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <Eye className="h-4 w-4" />
                   )}
                 </Button>
               </div>
@@ -240,54 +323,39 @@ const Register = () => {
                   {errors.password}
                 </p>
               )}
-              {password && !errors.password && (
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">
-                    {i18n.language === 'en' ? 'Password requirements:' : 'Requisitos de contraseña:'}
-                  </p>
-                  <div className="flex items-center gap-1 text-xs">
-                    {passwordCriteria.minLength ? (
-                      <CheckCircle2 className="h-3 w-3 text-green-500" />
-                    ) : (
-                      <XCircle className="h-3 w-3 text-gray-400" />
-                    )}
-                    <span className={passwordCriteria.minLength ? "text-green-600" : "text-muted-foreground"}>
-                      {i18n.language === 'en' ? 'Minimum 6 characters' : 'Mínimo 6 caracteres'}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Confirm Password */}
-            <div className="space-y-2">
-              <Label htmlFor="passwordConfirm" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                {i18n.language === 'en' ? 'Confirm Password' : 'Confirmar Contraseña'}
-              </Label>
+            <div className="space-y-1">
               <div className="relative">
                 <Input
                   id="passwordConfirm"
                   type={showPasswordConfirm ? "text" : "password"}
-                  placeholder={i18n.language === 'en' ? '••••••••' : '••••••••'}
+                  placeholder={i18n.language === 'en' ? 'Confirm Password' : 'Confirmar Contraseña'}
                   value={passwordConfirm}
                   onChange={(e) => handlePasswordConfirmChange(e.target.value)}
                   required
-                  className={errors.passwordConfirm ? "border-red-500 pr-10" : "pr-10"}
-                  disabled={loading}
+                  className={`transition-all duration-200 pr-10 ${
+                    errors.passwordConfirm 
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" 
+                      : passwordConfirm && password === passwordConfirm
+                      ? "border-green-500 focus:border-green-500 focus:ring-green-500/20"
+                      : "border-gray-300 dark:border-gray-600 focus:border-purple-500 focus:ring-purple-500/20"
+                  }`}
+                  disabled={loading || googleLoading}
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                  disabled={loading}
+                  disabled={loading || googleLoading}
                 >
                   {showPasswordConfirm ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <Eye className="h-4 w-4" />
                   )}
                 </Button>
               </div>
@@ -297,19 +365,13 @@ const Register = () => {
                   {errors.passwordConfirm}
                 </p>
               )}
-              {passwordConfirm && !errors.passwordConfirm && password === passwordConfirm && (
-                <p className="text-xs text-green-600 flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3" />
-                  {i18n.language === 'en' ? 'Passwords match' : 'Las contraseñas coinciden'}
-                </p>
-              )}
             </div>
 
             {/* Submit Button */}
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" 
-              disabled={loading || !!errors.email || !!errors.password || !!errors.passwordConfirm}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200" 
+              disabled={loading || googleLoading || !!errors.email || !!errors.password || !!errors.passwordConfirm}
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {i18n.language === 'en' ? 'Create Account' : 'Crear Cuenta'}
@@ -317,40 +379,18 @@ const Register = () => {
           </form>
 
           {/* Footer */}
-          <div className="space-y-4 mt-6">
-            <div className="text-center text-sm">
+          <div className="space-y-2 mt-4">
+            <div className="text-center text-xs">
               <span className="text-muted-foreground">
                 {i18n.language === 'en' ? 'Already have an account? ' : '¿Ya tienes cuenta? '}
               </span>
               <Link
                 to="/auth"
-                className="text-purple-600 hover:underline font-medium"
+                className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 underline font-medium transition-colors"
               >
                 {i18n.language === 'en' ? 'Sign in' : 'Inicia sesión'}
               </Link>
             </div>
-
-            <div className="text-xs text-center text-muted-foreground space-y-2">
-              <p>
-                {i18n.language === 'en' 
-                  ? 'By creating an account, you agree to our Terms of Use and Privacy Policy.'
-                  : 'Al crear tu cuenta, aceptas nuestros Términos de Uso y Política de Privacidad.'}
-              </p>
-              <p className="font-medium text-purple-600">
-                {i18n.language === 'en' 
-                  ? 'Join our community of over 10K members from 50+ countries!'
-                  : '¡Únete a nuestra comunidad de más de 10K miembros de 50+ países!'}
-              </p>
-            </div>
-          </div>
-
-          <div className="text-center pt-4 border-t mt-6">
-            <p className="text-xs text-muted-foreground">
-              DAME Association - Valencia, Spain
-            </p>
-            <p className="text-xs text-purple-600 font-medium">
-              Art • Culture • Music • Wellbeing
-            </p>
           </div>
         </CardContent>
       </Card>
