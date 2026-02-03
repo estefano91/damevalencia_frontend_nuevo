@@ -11,12 +11,19 @@ import {
   ArrowLeft,
   MessageCircle,
   MapPin,
-  Calendar,
   Home,
-  Users,
-  Map,
   FileText,
   HelpCircle,
+  Music,
+  Leaf,
+  UtensilsCrossed,
+  PartyPopper,
+  MapPinned,
+  User,
+  Heart,
+  Users,
+  ChefHat,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { WHATSAPP_NUMBER } from "@/lib/tienda";
@@ -24,51 +31,37 @@ import { WHATSAPP_NUMBER } from "@/lib/tienda";
 // Portada: Torres de Serranos, Valencia (imagen local)
 const HERO_IMAGE_VALENCIA = "/portada-valencia.png";
 const HERO_IMAGE_FALLBACK = "/dame.png";
-// Tarjeta detalles: imagen local para que siempre cargue
 const SIDEBAR_IMAGE = "/dame.png";
 
+// ¿Para quién es el viaje? (pueden elegir varios)
+const TRIP_AUDIENCE: Array<{ id: string; name_es: string; name_en: string; icon: LucideIcon }> = [
+  { id: "individual", name_es: "Viaje individual", name_en: "Solo trip", icon: User },
+  { id: "pareja", name_es: "En pareja", name_en: "Couple", icon: Heart },
+  { id: "amigos", name_es: "Con amigos", name_en: "Friends", icon: Users },
+  { id: "despedida", name_es: "Despedida de soltero/a", name_en: "Stag / hen party", icon: PartyPopper },
+];
+
+// Servicios que puede incluir el pack (orden: base → descubrir → gastronomía → experiencias → otro)
 const TRIP_SERVICES: Array<{
   id: string;
   name_es: string;
   name_en: string;
   icon: LucideIcon;
 }> = [
-  {
-    id: "eventos",
-    name_es: "Acceso a eventos DAME (plan familiar, plan pareja, plan fiesta)",
-    name_en: "DAME events access (family plan, couple plan, party plan)",
-    icon: Calendar,
-  },
-  {
-    id: "alojamiento",
-    name_es: "Asesoramiento para alojamiento (pisos, zonas, estancias cortas o largas)",
-    name_en: "Accommodation advice (apartments, areas, short or long stays)",
-    icon: Home,
-  },
-  {
-    id: "comunidad",
-    name_es: "Conexión con la comunidad DAME — internacional y locales (ideal para conocer gente nueva)",
-    name_en: "Connection with DAME community — international & locals (great for meeting new people)",
-    icon: Users,
-  },
-  {
-    id: "experiencias",
-    name_es: "Experiencias y planes recomendados (plan familiar, pareja, fiestas, dónde comer, rutas, etc.)",
-    name_en: "Recommended experiences and plans (family, couple, parties, where to eat, routes, etc.)",
-    icon: Map,
-  },
-  {
-    id: "practico",
-    name_es: "Información práctica (transporte, trámites, documentación)",
-    name_en: "Practical info (transport, paperwork, documentation)",
-    icon: FileText,
-  },
-  {
-    id: "otro",
-    name_es: "Otro (especificar en comentarios)",
-    name_en: "Other (specify in comments)",
-    icon: HelpCircle,
-  },
+  // Base: alojamiento y trámites
+  { id: "alojamiento", name_es: "Asesoramiento alojamiento", name_en: "Accommodation advice", icon: Home },
+  { id: "practico", name_es: "Información práctica (trámites, documentación)", name_en: "Practical info (paperwork, documentation)", icon: FileText },
+  // Descubrir la ciudad
+  { id: "visitas-guiadas", name_es: "Visitas guiadas", name_en: "Guided tours", icon: MapPinned },
+  // Gastronomía
+  { id: "tapas", name_es: "Rutas de tapas", name_en: "Tapas routes", icon: UtensilsCrossed },
+  { id: "gastronomia", name_es: "Experiencia gastronómica (cena, taller de cocina)", name_en: "Gastronomic experience (dinner, cooking workshop)", icon: ChefHat },
+  // Experiencias y ocio
+  { id: "bachata-salsa", name_es: "Cursos privados bachata / salsa", name_en: "Private bachata / salsa lessons", icon: Music },
+  { id: "zen", name_es: "Actividades zen", name_en: "Zen activities", icon: Leaf },
+  { id: "eventos-ocio", name_es: "Eventos y ocio (conciertos, planes de noche)", name_en: "Events and leisure (concerts, night plans)", icon: Sparkles },
+  // Otro
+  { id: "otro", name_es: "Otro (especificar en comentarios)", name_en: "Other (specify in comments)", icon: HelpCircle },
 ];
 
 function buildWhatsAppUrl(message: string) {
@@ -80,10 +73,20 @@ const ViajePersonalizado = () => {
   const { i18n } = useTranslation();
   const isEnglish = i18n.language === "en" || i18n.language?.startsWith("en");
 
+  const [selectedAudience, setSelectedAudience] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [fechas, setFechas] = useState("");
   const [comentarios, setComentarios] = useState("");
   const [heroImage, setHeroImage] = useState(HERO_IMAGE_VALENCIA);
+
+  const toggleAudience = (id: string) => {
+    setSelectedAudience((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const toggleService = (id: string) => {
     setSelectedIds((prev) => {
@@ -94,6 +97,7 @@ const ViajePersonalizado = () => {
     });
   };
 
+  const selectedAudienceList = TRIP_AUDIENCE.filter((a) => selectedAudience.has(a.id));
   const selectedServices = TRIP_SERVICES.filter((s) => selectedIds.has(s.id));
   const canSend = selectedServices.length > 0;
 
@@ -105,7 +109,14 @@ const ViajePersonalizado = () => {
         : "¡Hola! Me gustaría solicitar un pack de viaje personalizado a Valencia:"
     );
     lines.push("");
-    lines.push(isEnglish ? "Services I'm interested in:" : "Servicios que me interesan:");
+    if (selectedAudienceList.length > 0) {
+      lines.push(isEnglish ? "For whom:" : "¿Para quién?:");
+      selectedAudienceList.forEach((a) => {
+        lines.push(`• ${isEnglish ? a.name_en : a.name_es}`);
+      });
+      lines.push("");
+    }
+    lines.push(isEnglish ? "Services I need:" : "Servicios que necesito:");
     selectedServices.forEach((s) => {
       lines.push(`• ${isEnglish ? s.name_en : s.name_es}`);
     });
@@ -181,82 +192,116 @@ const ViajePersonalizado = () => {
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 -mt-5 sm:-mt-10 pb-24 sm:pb-14 relative z-10 max-w-4xl">
-        {/* Intro: texto claro y legible */}
-        <div className="mb-8 rounded-2xl bg-white dark:bg-gray-800/90 border border-stone-200 dark:border-stone-600 shadow-sm px-5 py-4 sm:px-6 sm:py-5">
+        {/* Intro: para quién y qué servicios */}
+        <div className="mb-6 rounded-2xl bg-white dark:bg-gray-800/90 border border-stone-200 dark:border-stone-600 shadow-sm px-5 py-4 sm:px-6 sm:py-5">
           <p className="text-base sm:text-lg leading-relaxed text-gray-800 dark:text-gray-100 font-medium">
             {isEnglish
-              ? "Choose the DAME services you need. We'll put together a tailored pack for you — send us your selection via WhatsApp when you're ready."
-              : "Elige los servicios DAME que necesitas. Prepararemos un pack a tu medida; envíanos tu selección por WhatsApp cuando estés listo."}
+              ? "We have options for solo trips, couples, friends or stag/hen parties. Choose who the trip is for and the services you need — we'll put together a tailored pack."
+              : "Tenemos opciones para viajes individuales, en pareja, con amigos o despedidas de soltero/a. Elige para quién es el viaje y los servicios que necesitas; prepararemos un pack a tu medida."}
           </p>
         </div>
 
-        {/* Badge seleccionados */}
-        {selectedServices.length > 0 && (
-          <div className="mb-5 flex items-center justify-center sm:justify-start">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/90 dark:bg-gray-800/90 border border-purple-200/80 dark:border-purple-700/50 px-4 py-2 text-xs font-medium text-purple-800 dark:text-purple-200 shadow-sm backdrop-blur-sm">
-              <span className="h-2 w-2 rounded-full bg-purple-500" />
-              {selectedServices.length}{" "}
-              {isEnglish
-                ? selectedServices.length === 1 ? "service selected" : "services selected"
-                : selectedServices.length === 1 ? "servicio seleccionado" : "servicios seleccionados"}
-            </span>
-          </div>
-        )}
-
         <div className="grid gap-6 sm:gap-8 lg:grid-cols-2">
-          {/* Servicios: tarjetas elegantes */}
-          <Card className="border border-stone-200/80 dark:border-stone-700/50 bg-white dark:bg-gray-800/95 backdrop-blur-sm shadow-lg rounded-3xl overflow-hidden">
-            <CardHeader className="py-4 px-4 sm:py-5 sm:px-6 border-b border-stone-100 dark:border-stone-700/50">
-              <CardTitle className="flex items-center gap-2.5 text-base sm:text-lg font-semibold text-stone-800 dark:text-stone-100">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900/40">
-                  <MapPin className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                </div>
-                {isEnglish ? "Services that interest me" : "Servicios que me interesan"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 space-y-2.5 sm:space-y-3">
-              {TRIP_SERVICES.map((service) => {
-                const Icon = service.icon;
-                const isSelected = selectedIds.has(service.id);
-                return (
-                  <div
-                    key={service.id}
-                    className={`flex items-start gap-3 rounded-2xl p-3 sm:p-3.5 transition-all duration-200 cursor-pointer touch-manipulation active:scale-[0.99] min-h-[48px] sm:min-h-0 border ${
-                      isSelected
-                        ? "border-purple-400/60 bg-purple-50/80 dark:bg-purple-900/20 dark:border-purple-500/50 shadow-sm"
-                        : "border-stone-200/60 dark:border-stone-600/40 bg-stone-50/50 dark:bg-stone-800/30 hover:bg-stone-100/80 dark:hover:bg-stone-700/40"
-                    }`}
-                    onClick={() => toggleService(service.id)}
-                    onKeyDown={(e) => e.key === "Enter" && toggleService(service.id)}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <Checkbox
-                      id={service.id}
-                      checked={isSelected}
-                      onCheckedChange={() => toggleService(service.id)}
-                      className="mt-0.5 shrink-0"
-                    />
-                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <div
-                        className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-                          isSelected ? "bg-purple-600 text-white" : "bg-stone-200/80 dark:bg-stone-600/50 text-stone-500 dark:text-stone-400"
+          {/* Columna izquierda: ¿Para quién? + Servicios */}
+          <div className="space-y-6">
+            {/* Sección: ¿Para quién es el viaje? */}
+            <Card className="border border-stone-200/80 dark:border-stone-700/50 bg-white dark:bg-gray-800/95 shadow-lg rounded-3xl overflow-hidden">
+              <CardHeader className="py-3 px-4 sm:py-4 sm:px-5 border-b border-stone-100 dark:border-stone-700/50">
+                <CardTitle className="text-sm sm:text-base font-semibold text-stone-800 dark:text-stone-100">
+                  {isEnglish ? "Who is the trip for?" : "¿Para quién es el viaje?"}
+                </CardTitle>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                  {isEnglish ? "You can select more than one." : "Puedes elegir más de uno."}
+                </p>
+              </CardHeader>
+              <CardContent className="p-3 sm:p-4">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  {TRIP_AUDIENCE.map((item) => {
+                    const Icon = item.icon;
+                    const isSelected = selectedAudience.has(item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => toggleAudience(item.id)}
+                        className={`flex items-center gap-2 rounded-xl border-2 p-3 text-left transition-all duration-200 touch-manipulation min-h-[52px] ${
+                          isSelected
+                            ? "border-purple-500 bg-purple-50 dark:bg-purple-900/25 dark:border-purple-500/70"
+                            : "border-stone-200 dark:border-stone-600 bg-stone-50/50 dark:bg-stone-800/30 hover:border-stone-300 dark:hover:border-stone-500"
                         }`}
                       >
-                        <Icon className="h-4 w-4" />
+                        <div
+                          className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                            isSelected ? "bg-purple-600 text-white" : "bg-stone-200 dark:bg-stone-600 text-stone-500"
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <span className="text-xs sm:text-sm font-medium text-stone-700 dark:text-stone-200 truncate">
+                          {isEnglish ? item.name_en : item.name_es}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sección: Servicios que necesito */}
+            <Card className="border border-stone-200/80 dark:border-stone-700/50 bg-white dark:bg-gray-800/95 shadow-lg rounded-3xl overflow-hidden">
+              <CardHeader className="py-3 px-4 sm:py-4 sm:px-5 border-b border-stone-100 dark:border-stone-700/50">
+                <CardTitle className="flex items-center gap-2.5 text-sm sm:text-base font-semibold text-stone-800 dark:text-stone-100">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/40">
+                    <MapPin className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  {isEnglish ? "Services I need" : "Servicios que necesito"}
+                </CardTitle>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                  {isEnglish ? "Select at least one." : "Selecciona al menos uno."}
+                </p>
+              </CardHeader>
+              <CardContent className="p-3 sm:p-4 space-y-2">
+                {TRIP_SERVICES.map((service) => {
+                  const Icon = service.icon;
+                  const isSelected = selectedIds.has(service.id);
+                  return (
+                    <div
+                      key={service.id}
+                      className={`flex items-center gap-3 rounded-xl p-2.5 sm:p-3 transition-all duration-200 cursor-pointer touch-manipulation min-h-[48px] border ${
+                        isSelected
+                          ? "border-purple-400/60 bg-purple-50/80 dark:bg-purple-900/20 dark:border-purple-500/50"
+                          : "border-stone-200/60 dark:border-stone-600/40 bg-stone-50/50 dark:bg-stone-800/30 hover:bg-stone-100/80 dark:hover:bg-stone-700/40"
+                      }`}
+                      onClick={() => toggleService(service.id)}
+                      onKeyDown={(e) => e.key === "Enter" && toggleService(service.id)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <Checkbox
+                        id={service.id}
+                        checked={isSelected}
+                        onCheckedChange={() => toggleService(service.id)}
+                        className="shrink-0"
+                      />
+                      <div
+                        className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                          isSelected ? "bg-purple-600 text-white" : "bg-stone-200/80 dark:bg-stone-600/50 text-stone-500"
+                        }`}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
                       </div>
                       <Label
                         htmlFor={service.id}
-                        className="text-xs sm:text-sm font-medium leading-snug cursor-pointer flex-1 pt-0.5 text-stone-700 dark:text-stone-200"
+                        className="text-xs sm:text-sm font-medium cursor-pointer flex-1 text-stone-700 dark:text-stone-200"
                       >
                         {isEnglish ? service.name_en : service.name_es}
                       </Label>
                     </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Detalles + imagen */}
           <div className="space-y-0">
