@@ -216,6 +216,7 @@ const Tienda = () => {
   const categoryLabel = (key: StoreProduct["category"] | "all") => {
     if (key === "all") return isEnglish ? "All" : "Todo";
     if (key === "ropa") return isEnglish ? "Clothing" : "Ropa";
+    if (key === "viajes") return isEnglish ? "Trips" : "Viajes";
     return isEnglish ? "All" : "Todo";
   };
 
@@ -224,7 +225,7 @@ const Tienda = () => {
       <div className="space-y-2">
         <p className="text-sm font-semibold">{isEnglish ? "Category" : "Categoría"}</p>
         <div className="flex flex-wrap gap-2">
-          {(["all", "ropa"] as const).map((c) => (
+          {(["all", "ropa", "viajes"] as const).map((c) => (
             <button
               key={c}
               onClick={() => setCategory(c)}
@@ -543,7 +544,7 @@ const Tienda = () => {
               {filteredProducts.map((p) => {
             const qtyKey = `${p.id}`;
             const qty = cart[qtyKey] ?? 0;
-            const productHref = p.id === 1 ? "/camiseta" : `/tienda/${p.id}`;
+            const productHref = p.id === 1 ? "/camiseta" : p.id === 3 ? "/viaje" : `/tienda/${p.id}`;
             return (
               <Card key={p.id} className="overflow-hidden border border-purple-100 dark:border-purple-900/30 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
                 <div className="relative">
@@ -579,6 +580,15 @@ const Tienda = () => {
                     </p>
                     {p.id === 1 ? (
                       <Link to="/camiseta">
+                        <Button
+                          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                          size="sm"
+                        >
+                          {isEnglish ? "Customize" : "Personalizar"}
+                        </Button>
+                      </Link>
+                    ) : p.id === 3 ? (
+                      <Link to="/viaje">
                         <Button
                           className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                           size="sm"

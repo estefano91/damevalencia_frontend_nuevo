@@ -33,6 +33,7 @@ import Alquiler from "./pages/Alquiler";
 import Subscription from "./pages/Subscription";
 import Tienda from "./pages/Tienda";
 import TiendaProducto from "./pages/TiendaProducto";
+import ViajePersonalizado from "./pages/ViajePersonalizado";
 import { InterestsModalWrapper } from "./components/InterestsModalWrapper";
 import { MembershipModalWrapper } from "./components/MembershipModalWrapper";
 import RegisterPopup from "./components/RegisterPopup";
@@ -105,7 +106,15 @@ const App = () => (
                       </ProtectedRoute>
                     }
                   />
-                  
+                  <Route
+                    path="/viaje"
+                    element={
+                      <ProtectedRoute hideSidebar>
+                        <ViajePersonalizado />
+                      </ProtectedRoute>
+                    }
+                  />
+
                   {/* Editar perfil */}
                   <Route
                     path="/editar-perfil"

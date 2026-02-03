@@ -1,6 +1,6 @@
 import camisetaPersonalizadaImg from "@/assets/camisetablanca.png";
 
-export type StoreCategory = "ropa";
+export type StoreCategory = "ropa" | "viajes";
 
 export type StoreProduct = {
   id: number;
@@ -46,6 +46,17 @@ export const STORE_PRODUCTS: StoreProduct[] = [
     tag: "Festival",
     priceEur: 19.9,
     sizes: ["XS", "S", "M", "L", "XL"],
+    whatsappOnly: true,
+  },
+  {
+    id: 3,
+    name: "Viaje personalizado",
+    name_en: "Custom trip",
+    description: "Pack a medida para venir una temporada a Valencia. Elige los servicios que necesitas.",
+    description_en: "Tailored pack to spend a season in Valencia. Choose the services you need.",
+    image: "/dame.png",
+    category: "viajes",
+    tag: "Experiencia",
     whatsappOnly: true,
   },
 ];
