@@ -31,6 +31,8 @@ import TicketHashLookup from "./pages/TicketHashLookup";
 import MonthlyEvents from "./pages/MonthlyEvents";
 import Alquiler from "./pages/Alquiler";
 import Subscription from "./pages/Subscription";
+import Tienda from "./pages/Tienda";
+import TiendaProducto from "./pages/TiendaProducto";
 import { InterestsModalWrapper } from "./components/InterestsModalWrapper";
 import { MembershipModalWrapper } from "./components/MembershipModalWrapper";
 import RegisterPopup from "./components/RegisterPopup";
@@ -82,6 +84,24 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar>
                         <TShirtDesigner />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Tienda */}
+                  <Route
+                    path="/tienda"
+                    element={
+                      <ProtectedRoute hideSidebar>
+                        <Tienda />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/tienda/:id"
+                    element={
+                      <ProtectedRoute hideSidebar>
+                        <TiendaProducto />
                       </ProtectedRoute>
                     }
                   />

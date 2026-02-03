@@ -45,7 +45,6 @@ const TShirtDesigner = () => {
   const currentLogo = tshirtColor === "white" ? dameLogoBlack : dameLogoWhite;
   // Color de texto automático: camiseta blanca = texto negro, camiseta negra = texto blanco
   const textColor = tshirtColor === "white" ? "#000000" : "#FFFFFF";
-  const fontSize = 12; // Tamaño fijo
 
   const resetDesign = () => {
     setText("");
@@ -123,18 +122,18 @@ Entiendo que:
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-purple-900">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8 pt-20 sm:pt-8">
         {/* Header */}
-        <div className="mb-6 flex items-center gap-4">
+        <div className="mb-4 sm:mb-6 flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
-            className="rounded-full"
+            className="rounded-full shrink-0"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-xl sm:text-3xl font-bold truncate min-w-0">
             {i18n.language === 'en' ? 'T-Shirt Designer' : 'Diseñador de Camisetas'}
           </h1>
         </div>
@@ -148,28 +147,26 @@ Entiendo que:
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="relative bg-sky-100 dark:bg-sky-900/30 rounded-lg shadow-xl p-8">
-                {/* Mockup de camiseta */}
-                <div className="relative mx-auto" style={{ width: '100%', maxWidth: '400px' }}>
+              <div className="relative bg-sky-100 dark:bg-sky-900/30 rounded-lg shadow-xl p-4 sm:p-8">
+                {/* Mockup de camiseta: contenedor escala con la pantalla */}
+                <div className="relative mx-auto w-full max-w-[400px] aspect-[3/4] sm:aspect-auto sm:max-h-[520px]">
                   {/* Imagen de la camiseta */}
-                  <div className="relative w-full">
+                  <div className="relative w-full h-full min-h-[280px]">
                     <img
                       src={currentTshirtImage}
                       alt={tshirtColor === "white" ? "Camiseta Blanca" : "Camiseta Negra"}
-                      className="w-full h-auto object-contain"
+                      className="w-full h-full object-contain object-top"
                     />
 
-                    {/* Logo DAME fijo en el centro */}
+                    {/* Logo DAME: tamaño proporcional al contenedor (~35% ancho) para móvil y desktop */}
                     <div
-                      className="absolute left-1/2 transform -translate-x-1/2"
+                      className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10"
                       style={{
-                        top: '25%', // Logo más abajo
-                        zIndex: 10,
-                        width: '150px',
-                        height: '150px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        top: '22%',
+                        width: '35%',
+                        minWidth: '72px',
+                        maxWidth: '140px',
+                        aspectRatio: '1',
                       }}
                     >
                       <img
@@ -177,35 +174,32 @@ Entiendo que:
                         alt="DAME Logo"
                         className="w-full h-full object-contain"
                         onError={(e) => {
-                          // Fallback si la imagen no se carga
                           e.currentTarget.style.display = 'none';
                           const parent = e.currentTarget.parentElement;
                           if (parent && !parent.querySelector('.fallback-logo')) {
                             const fallback = document.createElement('div');
                             fallback.className = 'fallback-logo';
                             fallback.textContent = '🦄';
-                            fallback.style.fontSize = '60px';
+                            fallback.style.fontSize = 'min(12vw, 60px)';
                             parent.appendChild(fallback);
                           }
                         }}
                       />
                     </div>
 
-                    {/* Texto personalizado - siempre justo debajo del logo */}
+                    {/* Texto personalizado: posición y tamaño responsivos */}
                     {text && (
                       <div
-                        className="absolute left-1/2 transform -translate-x-1/2 text-center"
+                        className="absolute left-1/2 -translate-x-1/2 text-center z-10 w-[85%]"
                         style={{
-                          top: 'calc(25% + 100px)', // Justo debajo del logo
-                          fontSize: `${fontSize}px`,
+                          top: '42%',
                           fontFamily: 'Mansalva, cursive',
                           color: textColor,
                           fontWeight: 'normal',
-                          zIndex: 10,
-                          width: '80%',
-                          marginTop: '0',
-                          textShadow: tshirtColor === "white" 
-                            ? '0 2px 4px rgba(0,0,0,0.2)' 
+                          marginTop: 0,
+                          fontSize: 'clamp(10px, 2.8vw, 12px)',
+                          textShadow: tshirtColor === "white"
+                            ? '0 2px 4px rgba(0,0,0,0.2)'
                             : '0 2px 4px rgba(255,255,255,0.3)',
                         }}
                       >
