@@ -34,6 +34,8 @@ import Subscription from "./pages/Subscription";
 import Tienda from "./pages/Tienda";
 import TiendaProducto from "./pages/TiendaProducto";
 import ViajePersonalizado from "./pages/ViajePersonalizado";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import { InterestsModalWrapper } from "./components/InterestsModalWrapper";
 import { MembershipModalWrapper } from "./components/MembershipModalWrapper";
 import RegisterPopup from "./components/RegisterPopup";
@@ -111,6 +113,24 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar>
                         <ViajePersonalizado />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Blog (sin enlace en menú por ahora) */}
+                  <Route
+                    path="/blog"
+                    element={
+                      <ProtectedRoute hideSidebar>
+                        <Blog />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/blog/:slug"
+                    element={
+                      <ProtectedRoute hideSidebar>
+                        <BlogPost />
                       </ProtectedRoute>
                     }
                   />
