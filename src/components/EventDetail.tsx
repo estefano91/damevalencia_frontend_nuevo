@@ -44,7 +44,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import EventMap from "@/components/EventMap";
 import { TicketAtDoorModal } from "@/components/TicketAtDoorModal";
 import { TicketPurchaseModal } from "@/components/TicketPurchaseModal";
 import { TicketReserveModal } from "@/components/TicketReserveModal";
@@ -1748,50 +1747,6 @@ const EventDetail = () => {
                           ) : null;
                         })()}
                       </div>
-                      {/* Google Maps Interactive Map */}
-                      {(() => {
-                        // Validar y convertir coordenadas
-                        const lat = event.place.latitude;
-                        const lng = event.place.longitude;
-                        const latNum = typeof lat === 'string' ? parseFloat(lat) : lat;
-                        const lngNum = typeof lng === 'string' ? parseFloat(lng) : lng;
-                        const hasValidCoords = 
-                          latNum != null && 
-                          lngNum != null && 
-                          isFinite(latNum) && 
-                          isFinite(lngNum) &&
-                          latNum >= -90 && latNum <= 90 &&
-                          lngNum >= -180 && lngNum <= 180;
-
-                        return hasValidCoords ? (
-                          <EventMap
-                            latitude={latNum}
-                            longitude={lngNum}
-                            placeName={event.place.name}
-                            address={event.place.address}
-                          />
-                        ) : (
-                        <div className="rounded-lg overflow-hidden border shadow-sm">
-                          <a
-                            href={
-                              event.place.address
-                                ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.place.address)}`
-                                : 'https://maps.google.com'
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <div className="w-full h-64 bg-muted flex items-center justify-center">
-                              <p className="text-sm text-muted-foreground">
-                                {i18n.language === 'en' 
-                                  ? 'Click to view location on Google Maps' 
-                                  : 'Haz clic para ver la ubicación en Google Maps'}
-                              </p>
-                            </div>
-                          </a>
-                        </div>
-                        );
-                      })()}
                     </div>
                   )}
                 </CardContent>
