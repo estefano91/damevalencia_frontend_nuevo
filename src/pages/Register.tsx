@@ -132,6 +132,14 @@ const Register = () => {
             : "¡Bienvenido/a a DAME Valencia!"
         });
         navigate("/");
+      } else if (result.isGoogleAccountError) {
+        toast({
+          title: i18n.language === 'en' ? "Email already in use" : "Correo ya registrado",
+          description: i18n.language === 'en'
+            ? "This email is already associated with a Google account. Please sign in with Google."
+            : "Este correo ya está asociado a una cuenta de Google. Inicia sesión con Google.",
+          variant: "destructive",
+        });
       } else {
         // Verificar si el error indica que el usuario ya existe
         const errorMessage = result.error?.toLowerCase() || '';

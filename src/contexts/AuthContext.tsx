@@ -7,6 +7,8 @@ interface AuthResult {
   success: boolean;
   error?: string;
   isNewUser?: boolean;
+  /** true cuando el email ya está registrado con Google */
+  isGoogleAccountError?: boolean;
 }
 
 interface AuthContextType {
@@ -270,7 +272,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await authApi.register(requestData);
 
       if (!response.ok || !response.data?.tokens) {
-        // Manejar diferentes tipos de errores
+        const raw = response.raw as { is_google_account?: boolean } | undefined;
+        if (raw?.is_google_account) {
+          return {
+            success: false,
+            error: 'Este correo ya está asociado a una cuenta de Google. Inicia sesión con Google.',
+            isGoogleAccountError: true,
+          };
+        }
         const errorMessage = response.error || 'Error al registrar usuario';
         return { success: false, error: errorMessage };
       }
