@@ -197,4 +197,36 @@ All colors MUST be HSL.
   .dame-text-gradient {
     @apply bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent;
   }
+
+  /* Descripción de evento en tema oscuro: forzar texto claro (sobrescribe estilos inline del HTML) */
+  .dark .event-description-prose p,
+  .dark .event-description-prose li,
+  .dark .event-description-prose span,
+  .dark .event-description-prose div {
+    color: rgb(212 212 212) !important;
+  }
+  .dark .event-description-prose h1,
+  .dark .event-description-prose h2,
+  .dark .event-description-prose h3,
+  .dark .event-description-prose h4,
+  .dark .event-description-prose strong {
+    color: rgb(255 255 255) !important;
+  }
+  .dark .event-description-prose a {
+    color: rgb(251 191 36) !important;
+  }
+  .dark .event-description-prose a:hover {
+    color: rgb(253 224 71) !important;
+  }
+  .dark .event-description-prose blockquote {
+    color: rgb(212 212 212) !important;
+    border-left-color: rgb(251 146 60) !important;
+  }
+  .dark .event-description-prose code {
+    color: rgb(255 255 255) !important;
+    background-color: rgba(255 255 255 / 0.1) !important;
+  }
+  .dark .event-description-prose hr {
+    border-color: rgb(75 85 99) !important;
+  }
 }

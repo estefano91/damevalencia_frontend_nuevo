@@ -16,7 +16,8 @@ import {
   Sun,
   Globe,
   Crown,
-  ShoppingBag
+  ShoppingBag,
+  Coins
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/providers/ThemeProvider";
@@ -171,6 +172,21 @@ const Navigation = ({ isMobile }: NavigationProps) => {
               </DropdownMenuContent>
             </DropdownMenu>
             
+            {/* DameCoins - solo si tiene member con wallet */}
+            {user?.member?.wallet && (
+              <button
+                onClick={() => navigate("/wallet")}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/15 to-yellow-500/15 dark:from-amber-500/25 dark:to-yellow-500/25 border border-amber-400/40 dark:border-amber-500/50 hover:from-amber-500/25 hover:to-yellow-500/25 dark:hover:from-amber-500/35 dark:hover:to-yellow-500/35 transition-all duration-200 group"
+                title={i18n.language === 'en' ? 'DameCoins' : 'DameCoins'}
+                aria-label={i18n.language === 'en' ? 'DameCoins' : 'DameCoins'}
+              >
+                <Coins className="h-4 w-4 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold text-amber-700 dark:text-amber-300 tabular-nums">
+                  {parseFloat(user.member.wallet.balance || "0").toFixed(0)}
+                </span>
+              </button>
+            )}
+            
             {/* Mi Perfil / Invitado */}
             {user ? (
               <DropdownMenu>
@@ -214,6 +230,20 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                     <Ticket className="mr-2 h-4 w-4" />
                     {i18n.language === 'en' ? 'My Tickets' : 'Mis Entradas'}
                   </DropdownMenuItem>
+                  {user.member?.wallet && (
+                    <DropdownMenuItem 
+                      onClick={() => navigate("/wallet")}
+                      className="text-amber-600 dark:text-amber-400 focus:text-amber-700 dark:focus:text-amber-300"
+                    >
+                      <Coins className="mr-2 h-4 w-4" />
+                      <span className="flex items-center gap-2">
+                        {i18n.language === 'en' ? 'DameCoins' : 'DameCoins'}
+                        <span className="text-xs font-semibold tabular-nums opacity-90">
+                          {parseFloat(user.member.wallet.balance || "0").toFixed(0)}
+                        </span>
+                      </span>
+                    </DropdownMenuItem>
+                  )}
                   {user.member && (
                     <DropdownMenuItem onClick={() => navigate("/club-dame")}>
                       <Tag className="mr-2 h-4 w-4" />

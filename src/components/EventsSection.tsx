@@ -48,6 +48,7 @@ import {
   DameEvent,
   formatEventDate,
   formatEventPrice,
+  formatPerennialSchedule,
   getAvailableSpots,
   isEventSoldOut
 } from '@/integrations/dame-api/events';
@@ -1076,10 +1077,16 @@ const EventCard = ({ event, categoryColor, categoryName, isRecommended = false, 
               {formatEventPrice(event.price || '0', i18n.language === 'en' ? 'en-US' : 'es-ES')}
             </Badge>
           )}
-          {event.is_recurring_weekly && (
+          {event.is_recurring_weekly && !event.is_perennial && (
             <Badge className="bg-blue-600 text-white">
               <Repeat className="mr-1 h-3 w-3" />
               {i18n.language === 'en' ? 'Weekly' : 'Semanal'}
+            </Badge>
+          )}
+          {event.is_perennial && (
+            <Badge className="bg-amber-600 text-white">
+              <Calendar className="mr-1 h-3 w-3" />
+              {i18n.language === 'en' ? 'Ongoing' : 'Permanente'}
             </Badge>
           )}
           {(() => {
@@ -1135,14 +1142,22 @@ const EventCard = ({ event, categoryColor, categoryName, isRecommended = false, 
         <div className="flex items-center gap-2 text-sm">
           <Calendar className="h-3.5 w-3.5 text-purple-600 flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <span className="font-medium text-xs sm:text-sm">
-              {formatEventDate(event.start, i18n.language === 'en' ? 'en-US' : 'es-ES')}
-            </span>
-            {event.is_recurring_weekly && (
-              <span className="text-xs text-blue-600 ml-1.5 font-medium">
-                <Repeat className="inline h-3 w-3 mr-0.5" />
-                {i18n.language === 'en' ? 'Weekly' : 'Semanal'}
+            {event.is_perennial ? (
+              <span className="font-medium text-xs sm:text-sm">
+                {formatPerennialSchedule(event, i18n.language === 'en' ? 'en-US' : 'es-ES')}
               </span>
+            ) : (
+              <>
+                <span className="font-medium text-xs sm:text-sm">
+                  {formatEventDate(event.start, i18n.language === 'en' ? 'en-US' : 'es-ES')}
+                </span>
+                {event.is_recurring_weekly && (
+                  <span className="text-xs text-blue-600 ml-1.5 font-medium">
+                    <Repeat className="inline h-3 w-3 mr-0.5" />
+                    {i18n.language === 'en' ? 'Weekly' : 'Semanal'}
+                  </span>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -9,80 +9,17 @@ const CommunityLinks = () => {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   
-  // Comunidades con WhatsApp e Instagram agrupados
+  // Comunidades DAME – grupos de WhatsApp e Instagram oficiales
   const communities = [
-    { 
-      name: "Salsa", 
-      icon: "💃", 
-      whatsapp: { name: "Comunidad Salsa", url: "https://chat.whatsapp.com/JhtzEylNaAT1EnHQmNi3Dc" },
-      instagram: { name: "Salsa", url: "https://instagram.com/damecasino.valencia" },
-      playlist: { name: "Playlist Salsa", url: "https://tr.ee/rxAq80wTFl", available: true }
-    },
-    { 
-      name: "Bachata", 
-      icon: "🕺", 
-      whatsapp: { name: "Comunidad Bachata", url: "https://chat.whatsapp.com/GSfzCHspYY1LJxmbozWc1m" },
-      instagram: { name: "Bachata", url: "https://instagram.com/damebachata.valencia" },
-      playlist: { name: "Playlist Bachata", url: "https://open.spotify.com/playlist/3WSWPJ8h8IfFSFplRMIVOF" }
-    },
-    { 
-      name: "Volley", 
-      icon: "🏐", 
-      whatsapp: { name: "Volley", url: "https://chat.whatsapp.com/Ife0riSxN0H7R9woN8BkGC" },
-      instagram: { name: "Volley Valencia", url: "https://instagram.com/valenciavolley" },
-      playlist: null
-    },
-    { 
-      name: "Zen", 
-      icon: "🧘", 
-      whatsapp: { name: "Actividades Zen", url: "https://chat.whatsapp.com/CFgD6wStj2q7PJjiY633qY" },
-      instagram: { name: "Zen", url: "https://instagram.com/valenciazen.official" },
-      playlist: null
-    },
-    { 
-      name: "Fútbol", 
-      icon: "⚽", 
-      whatsapp: { name: "Comunidad Fútbol", url: "https://chat.whatsapp.com/GLTEVz2YjVTAq7F6JgXPeO" },
-      instagram: { name: "Sports", url: "https://instagram.com/damefit.valencia" },
-      playlist: null
-    },
-    { 
-      name: "Música", 
-      icon: "🎵", 
-      whatsapp: { name: "Música (Jam Sessions)", url: "https://chat.whatsapp.com/HYnZYcXgAti3XrBRPtqyWv" },
-      instagram: { name: "Música (Jam Sessions)", url: "https://instagram.com/damemusica.valencia" },
-      playlist: null
-    },
-    { 
-      name: "Baloncesto", 
-      icon: "🏀", 
-      whatsapp: { name: "Comunidad Baloncesto", url: "https://chat.whatsapp.com/CtLfrELuYQjFxzvYiw61fX" },
-      instagram: null,
-      playlist: null
-    },
-    { 
-      name: "Apoyo Social", 
-      icon: "🤝", 
-      whatsapp: [
-        { name: "Segunda Mano", url: "https://chat.whatsapp.com/CxYGgGTreDvGqpbOO0bWqq" },
-        { name: "Búsqueda de Empleo DAME", url: "https://chat.whatsapp.com/KfjUGTqVbel38etVlAQ9nu" },
-        { name: "Vivienda DAME", url: "https://chat.whatsapp.com/KrX2FJBXF336sy2ZlyHYh0" },
-      ],
-      instagram: { name: "Apoyo Social e Integración Comunitaria", url: "https://instagram.com/dameapoyo.vlc" },
-      playlist: null
-    },
-    {
-      name: "General",
-      icon: "🌐",
-      whatsapp: { name: "Planes VLC", url: null },
-      instagram: null,
-      playlist: null,
-      extras: [
-        { type: "telegram", name: "Canal Telegram DAME", url: "https://t.me/damevalencia" },
-        { type: "merch", name: "Camiseta Oficial DAME", url: "/camiseta", isInternal: true },
-        { type: "google", name: "Evalúanos en Google", url: null },
-      ]
-    },
+    { name: "Bachata", icon: "🕺", whatsapp: { name: "Bachata", url: "https://chat.whatsapp.com/GHj3wUYww6yGld0aWDlchO" }, instagram: { name: "Bachata", url: "https://instagram.com/damebachata.valencia" }, playlist: null },
+    { name: "Salsa", icon: "💃", whatsapp: { name: "Salsa", url: "https://chat.whatsapp.com/HZvr0SjVPfpBIkNrrMZVLE" }, instagram: { name: "Salsa", url: "https://instagram.com/damecasino.valencia" }, playlist: null },
+    { name: "Volley", icon: "🏐", whatsapp: { name: "Volley", url: "https://chat.whatsapp.com/BerLQLUhpCw1X99PdKpho5" }, instagram: { name: "Volley", url: "https://instagram.com/valenciavolley" }, playlist: null },
+    { name: "Live Music", icon: "🥁", whatsapp: { name: "Live Music", url: "https://chat.whatsapp.com/BANvcZkKA1yBxnVuzEmlet" }, instagram: { name: "Live Music", url: "https://instagram.com/damemusica.valencia" }, playlist: null },
+    { name: "Fútbol", icon: "⚽", whatsapp: { name: "Fútbol", url: "https://chat.whatsapp.com/KDj5EaTOjLTFBdbLafB04k" }, instagram: { name: "Fútbol", url: "https://instagram.com/damefutbol.official" }, playlist: null },
+    { name: "Zen", icon: "🧘", whatsapp: { name: "Zen", url: "https://chat.whatsapp.com/DpkBmM7WRppLp7f38CT15b" }, instagram: { name: "Zen", url: "https://instagram.com/valenciazen.official" }, playlist: null },
+    { name: "Baloncesto", icon: "🏀", whatsapp: { name: "Baloncesto", url: "https://chat.whatsapp.com/LcJVunz7Ltu4c6TfrHCFk4" }, instagram: null, playlist: null },
+    { name: "Electro", icon: "🎧", whatsapp: { name: "Electro", url: "https://chat.whatsapp.com/Kb9eiQdN26NI1iKq2rl7ev?mode=gi_t" }, instagram: null, playlist: null },
+    { name: "DAME General", icon: "🏠", whatsapp: { name: "Housing, Jobs, Extranjería", url: "https://chat.whatsapp.com/GvJZoPAyOeF06CGt4HFy5y" }, instagram: null, playlist: null },
   ];
 
   const moreLinks: Array<{ name: string; icon: string; url: string | null; description?: string; available?: boolean }> = [];

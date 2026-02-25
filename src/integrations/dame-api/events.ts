@@ -45,8 +45,18 @@ export interface DameEvent {
   capacity?: number;
   registered_count?: number;
   is_recurring_weekly?: boolean; // Indica si el evento se repite semanalmente
-  is_cancelled?: boolean; // Indica si esta sesión específica del evento está cancelada (para eventos recurrentes expandidos)
-  organizers?: EventOrganizer[]; // Organizadores del evento
+  is_perennial?: boolean; // Indica si es un evento perenne (abierto varios días/semana con horario fijo)
+  event_type?: "one-time" | "recurring" | "perennial";
+  is_cancelled?: boolean;
+  organizers?: EventOrganizer[];
+  // Campos para eventos perennes
+  available_weekdays?: number[]; // 0= Lun, 1= Mar, ..., 6= Dom
+  perennial_weekdays_start_time?: string | null;
+  perennial_weekdays_end_time?: string | null;
+  perennial_saturday_start_time?: string | null;
+  perennial_saturday_end_time?: string | null;
+  perennial_sunday_start_time?: string | null;
+  perennial_sunday_end_time?: string | null;
 }
 
 // Tipos para el evento detallado (/api/events/{slug}/)
@@ -54,7 +64,8 @@ export interface EventCategory {
   id: number;
   name_es: string;
   name_en: string;
-  slug: string;
+  slug?: string;
+  icon?: string;
 }
 
 export interface EventTag {
@@ -135,13 +146,33 @@ export interface DameEventDetail {
   main_photo_url?: string; // Imagen principal del evento
   tickets_webview?: string;
   booking_link?: string; // Link externo para reservas (opcional)
-  start_datetime: string;
-  end_datetime?: string;
+  start_datetime: string | null; // null para eventos perennes
+  end_datetime?: string | null;
   is_recurring_weekly: boolean;
-  recurrence_start_time?: string; // Formato HH:mm:ss (ej: "19:00:00")
-  recurrence_end_time?: string; // Formato HH:mm:ss (ej: "00:30:00")
-  recurrence_weekday?: number; // 0 = lunes, 1 = martes, ..., 6 = domingo
-  recurring_info?: RecurringEventInfo; // Info adicional para eventos recurrentes (legacy)
+  is_perennial?: boolean;
+  event_type?: "one-time" | "recurring" | "perennial";
+  recurrence_start_time?: string | null;
+  recurrence_end_time?: string | null;
+  recurrence_weekday?: number | null;
+  recurring_info?: RecurringEventInfo;
+  // Campos para eventos perennes (detail API)
+  perennial_start_date?: string | null;
+  perennial_end_date?: string | null;
+  available_monday?: boolean;
+  available_tuesday?: boolean;
+  available_wednesday?: boolean;
+  available_thursday?: boolean;
+  available_friday?: boolean;
+  available_saturday?: boolean;
+  available_sunday?: boolean;
+  // Campos para eventos perennes (list + detail)
+  available_weekdays?: number[] | null;
+  perennial_weekdays_start_time?: string | null;
+  perennial_weekdays_end_time?: string | null;
+  perennial_saturday_start_time?: string | null;
+  perennial_saturday_end_time?: string | null;
+  perennial_sunday_start_time?: string | null;
+  perennial_sunday_end_time?: string | null;
   upcoming_dates?: EventDate[]; // Próximas 6 fechas del evento (máximo), incluyendo ocurrencias con estado de cancelación
   place: EventPlace;
   categories: EventCategory[];
@@ -158,14 +189,20 @@ export interface EventsByCategory {
   total_events: number;
 }
 
-// Tipos para fechas específicas de eventos recurrentes
+// Tipos para fechas específicas (recurrentes + perennes)
 export interface EventDate {
-  id: string;
+  id?: string;
   date: string; // ISO date string para la fecha específica
-  available_spots: number;
-  is_full: boolean;
+  start_datetime?: string;
+  end_datetime?: string;
+  is_cancelled?: boolean;
+  is_occurrence?: boolean;
+  note_es?: string | null;
+  note_en?: string | null;
+  // Campos legacy (recurrentes)
+  available_spots?: number;
+  is_full?: boolean;
   registration_deadline?: string;
-  is_cancelled?: boolean; // Indica si la fecha está cancelada
 }
 
 // Información extendida para eventos recurrentes
@@ -1052,6 +1089,68 @@ export class DameEventsAPI {
             sort_order: 4
           }
         ]
+      },
+      "exposicion-permanente": {
+        id: 56,
+        title_es: "Exposición Permanente de Arte Moderno",
+        title_en: "Permanent Modern Art Exhibition",
+        summary_es: "Exposición permanente con obras de artistas contemporáneos",
+        summary_en: "Permanent exhibition featuring contemporary artists",
+        description_es: "Descubre una colección única de arte moderno.",
+        description_en: "Discover a unique collection of modern art.",
+        slug: "exposicion-permanente",
+        is_featured: true,
+        from_price: "8.00",
+        to_price: "12.00",
+        price_currency: "EUR",
+        duration_minutes: 120,
+        capacity: 50,
+        main_photo_url: "https://example.com/expo.jpg",
+        start_datetime: null,
+        end_datetime: null,
+        is_recurring_weekly: false,
+        is_perennial: true,
+        perennial_start_date: "2025-09-01",
+        perennial_end_date: "2025-12-31",
+        available_monday: true,
+        available_tuesday: true,
+        available_wednesday: true,
+        available_thursday: true,
+        available_friday: true,
+        available_saturday: false,
+        available_sunday: false,
+        perennial_weekdays_start_time: "10:00:00",
+        perennial_weekdays_end_time: "20:00:00",
+        perennial_saturday_start_time: null,
+        perennial_saturday_end_time: null,
+        perennial_sunday_start_time: null,
+        perennial_sunday_end_time: null,
+        place: {
+          id: 3,
+          name: "Museo de Arte Contemporáneo",
+          address: "Calle Arte 123",
+          city: "Valencia",
+          latitude: 39.48,
+          longitude: -0.375
+        },
+        categories: [
+          { id: 3, name_es: "Exposiciones", name_en: "Exhibitions", slug: "exposiciones" }
+        ],
+        tags: [],
+        organizers: [
+          { id: 3, name: "Fundación Arte Valencia", email: "arte@valencia.com", groups: [] }
+        ],
+        photos: [],
+        faqs: [],
+        programs: [],
+        upcoming_dates: [
+          { date: "2025-09-23", start_datetime: "2025-09-23T10:00:00+02:00", end_datetime: "2025-09-23T20:00:00+02:00", is_cancelled: false, is_occurrence: false },
+          { date: "2025-09-24", start_datetime: "2025-09-24T10:00:00+02:00", end_datetime: "2025-09-24T20:00:00+02:00", is_cancelled: false, is_occurrence: false },
+          { date: "2025-09-25", start_datetime: "2025-09-25T10:00:00+02:00", end_datetime: "2025-09-25T20:00:00+02:00", is_cancelled: false, is_occurrence: false },
+          { date: "2025-09-26", start_datetime: "2025-09-26T10:00:00+02:00", end_datetime: "2025-09-26T20:00:00+02:00", is_cancelled: false, is_occurrence: false },
+          { date: "2025-09-29", start_datetime: "2025-09-29T10:00:00+02:00", end_datetime: "2025-09-29T20:00:00+02:00", is_cancelled: false, is_occurrence: false },
+          { date: "2025-09-30", start_datetime: "2025-09-30T10:00:00+02:00", end_datetime: "2025-09-30T20:00:00+02:00", is_cancelled: false, is_occurrence: false }
+        ]
       }
     };
 
@@ -1179,6 +1278,197 @@ export const generateRecurringDates = (baseDate: string, weeksCount: number = 8)
     console.error('❌ Error generando fechas recurrentes:', error);
     return dates;
   }
+};
+
+/** Nombres de días en español (0 = Lun, 6 = Dom) */
+const WEEKDAY_NAMES_ES: Record<number, string> = {
+  0: "lunes", 1: "martes", 2: "miércoles", 3: "jueves", 4: "viernes", 5: "sábado", 6: "domingo",
+};
+const WEEKDAY_NAMES_EN: Record<number, string> = {
+  0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday", 4: "Friday", 5: "Saturday", 6: "Sunday",
+};
+/** Abreviaturas cortas (ES: Lun, Mar... / EN: Mon, Tue...) */
+const WEEKDAY_SHORT_ES: Record<number, string> = {
+  0: "Lun", 1: "Mar", 2: "Mié", 3: "Jue", 4: "Vie", 5: "Sáb", 6: "Dom",
+};
+const WEEKDAY_SHORT_EN: Record<number, string> = {
+  0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun",
+};
+
+export interface PerennialScheduleGroup {
+  dayLabels: string[];
+  dayLabelsShort: string[];
+  dayRange: string; // ej. "Lun–Vie" o "Sáb"
+  startTime: string;
+  endTime: string;
+}
+
+/** Devuelve grupos de días con sus horarios para mostrar en UI */
+export const getPerennialScheduleGroups = (
+  event: {
+    available_weekdays?: number[] | null;
+    perennial_weekdays_start_time?: string | null;
+    perennial_weekdays_end_time?: string | null;
+    perennial_saturday_start_time?: string | null;
+    perennial_saturday_end_time?: string | null;
+    perennial_sunday_start_time?: string | null;
+    perennial_sunday_end_time?: string | null;
+    available_monday?: boolean;
+    available_tuesday?: boolean;
+    available_wednesday?: boolean;
+    available_thursday?: boolean;
+    available_friday?: boolean;
+    available_saturday?: boolean;
+    available_sunday?: boolean;
+  },
+  locale: string = "es-ES"
+): PerennialScheduleGroup[] => {
+  const weekdays = event.available_weekdays && event.available_weekdays.length > 0
+    ? event.available_weekdays
+    : getAvailableWeekdaysFromBooleans(event);
+  if (!weekdays || weekdays.length === 0) return [];
+
+  const isEn = locale.startsWith("en");
+  const names = isEn ? WEEKDAY_NAMES_EN : WEEKDAY_NAMES_ES;
+  const shortNames = isEn ? WEEKDAY_SHORT_EN : WEEKDAY_SHORT_ES;
+
+  const fmt = (t: string | null | undefined) => {
+    if (!t) return "";
+    const [h, m] = t.split(":").map(Number);
+    return `${String(h).padStart(2, "0")}:${String(m || 0).padStart(2, "0")}`;
+  };
+
+  const wdStart = fmt(event.perennial_weekdays_start_time);
+  const wdEnd = fmt(event.perennial_weekdays_end_time);
+  const satStart = fmt(event.perennial_saturday_start_time);
+  const satEnd = fmt(event.perennial_saturday_end_time);
+  const sunStart = fmt(event.perennial_sunday_start_time);
+  const sunEnd = fmt(event.perennial_sunday_end_time);
+
+  const weekdaysOnly = weekdays.filter((d) => d >= 0 && d <= 4).sort((a, b) => a - b);
+  const hasSat = weekdays.includes(5);
+  const hasSun = weekdays.includes(6);
+
+  const groups: PerennialScheduleGroup[] = [];
+
+  if (weekdaysOnly.length > 0 && (wdStart || wdEnd)) {
+    const labels = weekdaysOnly.map((d) => names[d]);
+    const shortLabels = weekdaysOnly.map((d) => shortNames[d]);
+    const range =
+      weekdaysOnly.length === 5 && weekdaysOnly.every((d, i) => d === i)
+        ? isEn ? "Mon–Fri" : "Lun–Vie"
+        : shortLabels.join(", ");
+    groups.push({
+      dayLabels: labels,
+      dayLabelsShort: shortLabels,
+      dayRange: range,
+      startTime: wdStart,
+      endTime: wdEnd,
+    });
+  }
+  if (hasSat && (satStart || satEnd)) {
+    groups.push({
+      dayLabels: [names[5]],
+      dayLabelsShort: [shortNames[5]],
+      dayRange: shortNames[5],
+      startTime: satStart,
+      endTime: satEnd,
+    });
+  }
+  if (hasSun && (sunStart || sunEnd)) {
+    groups.push({
+      dayLabels: [names[6]],
+      dayLabelsShort: [shortNames[6]],
+      dayRange: shortNames[6],
+      startTime: sunStart,
+      endTime: sunEnd,
+    });
+  }
+
+  return groups;
+};
+
+/** Convierte available_monday...available_sunday a array de índices (0=Lun, 6=Dom) */
+const getAvailableWeekdaysFromBooleans = (e: {
+  available_monday?: boolean;
+  available_tuesday?: boolean;
+  available_wednesday?: boolean;
+  available_thursday?: boolean;
+  available_friday?: boolean;
+  available_saturday?: boolean;
+  available_sunday?: boolean;
+}): number[] => {
+  const out: number[] = [];
+  if (e.available_monday) out.push(0);
+  if (e.available_tuesday) out.push(1);
+  if (e.available_wednesday) out.push(2);
+  if (e.available_thursday) out.push(3);
+  if (e.available_friday) out.push(4);
+  if (e.available_saturday) out.push(5);
+  if (e.available_sunday) out.push(6);
+  return out;
+};
+
+/** Formatea el horario de un evento perenne (ej: "Lun-Vie 10:00-20:00") */
+export const formatPerennialSchedule = (
+  event: {
+    available_weekdays?: number[] | null;
+    perennial_weekdays_start_time?: string | null;
+    perennial_weekdays_end_time?: string | null;
+    perennial_saturday_start_time?: string | null;
+    perennial_saturday_end_time?: string | null;
+    perennial_sunday_start_time?: string | null;
+    perennial_sunday_end_time?: string | null;
+    available_monday?: boolean;
+    available_tuesday?: boolean;
+    available_wednesday?: boolean;
+    available_thursday?: boolean;
+    available_friday?: boolean;
+    available_saturday?: boolean;
+    available_sunday?: boolean;
+  },
+  locale: string = "es-ES"
+): string => {
+  const weekdays = event.available_weekdays && event.available_weekdays.length > 0
+    ? event.available_weekdays
+    : getAvailableWeekdaysFromBooleans(event);
+  if (!weekdays || weekdays.length === 0) return locale.startsWith("en") ? "Schedule TBD" : "Horario por determinar";
+
+  const isEn = locale.startsWith("en");
+  const names = isEn ? WEEKDAY_NAMES_EN : WEEKDAY_NAMES_ES;
+
+  const fmt = (t: string | null | undefined) => {
+    if (!t) return null;
+    const [h, m] = t.split(":").map(Number);
+    return `${String(h).padStart(2, "0")}:${String(m || 0).padStart(2, "0")}`;
+  };
+
+  const wdStart = fmt(event.perennial_weekdays_start_time);
+  const wdEnd = fmt(event.perennial_weekdays_end_time);
+  const satStart = fmt(event.perennial_saturday_start_time);
+  const satEnd = fmt(event.perennial_saturday_end_time);
+  const sunStart = fmt(event.perennial_sunday_start_time);
+  const sunEnd = fmt(event.perennial_sunday_end_time);
+
+  const weekdaysOnly = weekdays.filter((d) => d >= 0 && d <= 4).sort((a, b) => a - b);
+  const hasSat = weekdays.includes(5);
+  const hasSun = weekdays.includes(6);
+
+  const parts: string[] = [];
+  if (weekdaysOnly.length === 5 && weekdaysOnly.every((d, i) => d === i)) {
+    parts.push(isEn ? `Mon–Fri ${wdStart || ""}–${wdEnd || ""}`.trim() : `Lun–Vie ${wdStart || ""}–${wdEnd || ""}`.trim());
+  } else if (weekdaysOnly.length > 0) {
+    const dayNames = weekdaysOnly.map((d) => names[d]).join(", ");
+    parts.push(`${dayNames} ${wdStart || ""}–${wdEnd || ""}`.trim());
+  }
+  if (hasSat && (satStart || satEnd)) {
+    parts.push(`${isEn ? "Sat" : "Sáb"} ${satStart || ""}–${satEnd || ""}`.trim());
+  }
+  if (hasSun && (sunStart || sunEnd)) {
+    parts.push(`${isEn ? "Sun" : "Dom"} ${sunStart || ""}–${sunEnd || ""}`.trim());
+  }
+
+  return parts.length > 0 ? parts.join(" · ") : (isEn ? "Open on selected days" : "Abierto según días indicados");
 };
 
 // Helper para formatear información de horario recurrente

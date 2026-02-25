@@ -27,6 +27,7 @@ import EditMember from "./pages/EditMember";
 import MyTickets from "./pages/MyTickets";
 import MyUpcomingEvents from "./pages/MyUpcomingEvents";
 import ClubDame from "./pages/ClubDame";
+import Wallet from "./pages/Wallet";
 import TicketHashLookup from "./pages/TicketHashLookup";
 import MonthlyEvents from "./pages/MonthlyEvents";
 import Alquiler from "./pages/Alquiler";
@@ -168,6 +169,15 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar requireAuth requireMember>
                         <ClubDame />
+                      </ProtectedRoute>
+                    }
+                  />
+                  {/* DameCoins Wallet */}
+                  <Route
+                    path="/wallet"
+                    element={
+                      <ProtectedRoute hideSidebar requireAuth requireMember>
+                        <Wallet />
                       </ProtectedRoute>
                     }
                   />

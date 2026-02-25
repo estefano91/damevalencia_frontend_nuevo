@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { dameEventsAPI } from "@/integrations/dame-api/events";
+import { dameEventsAPI, formatPerennialSchedule, getPerennialScheduleGroups } from "@/integrations/dame-api/events";
 import type { DameEventDetail, EventOrganizer } from "@/integrations/dame-api/events";
 import type { Ticket as TicketType, TicketTypeDetail } from "@/types/tickets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1060,7 +1060,7 @@ const EventDetail = () => {
                   </p>
                 </div>
               )}
-              {!event.is_recurring_weekly && (event.start_datetime || event.end_datetime) && (() => {
+              {!event.is_perennial && !event.is_recurring_weekly && (event.start_datetime || event.end_datetime) && (() => {
                 const dateTimeInfo = formatCompactDateWithTime(event.start_datetime, event.end_datetime);
                 return (
                   <div className="flex flex-wrap items-center gap-3 mb-4 sm:mb-6">
@@ -1085,7 +1085,7 @@ const EventDetail = () => {
                   </div>
                 );
               })()}
-              {event.is_recurring_weekly && (() => {
+              {!event.is_perennial && event.is_recurring_weekly && (() => {
                 // Usar upcoming_dates de la API si está disponible, sino generar manualmente
                 const datesToShow = event.upcoming_dates && event.upcoming_dates.length > 0
                   ? event.upcoming_dates.map(d => new Date(d.date))
@@ -1163,16 +1163,25 @@ const EventDetail = () => {
               </Card>
             )}
 
-            {/* Description */}
+            {/* Description - rich text */}
             {getLocalizedText(event.description_es, event.description_en) && (
               <Card>
                 <CardHeader>
                   <CardTitle>{i18n.language === 'en' ? 'Event description' : 'Descripción del evento'}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                    {getLocalizedText(event.description_es, event.description_en)}
-                  </p>
+                  <div
+                    className="event-description-prose prose prose-sm sm:prose-base max-w-none text-foreground
+                      prose-headings:font-semibold prose-headings:text-foreground
+                      prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-4 last:prose-p:mb-0
+                      prose-ul:text-muted-foreground prose-ol:text-muted-foreground prose-li:my-1
+                      prose-strong:text-foreground prose-strong:font-semibold
+                      prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                      prose-blockquote:border-l-primary prose-blockquote:border-l-4 prose-blockquote:bg-muted/30 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-muted-foreground
+                      prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-foreground prose-code:text-sm
+                      prose-hr:border-border"
+                    dangerouslySetInnerHTML={{ __html: getLocalizedText(event.description_es, event.description_en) ?? '' }}
+                  />
                 </CardContent>
               </Card>
             )}
@@ -1553,7 +1562,81 @@ const EventDetail = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Date */}
-                  {event.is_recurring_weekly ? (
+                  {event.is_perennial ? (
+                    <div className="space-y-4">
+                      <div className="rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/30 dark:to-amber-900/20 border border-amber-200/60 dark:border-amber-800/60 overflow-hidden">
+                        <div className="p-4 sm:p-5">
+                          <div className="flex items-start gap-3">
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-400 flex-shrink-0">
+                              <Calendar className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-amber-800 dark:text-amber-200">{i18n.language === 'en' ? 'Opening hours' : 'Horario'}</p>
+                              {(event.perennial_start_date || event.perennial_end_date) && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {event.perennial_start_date && event.perennial_end_date
+                                    ? (() => {
+                                        const start = new Date(event.perennial_start_date);
+                                        const end = new Date(event.perennial_end_date);
+                                        return `${start.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })} – ${end.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}`;
+                                      })()
+                                    : event.perennial_start_date
+                                      ? new Date(event.perennial_start_date).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+                                      : event.perennial_end_date
+                                        ? new Date(event.perennial_end_date).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+                                        : null}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Desglose visual: días + horarios por fila */}
+                        {(() => {
+                          const groups = getPerennialScheduleGroups(event, locale);
+                          if (groups.length === 0) return null;
+                          return (
+                            <div className="border-t border-amber-200/50 dark:border-amber-800/50 divide-y divide-amber-200/40 dark:divide-amber-800/40">
+                              {groups.map((g, idx) => (
+                                <div key={idx} className="flex items-center justify-between gap-4 px-4 sm:px-5 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-amber-600/80 dark:text-amber-400/80" />
+                                    <span className="font-medium text-foreground">{g.dayRange}</span>
+                                  </div>
+                                  <span className="text-sm text-muted-foreground tabular-nums">
+                                    {g.startTime} – {g.endTime}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      {event.upcoming_dates && event.upcoming_dates.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground/80">
+                            {i18n.language === 'en' ? 'Next dates:' : 'Próximas fechas:'}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {event.upcoming_dates.map((d, idx) => (
+                              <span
+                                key={d.date ?? idx}
+                                className={`px-3 py-1 rounded-full border text-xs font-medium ${
+                                  d.is_cancelled
+                                    ? 'bg-red-50 border-red-200 text-red-600 line-through'
+                                    : 'bg-muted/50 border-border text-muted-foreground'
+                                }`}
+                              >
+                                {formatCompactDate(new Date(d.date))}
+                                {d.is_cancelled && (
+                                  <span className="ml-1 text-red-600">✕</span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : event.is_recurring_weekly ? (
                     <>
                       <div className="flex items-center gap-3">
                         <Calendar className="h-5 w-5 text-purple-600" />

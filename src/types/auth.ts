@@ -1,5 +1,11 @@
 export type SubscriptionType = "FREE" | "VIP" | "SUPER";
 
+export interface ApiWallet {
+  balance: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ApiMember {
   id: number;
   document_type: string;
@@ -10,6 +16,8 @@ export interface ApiMember {
   full_name: string;
   email: string;
   subscription_type?: SubscriptionType;
+  wallet?: ApiWallet;
+  segments?: { id: number; name: string; description?: string; price?: string; is_default?: boolean; members_count?: number }[];
   created_at: string;
   updated_at: string;
 }
