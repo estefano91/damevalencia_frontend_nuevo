@@ -1163,6 +1163,24 @@ const EventDetail = () => {
               </Card>
             )}
 
+            {/* Botón Reservar móvil - visible arriba de descripción (evita que lo tape la barra de cookies) */}
+            {hasTickets !== null && event && (hasTickets === true || hasReserveLink()) && (
+              <div className="md:hidden mb-4">
+                <Button
+                  className="w-full h-14 rounded-xl text-base font-bold bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-lg"
+                  onClick={() => handleReserveClick(getReserveLink())}
+                  disabled={checkingUserTicket || (hasTickets === true && allTicketsSoldOut)}
+                >
+                  <TicketIcon className="h-5 w-5 mr-2" />
+                  {checkingUserTicket
+                    ? (i18n.language === 'en' ? 'Checking availability...' : 'Verificando disponibilidad...')
+                    : hasTickets === true
+                    ? (i18n.language === 'en' ? 'Reserve Tickets' : 'Reservar Tickets')
+                    : (i18n.language === 'en' ? 'Reserve & Info' : 'Reserva & Info')}
+                </Button>
+              </div>
+            )}
+
             {/* Description - rich text */}
             {getLocalizedText(event.description_es, event.description_en) && (
               <Card>
