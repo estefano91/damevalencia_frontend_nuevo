@@ -1,0 +1,169 @@
+/* Popup del mapa Fallas - diseño unificado con recuadro único */
+
+/* Wrapper principal - recuadro único con toda la info */
+.leaflet-container .falla-map-popup.leaflet-popup-content-wrapper,
+.leaflet-container .leaflet-popup.falla-map-popup .leaflet-popup-content-wrapper,
+.leaflet-container .leaflet-popup-content-wrapper.falla-map-popup {
+  background: #ffffff !important;
+  opacity: 1 !important;
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  padding: 0 !important;
+}
+
+.leaflet-container .falla-map-popup.leaflet-popup-content-wrapper .leaflet-popup-tip,
+.leaflet-container .leaflet-popup.falla-map-popup .leaflet-popup-tip {
+  background: #ffffff !important;
+}
+
+/* Contenido sin margen extra - todo dentro del recuadro */
+.leaflet-container .falla-map-popup .leaflet-popup-content {
+  margin: 0 !important;
+  min-width: 260px !important;
+  max-width: 320px !important;
+  min-height: 60px !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Card interior - recuadro único */
+.falla-popup-card {
+  display: block !important;
+  background: #ffffff !important;
+  color: #1e293b !important;
+  min-height: 50px !important;
+}
+
+.falla-popup-dame-badge {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
+  color: white !important;
+}
+
+.falla-popup-body {
+  padding: 16px 48px 16px 16px !important;
+  display: block !important;
+}
+
+.falla-popup-title {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: #0f172a !important;
+  margin: 0 0 12px 0 !important;
+  line-height: 1.35 !important;
+  display: block !important;
+}
+
+.falla-popup-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.falla-popup-details div {
+  display: flex;
+  gap: 8px;
+  font-size: 0.8125rem;
+}
+
+.falla-popup-details dt {
+  color: #64748b;
+  font-weight: 500;
+  margin: 0;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.falla-popup-details dd {
+  color: #334155;
+  margin: 0;
+}
+
+/* Botón cerrar (X) - más visible, circular con fondo */
+.leaflet-container .falla-map-popup a.leaflet-popup-close-button,
+.leaflet-container .leaflet-popup.falla-map-popup a.leaflet-popup-close-button {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  color: #1e293b !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: none !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  z-index: 10 !important;
+  transition: background 0.15s, transform 0.15s !important;
+}
+
+.leaflet-container .falla-map-popup a.leaflet-popup-close-button span,
+.leaflet-container .leaflet-popup.falla-map-popup a.leaflet-popup-close-button span {
+  display: block !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  font-weight: 600 !important;
+}
+
+.leaflet-container .falla-map-popup a.leaflet-popup-close-button:hover,
+.leaflet-container .leaflet-popup.falla-map-popup a.leaflet-popup-close-button:hover {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Dark mode */
+.dark .leaflet-container .falla-map-popup.leaflet-popup-content-wrapper,
+.dark .leaflet-container .leaflet-popup.falla-map-popup .leaflet-popup-content-wrapper {
+  background: #1e293b !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .leaflet-container .falla-map-popup .leaflet-popup-tip,
+.dark .leaflet-container .leaflet-popup.falla-map-popup .leaflet-popup-tip {
+  background: #1e293b !important;
+}
+
+.dark .falla-popup-card {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+.dark .falla-popup-title {
+  color: #f8fafc;
+}
+
+.dark .falla-popup-details dt {
+  color: #94a3b8;
+}
+
+.dark .falla-popup-details dd {
+  color: #e2e8f0;
+}
+
+.dark .leaflet-container .falla-map-popup a.leaflet-popup-close-button {
+  background: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.dark .leaflet-container .falla-map-popup a.leaflet-popup-close-button:hover {
+  background: #475569 !important;
+  color: #ffffff !important;
+}
+
+/* Forzar opacidad 1 */
+.leaflet-container .leaflet-popup,
+.leaflet-container .leaflet-popup.falla-map-popup {
+  opacity: 1 !important;
+}

@@ -186,6 +186,15 @@ All colors MUST be HSL.
   .scrollbar-track-transparent {
     scrollbar-color: transparent transparent;
   }
+
+  /* Markers de Fallas: sin fondo/borde por defecto de Leaflet */
+  .falla-marker-custom,
+  .falla-marker-dame,
+  .falla-marker-special {
+    background: none !important;
+    border: none !important;
+  }
+
 }
 
 /* Estilos adicionales para DAME Valencia */

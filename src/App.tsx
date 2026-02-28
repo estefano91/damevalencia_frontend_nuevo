@@ -37,6 +37,7 @@ import TiendaProducto from "./pages/TiendaProducto";
 import ViajePersonalizado from "./pages/ViajePersonalizado";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
+import Fallas from "./pages/Fallas";
 import { InterestsModalWrapper } from "./components/InterestsModalWrapper";
 import { MembershipModalWrapper } from "./components/MembershipModalWrapper";
 import RegisterPopup from "./components/RegisterPopup";
@@ -114,6 +115,16 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar>
                         <ViajePersonalizado />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Fallas de Valencia - mapa Open Data */}
+                  <Route
+                    path="/fallas"
+                    element={
+                      <ProtectedRoute hideSidebar>
+                        <Fallas />
                       </ProtectedRoute>
                     }
                   />
