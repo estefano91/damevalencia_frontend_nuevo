@@ -79,7 +79,7 @@ function CentrarButton({ onClick }: { onClick: () => void }) {
 function MapController({ onCenter }: { onCenter: () => void }) {
   const map = useMap();
   const handleCenter = useCallback(() => {
-    map.setView(VALENCIA_CENTER, 13);
+    map.setView(VALENCIA_CENTER, 11);
     onCenter();
   }, [map, onCenter]);
   useEffect(() => {
