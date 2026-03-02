@@ -99,7 +99,7 @@ const AppLayout = ({ children, hideSidebar = false }: AppLayoutProps) => {
             ? 'ml-0'
             : (sidebarOpen ? 'ml-64' : 'ml-12')
         }`}>
-            <div className="container mx-auto px-4 py-6 flex-1 w-full max-w-full overflow-x-hidden">
+            <div className="container mx-auto px-2 sm:px-3 py-6 flex-1 w-full max-w-full overflow-x-hidden">
               {children}
             </div>
             <Footer />
