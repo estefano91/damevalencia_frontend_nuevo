@@ -10,6 +10,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -36,6 +43,8 @@ import {
   Repeat,
   CheckCircle,
   Filter,
+  List,
+  ListFilter,
   X,
   Crown,
   Sparkles,
@@ -78,7 +87,8 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   const [filteredEventsByCategory, setFilteredEventsByCategory] = useState<EventsByCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { selectedCategoryId, setAvailableCategories } = useCategoryFilter();
+  const { selectedCategoryId, setSelectedCategoryId, setAvailableCategories } = useCategoryFilter();
+  const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
   const [userTickets, setUserTickets] = useState<UserAttendance[]>([]);
   const [userTicketsLoaded, setUserTicketsLoaded] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(0);
@@ -146,9 +156,8 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
   useEffect(() => {
     const calculateSidebarWidth = () => {
       if (isMobile) {
-        // En móvil, el sidebar está cerrado por defecto (w-12 = 48px)
-        // Si está abierto, será w-64 (256px) pero con overlay, así que usamos 48px
-        setSidebarWidth(48);
+        // En móvil, el sidebar está oculto (0px)
+        setSidebarWidth(0);
       } else {
         // En desktop, buscar el sidebar en el DOM
         const sidebar = document.querySelector('[class*="fixed"][class*="left-0"][class*="z-40"]') as HTMLElement;
@@ -616,12 +625,25 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
       <div 
         className="fixed top-20 sm:top-24 md:top-28 z-30 bg-card border-b shadow-sm transition-all duration-300"
         style={{
-          left: isMobile ? '48px' : `${sidebarWidth}px`,
+          left: `${sidebarWidth}px`,
           right: '0'
         }}
       >
         <div className="container mx-auto px-2 sm:px-4">
           <div className="flex items-center justify-center flex-wrap sm:flex-nowrap gap-2 sm:gap-4 md:gap-6 h-auto sm:h-14 py-2 sm:py-0">
+            {/* Botón categorías - solo móvil */}
+            {isMobile && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 border-2 border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                onClick={() => setCategoriesModalOpen(true)}
+                aria-label={i18n.language === 'en' ? 'Filter by category' : 'Filtrar por categoría'}
+                title={i18n.language === 'en' ? 'Categories' : 'Categorías'}
+              >
+                <ListFilter className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400" />
+              </Button>
+            )}
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <span className="text-sm sm:text-base md:text-lg font-semibold text-foreground whitespace-nowrap">
                 {i18n.language === 'en' ? 'When:' : 'Cuando:'}
@@ -683,6 +705,76 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
         </div>
       </div>
 
+      {/* Modal de categorías - solo móvil */}
+      <Dialog open={categoriesModalOpen} onOpenChange={setCategoriesModalOpen}>
+        <DialogContent className="max-w-sm w-[calc(100vw-2rem)] max-h-[85vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-4 pt-4 pb-3 flex-shrink-0">
+            <DialogTitle className="text-lg font-bold text-foreground">
+              {i18n.language === 'en' ? 'Categories' : 'Categorías'}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              {i18n.language === 'en' ? 'Filter events by category' : 'Filtra eventos por categoría'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
+            {/* Todas */}
+            <Button
+              variant="ghost"
+              className={`w-full justify-start h-auto py-3 px-4 rounded-xl transition-all ${
+                selectedCategoryId === null
+                  ? 'bg-gradient-to-br from-purple-600 to-purple-800 text-white'
+                  : 'bg-muted hover:bg-muted/80'
+              }`}
+              onClick={() => {
+                setSelectedCategoryId(null);
+                setCategoriesModalOpen(false);
+                window.scrollTo(0, 0);
+              }}
+            >
+              <div className={`mr-3 p-2 rounded-lg ${selectedCategoryId === null ? 'bg-white/20' : 'bg-muted-foreground/10'}`}>
+                <List className={`h-5 w-5 ${selectedCategoryId === null ? 'text-white' : ''}`} />
+              </div>
+              <span className="font-semibold">
+                {i18n.language === 'en' ? 'All' : 'Todos'}
+              </span>
+            </Button>
+            {/* Categorías */}
+            {eventsByCategory.map(({ category, events }) => {
+              const isSelected = selectedCategoryId === category.id;
+              const gradient = getCategoryColor(category.id, category.name_es);
+              return (
+                <Button
+                  key={category.id}
+                  variant="ghost"
+                  className={`w-full justify-start h-auto py-3 px-4 rounded-xl transition-all ${
+                    isSelected
+                      ? `bg-gradient-to-r ${gradient} text-white [&_svg]:text-white`
+                      : 'bg-muted hover:bg-muted/80'
+                  }`}
+                  onClick={() => {
+                    setSelectedCategoryId(category.id);
+                    setCategoriesModalOpen(false);
+                    window.scrollTo(0, 0);
+                  }}
+                >
+                  <div className={`mr-3 p-2 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-muted-foreground/10'}`}>
+                    {getCategoryIcon(category.icon, category.name_es)}
+                  </div>
+                  <div className="text-left flex-1">
+                    <span className="font-semibold block">
+                      {i18n.language === 'en' ? (category.name_en || category.name_es) : category.name_es}
+                    </span>
+                    <span className={`text-xs ${isSelected ? 'text-white/90' : 'text-muted-foreground'}`}>
+                      {events.length} {i18n.language === 'en' ? 'events' : 'eventos'}
+                    </span>
+                  </div>
+                </Button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Barra de membresía para usuarios no miembros */}
       {user && !user.member && !membershipBannerClosed && (
         <div 
@@ -691,7 +783,7 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
           }`}
           style={{
             top: isMobile ? '140px' : '168px', // Debajo de la barra de filtro (top-20/24/28 + h-14)
-            left: isMobile ? '48px' : `${sidebarWidth}px`,
+            left: `${sidebarWidth}px`,
             right: '0'
           }}
         >

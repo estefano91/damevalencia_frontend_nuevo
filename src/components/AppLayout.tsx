@@ -91,47 +91,13 @@ const AppLayout = ({ children, hideSidebar = false }: AppLayoutProps) => {
           </div>
         )}
 
-        {/* Sidebar - Mobile: rail siempre visible; overlay al expandir */}
-        {!hideSidebar && isMobile && !sidebarOpen && (
-          <div className="fixed top-20 left-0 h-[calc(100vh-5rem)] w-12 bg-card border-r shadow-lg z-40">
-            <Sidebar
-              userType={userType}
-              onCategoryFilter={setSelectedCategoryId}
-              selectedCategoryId={selectedCategoryId}
-              availableCategories={availableCategories}
-              sidebarOpen={false}
-              setSidebarOpen={setSidebarOpen}
-            />
-          </div>
-        )}
-
-        {/* Sidebar - Mobile con overlay cuando está expandido */}
-        {!hideSidebar && isMobile && sidebarOpen && (
-          <>
-            <div
-              className="fixed inset-0 bg-black bg-opacity-50 z-30 top-20"
-              onClick={() => setSidebarOpen(false)}
-            />
-            <div className="fixed top-20 left-0 h-[calc(100vh-5rem)] w-64 bg-card border-r shadow-lg z-40">
-              <Sidebar
-                userType={userType}
-                onCategoryFilter={setSelectedCategoryId}
-                selectedCategoryId={selectedCategoryId}
-                availableCategories={availableCategories}
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-              />
-            </div>
-          </>
-        )}
+        {/* Sidebar - Mobile: oculto (solo visible en desktop) */}
 
         {/* Main content con margin automático */}
         <main className={`flex-1 pt-20 sm:pt-24 md:pt-28 min-h-screen transition-all duration-300 flex flex-col overflow-x-hidden max-w-full ${
-          hideSidebar
+          hideSidebar || isMobile
             ? 'ml-0'
-            : isMobile
-              ? (sidebarOpen ? 'ml-0' : 'ml-12')
-              : (sidebarOpen ? 'ml-64' : 'ml-12')
+            : (sidebarOpen ? 'ml-64' : 'ml-12')
         }`}>
             <div className="container mx-auto px-4 py-6 flex-1 w-full max-w-full overflow-x-hidden">
               {children}
