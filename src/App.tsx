@@ -8,6 +8,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ScrollToTop from "./components/ScrollToTop";
 import Auth from "./pages/Auth";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import RecoveryPassword from "./pages/RecoveryPassword";
 import Demo from "./pages/Demo";
 import Disclaimer from "./pages/Disclaimer";
 import NotFound from "./pages/NotFound";
@@ -62,6 +64,8 @@ const App = () => (
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/login" element={<Auth />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/recovery-password" element={<RecoveryPassword />} />
                   
                   {/* Vista detallada de eventos */}
                   <Route 

@@ -29,6 +29,16 @@ export interface WalletHistoryResponse {
   results: WalletTransaction[];
 }
 
+/** Respuesta de creación de tarjeta Google Wallet (201 o 200) */
+export interface GoogleWalletCreateResponse {
+  success: boolean;
+  save_url: string;
+  object_id?: string;
+  qr_code?: string;
+  qr_code_url?: string;
+  message?: string;
+}
+
 interface ApiRequestResult<T> {
   ok: boolean;
   data?: T;
@@ -70,6 +80,51 @@ export const walletApi = {
       return {
         ok: true,
         data: payload as WalletHistoryResponse,
+        status: response.status,
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : "Error de conexión",
+        status: 0,
+      };
+    }
+  },
+
+  /** Crear tarjeta de fidelización en Google Wallet (solo miembros). Si responde 200 o 201, abrir save_url en nueva pestaña. */
+  createGoogleWallet: async (): Promise<ApiRequestResult<GoogleWalletCreateResponse>> => {
+    const token = getAuthToken();
+    if (!token) {
+      return { ok: false, error: "No autenticado", status: 401 };
+    }
+
+    try {
+      const url = buildUrl("/wallet/google/create/");
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      const payload = (await response.json().catch(() => null)) as GoogleWalletCreateResponse | null;
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          error: (payload as { message?: string })?.message || "Error al crear tarjeta Google Wallet",
+          status: response.status,
+        };
+      }
+
+      const data = payload as GoogleWalletCreateResponse;
+      // No abrir aquí: en iOS window.open tras un await es bloqueado. El componente abre la ventana en el clic y asigna save_url después.
+
+      return {
+        ok: true,
+        data,
         status: response.status,
       };
     } catch (err) {

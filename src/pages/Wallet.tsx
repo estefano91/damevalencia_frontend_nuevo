@@ -16,13 +16,17 @@ import {
   ChevronRight,
   ShoppingBag,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-const Wallet = () => {
+const WalletPage = () => {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [googleWalletLoading, setGoogleWalletLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingPage, setLoadingPage] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +79,27 @@ const Wallet = () => {
   };
   const handleNext = () => {
     if (nextUrl) setCurrentPage((p) => p + 1);
+  };
+
+  const handleAddToGoogleWallet = async () => {
+    setGoogleWalletLoading(true);
+    const result = await walletApi.createGoogleWallet();
+    setGoogleWalletLoading(false);
+    if (result.ok && result.data?.save_url) {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (isIOS) {
+        // iOS: misma pestaña para evitar ventana en blanco; el usuario puede volver atrás
+        window.location.href = result.data.save_url;
+      } else {
+        window.open(result.data.save_url, '_blank', 'noopener,noreferrer');
+      }
+    } else if (!result.ok) {
+      toast({
+        title: i18n.language === 'en' ? 'Error' : 'Error',
+        description: result.error || (i18n.language === 'en' ? 'Could not create Google Wallet card' : 'No se pudo crear la tarjeta en Google Wallet'),
+        variant: 'destructive',
+      });
+    }
   };
 
   const formatDate = (iso: string) => {
@@ -143,6 +168,43 @@ const Wallet = () => {
             </p>
           </div>
         </div>
+
+        {/* Google Wallet - tarjeta de fidelización */}
+        <Card className="mb-8 border-amber-200/60 dark:border-amber-800/40">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1">
+              <p className="font-medium text-foreground flex items-center gap-2">
+                <img src="/googlewallet.png" alt="" className="h-6 w-auto object-contain" />
+                {i18n.language === 'en' ? 'Google Wallet' : 'Google Wallet'}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {i18n.language === 'en'
+                  ? 'Add your DAME loyalty card to Google Wallet.'
+                  : 'Añade tu tarjeta de fidelización DAME a Google Wallet.'}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 px-4 rounded-full border-2 border-[#5f6368] bg-[#202124] hover:bg-[#303134] text-white hover:text-white border-gray-500 dark:border-gray-600 shrink-0"
+              onClick={handleAddToGoogleWallet}
+              disabled={googleWalletLoading}
+            >
+              {googleWalletLoading ? (
+                <Loader2 className="mr-3 h-6 w-6 animate-spin shrink-0" />
+              ) : (
+                <img
+                  src="/googlewallet.png"
+                  alt="Google Wallet"
+                  className="h-8 w-auto max-w-[120px] object-contain shrink-0"
+                />
+              )}
+              <span className="ml-3 text-left font-medium whitespace-nowrap">
+                {i18n.language === 'en' ? 'Add to Google Wallet' : 'Añadir a Google Wallet'}
+              </span>
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Historial */}
         <div className="space-y-4">
@@ -269,4 +331,4 @@ const Wallet = () => {
   );
 };
 
-export default Wallet;
+export default WalletPage;

@@ -170,5 +170,23 @@ export const authApi = {
       },
       body: { subscription_type: subscriptionType },
     }),
+
+  /** Solicitar envío de correo de recuperación de contraseña */
+  passwordRecoveryRequest: (email: string) =>
+    request<{ success: boolean; message?: string }>("/users/password/recovery/request/", {
+      method: "POST",
+      body: { email },
+    }),
+
+  /** Confirmar recuperación con código y nueva contraseña */
+  passwordRecoveryConfirm: (data: {
+    code: string;
+    new_password: string;
+    new_password_confirm: string;
+  }) =>
+    request<{ success: boolean; message?: string }>("/users/password/recovery/confirm/", {
+      method: "POST",
+      body: data,
+    }),
 };
 

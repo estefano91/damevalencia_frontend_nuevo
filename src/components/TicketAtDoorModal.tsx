@@ -163,7 +163,7 @@ export const TicketAtDoorModal = ({
       return false;
     }
 
-    if (!attendee.email.trim() || !attendee.email.includes('@')) {
+    if (ticketType.require_email && (!attendee.email.trim() || !attendee.email.includes('@'))) {
       toast({
         title: i18n.language === 'en' ? 'Validation error' : 'Error de validación',
         description: i18n.language === 'en'
@@ -289,7 +289,7 @@ export const TicketAtDoorModal = ({
       const attendeeDataArray = attendees.map(attendee => {
         const attendeeData: any = {
           full_name: attendee.full_name.trim(),
-          email: attendee.email.trim(),
+          email: ticketType.require_email ? attendee.email.trim() : '',
         };
         
         // Agregar campos requeridos siempre que sean requeridos
@@ -323,6 +323,7 @@ export const TicketAtDoorModal = ({
       
       console.log('📤 TicketAtDoorModal: Enviando request EN_PUERTA:', request);
       console.log('📋 TicketAtDoorModal: Campos requeridos del ticket:', {
+        require_email: ticketType.require_email,
         require_phone: ticketType.require_phone,
         require_gender: ticketType.require_gender,
         require_role: ticketType.require_role,
@@ -551,23 +552,25 @@ export const TicketAtDoorModal = ({
                   />
                 </div>
 
-                {/* Email */}
-                <div className="space-y-2">
-                  <Label htmlFor={`email-${attendeeIndex}`} className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-purple-600" />
-                    {i18n.language === 'en' ? 'Email' : 'Correo Electrónico'} *
-                  </Label>
-                  <Input
-                    id={`email-${attendeeIndex}`}
-                    type="email"
-                    value={attendee.email}
-                    onChange={(e) => updateAttendee(attendeeIndex, 'email', e.target.value)}
-                    placeholder={i18n.language === 'en' ? 'your.email@example.com' : 'tu.email@ejemplo.com'}
-                    className="h-11"
-                    autoComplete="off"
-                    required
-                  />
-                </div>
+                {/* Email (solo si el evento lo requiere) */}
+                {ticketType.require_email && (
+                  <div className="space-y-2">
+                    <Label htmlFor={`email-${attendeeIndex}`} className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-purple-600" />
+                      {i18n.language === 'en' ? 'Email' : 'Correo Electrónico'} *
+                    </Label>
+                    <Input
+                      id={`email-${attendeeIndex}`}
+                      type="email"
+                      value={attendee.email}
+                      onChange={(e) => updateAttendee(attendeeIndex, 'email', e.target.value)}
+                      placeholder={i18n.language === 'en' ? 'your.email@example.com' : 'tu.email@ejemplo.com'}
+                      className="h-11"
+                      autoComplete="off"
+                      required
+                    />
+                  </div>
+                )}
 
                 {/* Phone (conditional) */}
                 {ticketType.require_phone && (
