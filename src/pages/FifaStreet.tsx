@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   Calendar,
   MapPin,
   Clock,
@@ -19,6 +26,8 @@ import {
   TrendingUp,
   Euro,
   ExternalLink,
+  FileText,
+  Banknote,
 } from 'lucide-react';
 
 // Mock data – sustituir por API cuando exista
@@ -29,8 +38,12 @@ const NEXT_MATCHDAY = {
   venue: 'Polideportivo Betero',
   address: 'Valencia',
   mapUrl: 'https://www.google.com/maps/search/Polideportivo+Betero+Valencia',
-  format: '3v3 · 15 min',
+  format: '5v5 · Arranque 2v2',
   prize: 150,
+  prizePayment: 'Transferencia o Bizum al capitán del equipo ganador.',
+  prizeWhen: 'En un plazo máximo de 7 días naturales tras la jornada final (30 abril).',
+  prizePaymentEn: 'By bank transfer or Bizum to the winning team captain.',
+  prizeWhenEn: 'Within 7 calendar days after the final matchday (30 April).',
   spotsLeft: 4,
   totalSpots: 16,
 };
@@ -71,10 +84,35 @@ const CALENDAR_PAST = [
 
 const WHATSAPP_SIGNUP = 'https://wa.me/34600000000?text=Hola%2C%20quiero%20apuntarme%20a%20la%20próxima%20jornada%20FIFA%20Street%20League%20VLC';
 
+const RULES_ES = [
+  { title: 'Formato', text: '5 contra 5. Cada partido empieza con 2v2 en pista; el resto de jugadores entran según dinámica del partido.' },
+  { title: 'Duración', text: '2 partes de 10 minutos a reloj corrido (o según organización el día de la jornada).' },
+  { title: 'Tarjeta azul', text: 'Expulsión temporal de 2 minutos. El equipo juega con un jugador menos hasta que pase el tiempo. Reincorporación en el centro del campo.' },
+  { title: 'Tarjeta amarilla', text: 'Amonestación. Dos amarillas en el mismo partido = expulsión (tarjeta roja).' },
+  { title: 'Tarjeta roja', text: 'Expulsión definitiva del partido. El equipo termina con un jugador menos.' },
+  { title: 'Fuera de juego', text: 'No hay fuera de juego.' },
+  { title: 'Saques y corners', text: 'Saques de banda con las manos. Los corners se sacan con el pie desde la esquina.' },
+  { title: 'Portería y área', text: 'El portero puede usar las manos solo dentro del área. Salida con los pies o con la mano (medio campo según organización).' },
+  { title: 'Conducta y fair play', text: 'Respeto al rival, al árbitro y al público. Actitudes antideportivas pueden suponer amonestación, expulsión o baja de la liga.' },
+];
+
+const RULES_EN = [
+  { title: 'Format', text: '5 vs 5. Each match starts 2v2 on the court; remaining players join as the game goes on.' },
+  { title: 'Duration', text: '2 halves of 10 minutes running clock (or as set by the organisers on the day).' },
+  { title: 'Blue card', text: 'Temporary sending-off for 2 minutes. The team plays with one player less until the time is up. Player returns from the centre.' },
+  { title: 'Yellow card', text: 'Caution. Two yellows in the same match = sending-off (red card).' },
+  { title: 'Red card', text: 'Sending-off for the rest of the match. The team finishes with one player less.' },
+  { title: 'Offside', text: 'There is no offside.' },
+  { title: 'Throw-ins and corners', text: 'Throw-ins with the hands. Corners taken with the foot from the corner.' },
+  { title: 'Goal and area', text: 'The keeper may use hands only inside the area. Restart with feet or hand (halfway line as per organisers).' },
+  { title: 'Conduct and fair play', text: 'Respect opponents, referees and spectators. Unsporting behaviour may lead to caution, sending-off or removal from the league.' },
+];
+
 const FifaStreet = () => {
   const { i18n } = useTranslation();
   const isEn = i18n.language === 'en';
   const [galleryTab, setGalleryTab] = useState<'photos' | 'videos'>('photos');
+  const rules = isEn ? RULES_EN : RULES_ES;
 
   const formBadge = (form: string) => {
     return form.split('').map((r, i) => (
@@ -140,17 +178,51 @@ const FifaStreet = () => {
                 </a>
               </div>
               {NEXT_MATCHDAY.prize != null && (
-                <p className="text-sm text-white/95 flex items-center gap-1.5">
-                  <Euro className="h-4 w-4 text-amber-300" />
-                  <span className="font-semibold">{NEXT_MATCHDAY.prize}€</span>
-                  {isEn ? ' prize' : ' de premio'}
-                </p>
+                <div className="space-y-1">
+                  <p className="text-sm text-white/95 flex items-center gap-1.5">
+                    <Euro className="h-4 w-4 text-amber-300" />
+                    <span className="font-semibold">{NEXT_MATCHDAY.prize}€</span>
+                    {isEn ? ' prize' : ' de premio'}
+                  </p>
+                  <p className="text-xs text-emerald-100 flex items-start gap-1.5">
+                    <Banknote className="h-3.5 w-3.5 text-amber-300 shrink-0 mt-0.5" />
+                    <span>
+                      {isEn ? NEXT_MATCHDAY.prizePaymentEn : NEXT_MATCHDAY.prizePayment}
+                      {' · '}
+                      {isEn ? NEXT_MATCHDAY.prizeWhenEn : NEXT_MATCHDAY.prizeWhen}
+                    </span>
+                  </p>
+                </div>
               )}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary" className="bg-white/20 text-white border-0">
                     {NEXT_MATCHDAY.format}
                   </Badge>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="bg-white/10 text-white border-white/30 hover:bg-white/20">
+                        <FileText className="mr-1.5 h-4 w-4" />
+                        {isEn ? 'Rules' : 'Reglas'}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <FileText className="h-5 w-5" />
+                          {isEn ? 'League rules' : 'Reglas de la liga'}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <ul className="space-y-4 mt-4">
+                        {rules.map((r, i) => (
+                          <li key={i} className="border-b border-muted pb-4 last:border-0 last:pb-0">
+                            <p className="font-semibold text-foreground">{r.title}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{r.text}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </DialogContent>
+                  </Dialog>
                   <span className="text-sm text-emerald-100">
                     {NEXT_MATCHDAY.spotsLeft} {isEn ? 'spots left' : 'plazas libres'} / {NEXT_MATCHDAY.totalSpots}
                   </span>
