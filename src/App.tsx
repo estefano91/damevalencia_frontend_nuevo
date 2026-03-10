@@ -40,6 +40,7 @@ import ViajePersonalizado from "./pages/ViajePersonalizado";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import Fallas from "./pages/Fallas";
+import FifaStreet from "./pages/FifaStreet";
 import { InterestsModalWrapper } from "./components/InterestsModalWrapper";
 import { MembershipModalWrapper } from "./components/MembershipModalWrapper";
 import RegisterPopup from "./components/RegisterPopup";
@@ -132,6 +133,9 @@ const App = () => (
                       </ProtectedRoute>
                     }
                   />
+
+                  {/* FIFA Street League VLC - fútbol calle Valencia (público) */}
+                  <Route path="/fifastreet" element={<FifaStreet />} />
 
                   {/* Blog (sin enlace en menú por ahora) */}
                   <Route
