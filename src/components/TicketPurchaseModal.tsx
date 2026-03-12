@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { getStoredPromoterCode } from '@/lib/promoterLink';
+import { getStoredPromoterCode, capturePromoterCodeFromUrl } from '@/lib/promoterLink';
 import { Loader2, ShoppingCart, ArrowLeft } from 'lucide-react';
 
 interface TicketPurchaseModalProps {
@@ -89,9 +89,11 @@ export const TicketPurchaseModal = ({
   
   const [referralCode, setReferralCode] = useState('');
   
-  // Si el cliente llegó por enlace de promotor, rellenar código para que se envíe en el checkout
+  // Si el cliente llegó por enlace de promotor, rellenar código para que se envíe en el checkout.
+  // Capturamos también desde la URL por si el modal se abre antes de que PromoterLinkHandler haya corrido.
   useEffect(() => {
     if (open) {
+      capturePromoterCodeFromUrl(false);
       const stored = getStoredPromoterCode();
       if (stored) setReferralCode((prev) => prev || stored);
     }
@@ -410,16 +412,17 @@ export const TicketPurchaseModal = ({
         ticket_type_id: number;
         quantity: number;
         attendee_data: typeof attendeeData;
-        referral_code?: string;
+        promoter_code?: string;
       } = {
         ticket_type_id: ticketType.id,
         quantity,
         attendee_data: attendeeData,
       };
 
-      // Solo incluir referral_code si tiene valor
-      if (referralCode && referralCode.trim()) {
-        checkoutRequest.referral_code = referralCode.trim();
+      // Incluir promoter_code: estado del formulario o, por si se perdió, leer de sessionStorage (enlace promotor)
+      const codeToSend = (referralCode && referralCode.trim()) || getStoredPromoterCode() || '';
+      if (codeToSend) {
+        checkoutRequest.promoter_code = codeToSend.trim();
       }
 
       // Log del request completo
@@ -431,7 +434,7 @@ export const TicketPurchaseModal = ({
       console.log('  - ticket_type_id:', checkoutRequest.ticket_type_id);
       console.log('  - quantity:', checkoutRequest.quantity);
       console.log('  - attendee_data (cantidad):', checkoutRequest.attendee_data.length);
-      console.log('  - referral_code:', checkoutRequest.referral_code || '(no incluido)');
+      console.log('  - promoter_code:', checkoutRequest.promoter_code || '(no incluido)');
       console.log('  - attendee_data detallado:');
       checkoutRequest.attendee_data.forEach((attendee, index) => {
         console.log(`    Asistente ${index + 1}:`, {
@@ -839,7 +842,7 @@ export const TicketPurchaseModal = ({
             </div>
           ))}
 
-          {/* Referral Code (optional) */}
+          {/* Referral Code (optional) - si viene por enlace de promotor se rellena solo */}
           <div className="space-y-2">
             <Label htmlFor="referralCode">
               {i18n.language === 'en' ? 'Referral Code' : 'Código de Referido'} (Optional / Opcional)
@@ -850,6 +853,13 @@ export const TicketPurchaseModal = ({
               onChange={(e) => setReferralCode(e.target.value)}
               placeholder={i18n.language === 'en' ? 'Enter referral code if you have one' : 'Ingresa código de referido si tienes uno'}
             />
+            {(referralCode && referralCode.trim()) || getStoredPromoterCode() ? (
+              <p className="text-xs text-muted-foreground">
+                {i18n.language === 'en'
+                  ? 'This purchase will be assigned to the promoter.'
+                  : 'Esta compra se asignará al promotor.'}
+              </p>
+            ) : null}
           </div>
         </div>
         )}

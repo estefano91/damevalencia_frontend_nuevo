@@ -219,7 +219,7 @@ export interface StripeCheckoutRequest {
     city?: string;
     additional_notes?: string;
   }>;
-  referral_code?: string;
+  promoter_code?: string;
 }
 
 export interface StripeCheckoutResponse {
