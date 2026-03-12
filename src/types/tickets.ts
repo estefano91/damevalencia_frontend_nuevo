@@ -52,6 +52,12 @@ export interface TicketTypeDetail {
   tickets_sold_count: number;
   available_stock: number;
   current_price: string; // Decimal as string
+  /** Si true, mostrar comisión de venta en el desglose. */
+  include_sale_commission?: boolean;
+  /** Comisión de venta por la pasarela de pago (Stripe). Decimal como string. Total del pedido. */
+  sale_commission?: string;
+  /** Algunas APIs devuelven la comisión anidada aquí. */
+  stripe_config_details?: { include_sale_commission?: boolean; sale_commission?: string };
   sale_start_date?: string; // ISO date string
   sale_end_date?: string; // ISO date string
   created_at: string;

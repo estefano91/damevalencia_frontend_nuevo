@@ -127,9 +127,28 @@ export const TicketPurchaseModal = ({
     setAttendees(newAttendees);
   };
 
-  // Calculate total price
+  // Precio y comisión: subtotal (entradas) + comisión pasarela = total a pagar
   const pricePerTicket = parseFloat(ticketType.current_price || ticketType.base_price || '0');
-  const totalPrice = (pricePerTicket * quantity).toFixed(2);
+  const subtotal = pricePerTicket * quantity;
+  // Leer comisión: puede venir en ticketType.sale_commission o anidada en stripe_config_details
+  const commissionRaw =
+    ticketType.sale_commission ??
+    ticketType.stripe_config_details?.sale_commission ??
+    '0';
+  const includeCommission =
+    ticketType.include_sale_commission ?? ticketType.stripe_config_details?.include_sale_commission ?? false;
+  let commission = parseFloat(String(commissionRaw).trim() || '0');
+  // Si la API pide incluir comisión pero no envía valor (o es 0) y es Stripe, estimar (1.5% + 0.25€)
+  const isStripe = ticketType.payment_gateway === 'STRIPE';
+  if ((isStripe && commission <= 0) || (includeCommission && commission <= 0 && isStripe)) {
+    commission = Math.round((subtotal * 0.015 + 0.25) * 100) / 100;
+  }
+  const totalToPay = subtotal + commission;
+  const totalPrice = totalToPay.toFixed(2);
+  const subtotalStr = subtotal.toFixed(2);
+  const commissionStr = commission.toFixed(2);
+  const hasCommission = commission > 0 || includeCommission;
+  const isCommissionEstimated = isStripe && !ticketType.sale_commission && !ticketType.stripe_config_details?.sale_commission;
 
   const validateForm = (): boolean => {
     // Validar cada asistente
@@ -618,9 +637,30 @@ export const TicketPurchaseModal = ({
               >
                 +
               </Button>
-              <span className="ml-auto font-bold">
-                {i18n.language === 'en' ? 'Total' : 'Total'}: {totalPrice}€
-              </span>
+              <div className="ml-auto flex flex-col items-end gap-0.5">
+                <div className="flex justify-between items-center gap-4 w-full">
+                  <span className="text-sm text-muted-foreground">
+                    {i18n.language === 'en' ? 'Subtotal' : 'Subtotal'}:
+                  </span>
+                  <span className="font-medium">{subtotalStr}€</span>
+                </div>
+                {hasCommission && (
+                  <div className="flex justify-between items-center gap-4 w-full">
+                    <span className="text-xs text-muted-foreground">
+                      {i18n.language === 'en'
+                        ? `Payment gateway fee (Stripe)${isCommissionEstimated ? ' (approx.)' : ''}`
+                        : `Comisión pasarela (Stripe)${isCommissionEstimated ? ' (aprox.)' : ''}`}:
+                    </span>
+                    <span className="text-xs text-muted-foreground">{commissionStr}€</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center gap-4 w-full border-t pt-1 mt-0.5">
+                  <span className="text-xs text-muted-foreground">
+                    {i18n.language === 'en' ? 'Total to pay' : 'Total a pagar'}:
+                  </span>
+                  <span className="text-sm font-semibold text-muted-foreground">{totalPrice}€</span>
+                </div>
+              </div>
             </div>
           </div>
 
