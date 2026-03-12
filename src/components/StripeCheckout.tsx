@@ -46,15 +46,14 @@ const StripePaymentForm = ({ orderId, onSuccess, onError, onCancel }: {
       // Confirmar el pago
       console.log('💳 Confirmando pago con Stripe...');
       
-      // Construir URLs de redirección para diferentes casos
-      const baseUrl = window.location.origin + window.location.pathname;
-      const returnUrl = new URL(baseUrl, window.location.href);
+      // Usar página dedicada /pago-retorno para que el usuario siempre tenga una pantalla
+      // que verifique el pago al volver (p. ej. 3D Secure en móvil), evitando pantallas en blanco
+      const returnUrl = new URL('/pago-retorno', window.location.origin);
       returnUrl.searchParams.set('order_id', orderId.toString());
       returnUrl.searchParams.set('return_from_stripe', 'true');
       returnUrl.searchParams.set('payment_status', 'success');
-      
-      // URL para cancelación (si el usuario cancela durante el proceso)
-      const cancelUrl = new URL(baseUrl, window.location.href);
+
+      const cancelUrl = new URL('/pago-retorno', window.location.origin);
       cancelUrl.searchParams.set('order_id', orderId.toString());
       cancelUrl.searchParams.set('return_from_stripe', 'true');
       cancelUrl.searchParams.set('payment_status', 'canceled');
@@ -62,19 +61,29 @@ const StripePaymentForm = ({ orderId, onSuccess, onError, onCancel }: {
       console.log('🔗 URLs de redirección configuradas:');
       console.log('  - return_url (éxito):', returnUrl.toString());
       console.log('  - cancel_url (cancelación):', cancelUrl.toString());
-      
-      const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+
+      // Timeout para evitar "procesando sin fin" si confirmPayment se cuelga (p. ej. en Firefox)
+      const CONFIRM_TIMEOUT_MS = 90_000; // 90 segundos
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('PAYMENT_CONFIRM_TIMEOUT')), CONFIRM_TIMEOUT_MS);
+      });
+      const confirmPromise = stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: returnUrl.toString(),
-          // Stripe también puede usar payment_method_data para configuraciones adicionales
         },
-        redirect: 'if_required', // Solo redirige si es necesario (ej: 3D Secure)
+        redirect: 'if_required',
       });
+
+      const { error: confirmError, paymentIntent } = await Promise.race([
+        confirmPromise,
+        timeoutPromise,
+      ]);
 
       if (confirmError) {
         console.error('❌ Stripe payment error:', confirmError);
-        resetLoadingStates();
+        setLoading(false);
+        setIsProcessing(false);
         toast({
           title: i18n.language === 'en' ? 'Payment failed' : 'Pago fallido',
           description: confirmError.message || (i18n.language === 'en' ? 'Could not process payment' : 'No se pudo procesar el pago'),
@@ -107,10 +116,16 @@ const StripePaymentForm = ({ orderId, onSuccess, onError, onCancel }: {
       await checkPaymentStatus(orderId, onSuccess, onError, i18n.language, 20, 2000, setLoading, setIsProcessing);
     } catch (error) {
       console.error('❌ Error confirming payment:', error);
-      resetLoadingStates();
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setLoading(false);
+      setIsProcessing(false);
+      const isTimeout = error instanceof Error && error.message === 'PAYMENT_CONFIRM_TIMEOUT';
+      const errorMessage = isTimeout
+        ? (i18n.language === 'en'
+            ? 'Payment is taking longer than usual. Please check My Tickets in a few minutes or try another browser (e.g. Chrome).'
+            : 'El pago está tardando más de lo habitual. Revisa Mis entradas en unos minutos o prueba otro navegador (p. ej. Chrome).')
+        : (error instanceof Error ? error.message : 'Unknown error');
       toast({
-        title: i18n.language === 'en' ? 'Error' : 'Error',
+        title: i18n.language === 'en' ? (isTimeout ? 'Taking too long' : 'Error') : isTimeout ? 'Tarda mucho' : 'Error',
         description: errorMessage,
         variant: 'destructive',
       });
@@ -148,8 +163,30 @@ const StripePaymentForm = ({ orderId, onSuccess, onError, onCancel }: {
           )}
         </Button>
       </div>
+      {(loading || isProcessing) && (
+        <p className="text-xs text-muted-foreground">
+          {i18n.language === 'en'
+            ? 'If it keeps processing for more than 1–2 minutes, check My Tickets or try another browser (e.g. Chrome).'
+            : 'Si se queda en "Procesando..." más de 1–2 minutos, revisa Mis entradas o prueba otro navegador (p. ej. Chrome).'}
+        </p>
+      )}
     </form>
   );
+};
+
+// Timeout para cada petición de estado (evita colgarse si la API no responde, p. ej. en Firefox)
+const PAYMENT_STATUS_REQUEST_TIMEOUT_MS = 15_000;
+
+const getPaymentStatusWithTimeout = (orderId: number) => {
+  return Promise.race([
+    dameTicketsAPI.getPaymentStatus(orderId),
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('REQUEST_TIMEOUT')),
+        PAYMENT_STATUS_REQUEST_TIMEOUT_MS
+      )
+    ),
+  ]);
 };
 
 // Función para verificar el estado del pago con polling
@@ -168,7 +205,7 @@ const checkPaymentStatus = async (
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       console.log(`🔄 Intento ${attempt + 1}/${maxAttempts} - Verificando estado del pago...`);
-      const response = await dameTicketsAPI.getPaymentStatus(orderId);
+      const response = await getPaymentStatusWithTimeout(orderId);
       
       if (!response.success) {
         console.error(`❌ Error en respuesta del API:`, response.error);
@@ -209,12 +246,14 @@ const checkPaymentStatus = async (
         }
       } else if (order.status === 'FAILED') {
         console.error(`❌ Pago fallido: ${order.error_message || 'Unknown error'}`);
-        resetLoadingStates();
+        if (setLoading) setLoading(false);
+        if (setIsProcessing) setIsProcessing(false);
         onError(order.error_message || (language === 'en' ? 'Payment failed' : 'El pago falló'));
         return;
       } else if (order.status === 'CANCELLED') {
         console.warn(`⚠️ Pago cancelado`);
-        resetLoadingStates();
+        if (setLoading) setLoading(false);
+        if (setIsProcessing) setIsProcessing(false);
         onError(language === 'en' ? 'Payment was cancelled' : 'El pago fue cancelado');
         return;
       } else if (order.status === 'PENDING') {
@@ -264,16 +303,18 @@ const checkPaymentStatus = async (
       }
     } catch (error) {
       console.error(`❌ Error en intento ${attempt + 1}:`, error);
+      const isRequestTimeout = error instanceof Error && error.message === 'REQUEST_TIMEOUT';
       if (attempt === maxAttempts - 1) {
-        // Resetear estados de loading en caso de error
         if (setLoading) setLoading(false);
         if (setIsProcessing) setIsProcessing(false);
-        onError(error instanceof Error 
-          ? error.message 
-          : (language === 'en' ? 'Unknown error occurred' : 'Ocurrió un error desconocido'));
+        const message = isRequestTimeout
+          ? (language === 'en'
+              ? 'The server is taking too long to respond. Please check My Tickets in a few minutes or try another browser.'
+              : 'El servidor tarda mucho en responder. Revisa Mis entradas en unos minutos o prueba otro navegador.')
+          : (error instanceof Error ? error.message : (language === 'en' ? 'Unknown error occurred' : 'Ocurrió un error desconocido'));
+        onError(message);
         return;
       }
-      // En caso de error de red, esperar un poco más antes de reintentar
       await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
   }

@@ -44,6 +44,8 @@ import FifaStreet from "./pages/FifaStreet";
 import { InterestsModalWrapper } from "./components/InterestsModalWrapper";
 import { MembershipModalWrapper } from "./components/MembershipModalWrapper";
 import RegisterPopup from "./components/RegisterPopup";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import PaymentReturn from "./pages/PaymentReturn";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +57,7 @@ const App = () => (
       <CookieBanner />
       <BrowserRouter>
         <ScrollToTop />
+        <ErrorBoundary>
         <AuthProvider>
           <InterestsModalWrapper />
           <MembershipModalWrapper />
@@ -271,6 +274,8 @@ const App = () => (
                   <Route path="/about" element={<AboutUs />} />
                   <Route path="/tickets/hash/:hash" element={<TicketHashLookup />} />
                   <Route path="/ticket-hash" element={<TicketHashLookup />} />
+                  {/* Return from Stripe redirect (e.g. 3D Secure) - avoids blank screen on mobile */}
+                  <Route path="/pago-retorno" element={<PaymentReturn />} />
                   
                   {/* Eventos mensuales */}
                   <Route
@@ -295,6 +300,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
+        </ErrorBoundary>
         <WhatsAppButton />
       </BrowserRouter>
     </TooltipProvider>

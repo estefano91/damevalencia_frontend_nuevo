@@ -10,8 +10,9 @@
     "build:production": "vite build --mode production",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "npm run build:production && firebase deploy --only hosting",
-    "deploy:preview": "npm run build:production && firebase hosting:channel:deploy preview"
+    "deploy": "npm run build:production && npx firebase-tools deploy --only hosting",
+    "deploy:preview": "npm run build:production && npx firebase-tools hosting:channel:deploy preview",
+    "deploy:script": "bash deploy.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

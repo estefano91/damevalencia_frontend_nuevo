@@ -287,8 +287,15 @@ export const TicketPurchaseModal = ({
 
       if (response.success && response.data) {
         // Si hay checkout_url (Stripe), redirigir
-        if (response.data.checkout_url) {
-          window.location.href = response.data.checkout_url;
+        const checkoutUrl = response.data.checkout_url;
+        if (checkoutUrl && typeof checkoutUrl === 'string' && checkoutUrl.startsWith('http')) {
+          toast({
+            title: i18n.language === 'en' ? 'Redirecting to payment...' : 'Redirigiendo al pago...',
+            description: i18n.language === 'en'
+              ? 'If the page stays blank, check My Tickets or contact us.'
+              : 'Si la página se queda en blanco, revisa Mis entradas o contacta con nosotros.',
+          });
+          window.location.href = checkoutUrl;
           return;
         }
 
@@ -799,34 +806,41 @@ export const TicketPurchaseModal = ({
         )}
 
         {!showStripeForm && (
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={loading}
-            >
-              {i18n.language === 'en' ? 'Cancel' : 'Cancelar'}
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSubmit}
-              disabled={loading}
-              className="min-w-[120px]"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {i18n.language === 'en' ? 'Processing...' : 'Procesando...'}
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="mr-2 h-4 w-4" />
-                  {i18n.language === 'en' ? `Buy ${totalPrice}€` : `Comprar ${totalPrice}€`}
-                </>
-              )}
-            </Button>
-          </DialogFooter>
+          <>
+            <p className="text-xs text-muted-foreground px-6 pb-2">
+              {i18n.language === 'en'
+                ? 'If the screen goes blank after buying, check My Tickets or contact us.'
+                : 'Si la pantalla se queda en blanco al comprar, revisa Mis entradas o contacta con nosotros.'}
+            </p>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={loading}
+              >
+                {i18n.language === 'en' ? 'Cancel' : 'Cancelar'}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="min-w-[120px]"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {i18n.language === 'en' ? 'Processing...' : 'Procesando...'}
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    {i18n.language === 'en' ? `Buy ${totalPrice}€` : `Comprar ${totalPrice}€`}
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </>
         )}
       </DialogContent>
 
