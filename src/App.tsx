@@ -46,6 +46,8 @@ import { MembershipModalWrapper } from "./components/MembershipModalWrapper";
 import RegisterPopup from "./components/RegisterPopup";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import PaymentReturn from "./pages/PaymentReturn";
+import PromoterDashboard from "./pages/PromoterDashboard";
+import { PromoterLinkHandler } from "./components/PromoterLinkHandler";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +59,7 @@ const App = () => (
       <CookieBanner />
       <BrowserRouter>
         <ScrollToTop />
+        <PromoterLinkHandler />
         <ErrorBoundary>
         <AuthProvider>
           <InterestsModalWrapper />
@@ -276,6 +279,14 @@ const App = () => (
                   <Route path="/ticket-hash" element={<TicketHashLookup />} />
                   {/* Return from Stripe redirect (e.g. 3D Secure) - avoids blank screen on mobile */}
                   <Route path="/pago-retorno" element={<PaymentReturn />} />
+                  <Route
+                    path="/panel-promotor"
+                    element={
+                      <ProtectedRoute hideSidebar requireAuth>
+                        <PromoterDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
                   
                   {/* Eventos mensuales */}
                   <Route

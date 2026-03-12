@@ -17,11 +17,13 @@ import {
   Globe,
   Crown,
   Coins,
-  Flame
+  Flame,
+  Megaphone
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePromoter } from "@/hooks/usePromoter";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -43,6 +45,7 @@ const Navigation = ({ isMobile }: NavigationProps) => {
   const { i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { isPromoter, loading: promoterLoading } = usePromoter();
 
   const isEnglish = i18n.language === 'en' || i18n.language?.startsWith('en');
   const currentLang = isEnglish ? { code: 'en', name: 'English', flag: '🇬🇧' } : { code: 'es', name: 'Español', flag: '🇪🇸' };
@@ -230,6 +233,12 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                     <Ticket className="mr-2 h-4 w-4" />
                     {i18n.language === 'en' ? 'My Tickets' : 'Mis Entradas'}
                   </DropdownMenuItem>
+                  {!promoterLoading && isPromoter && (
+                    <DropdownMenuItem onClick={() => navigate("/panel-promotor")}>
+                      <Megaphone className="mr-2 h-4 w-4" />
+                      {i18n.language === 'en' ? 'Promoter panel' : 'Panel promotor'}
+                    </DropdownMenuItem>
+                  )}
                   {user.member?.wallet && (
                     <DropdownMenuItem 
                       onClick={() => navigate("/wallet")}

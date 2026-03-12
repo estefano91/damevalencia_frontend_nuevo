@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { getStoredPromoterCode } from '@/lib/promoterLink';
 import { Loader2, ShoppingCart, ArrowLeft } from 'lucide-react';
 
 interface TicketPurchaseModalProps {
@@ -88,6 +89,14 @@ export const TicketPurchaseModal = ({
   
   const [referralCode, setReferralCode] = useState('');
   
+  // Si el cliente llegó por enlace de promotor, rellenar código para que se envíe en el checkout
+  useEffect(() => {
+    if (open) {
+      const stored = getStoredPromoterCode();
+      if (stored) setReferralCode((prev) => prev || stored);
+    }
+  }, [open]);
+
   // Actualizar array de asistentes cuando cambia la cantidad
   useEffect(() => {
     setAttendees((prevAttendees) => {
