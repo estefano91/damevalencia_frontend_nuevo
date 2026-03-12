@@ -25,6 +25,8 @@ export interface IsPromoterResponse {
 export interface PromoterEvent {
   event_id: number;
   event_promoter_id: number;
+  /** Slug para construir enlace directo al evento: /eventos/{event_slug}?promoter=CODE */
+  event_slug?: string;
   event_title: string;
   event_date: string;
   sales_count: number;

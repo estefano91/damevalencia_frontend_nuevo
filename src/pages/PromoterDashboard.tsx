@@ -39,15 +39,17 @@ export default function PromoterDashboard() {
   const [eventsLoading, setEventsLoading] = useState(true);
   const [salesByEvent, setSalesByEvent] = useState<Record<number, PromoterSale[]>>({});
   const [loadingSales, setLoadingSales] = useState<Record<number, boolean>>({});
-  const [linkCopied, setLinkCopied] = useState(false);
+  const [copiedEventId, setCopiedEventId] = useState<number | null>(null);
   const isEn = i18n.language === 'en';
 
-  const promoterLink = promoter ? buildPromoterLink(promoter.code) : '';
-  const copyPromoterLink = async () => {
-    if (!promoterLink) return;
-    await navigator.clipboard.writeText(promoterLink);
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
+  const getEventLink = (ev: PromoterEvent) =>
+    promoter ? buildPromoterLink(promoter.code, ev.event_slug) : '';
+  const copyEventLink = async (ev: PromoterEvent) => {
+    const link = getEventLink(ev);
+    if (!link) return;
+    await navigator.clipboard.writeText(link);
+    setCopiedEventId(ev.event_id);
+    setTimeout(() => setCopiedEventId(null), 2000);
   };
 
   useEffect(() => {
@@ -194,56 +196,17 @@ export default function PromoterDashboard() {
           </Card>
         )}
 
-        {/* Enlace para compartir con clientes */}
-        {promoter && (
-          <Card className="mb-8 border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-800 dark:text-green-200">
-                <Link2 className="h-5 w-5" />
-                {isEn ? 'Your promoter link' : 'Tu enlace de promotor'}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {isEn
-                  ? 'Share this link with your audience. When they buy tickets through it, you earn your commission.'
-                  : 'Comparte este enlace con tu público. Cuando compren entradas a través de él, tú ganas tu comisión.'}
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Input
-                  readOnly
-                  value={promoterLink}
-                  className="font-mono text-sm bg-background"
-                />
-                <Button onClick={copyPromoterLink} variant="secondary" className="shrink-0 gap-2">
-                  {linkCopied ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      {isEn ? 'Copied!' : '¡Copiado!'}
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4" />
-                      {isEn ? 'Copy link' : 'Copiar enlace'}
-                    </>
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {isEn
-                  ? 'The link can be used for any event. The client will have your code applied automatically at checkout.'
-                  : 'El enlace sirve para cualquier evento. El cliente tendrá tu código aplicado automáticamente al comprar.'}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Eventos */}
+        {/* Eventos con enlace propio para compartir */}
         <div>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <h2 className="text-xl font-semibold mb-2 flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
             {isEn ? 'Events where you are promoter' : 'Eventos donde eres promotor'}
           </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {isEn
+              ? 'Share each event link with your audience. When they buy through it, you earn your commission.'
+              : 'Comparte el enlace de cada evento con tu público. Si compran a través de él, ganas tu comisión.'}
+          </p>
           {eventsLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-28 w-full" />
@@ -265,31 +228,63 @@ export default function PromoterDashboard() {
                   onOpenChange={(open) => open && loadSales(ev.event_id)}
                 >
                   <Card>
-                    <CollapsibleTrigger asChild>
-                      <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <CardTitle className="text-lg">{ev.event_title}</CardTitle>
-                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                              <Calendar className="h-4 w-4" />
-                              {formatDate(ev.event_date)}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="secondary">
-                              {ev.sales_count} {isEn ? 'sales' : 'ventas'}
-                            </Badge>
-                            <Badge variant="outline" className="text-green-600 dark:text-green-400">
-                              {ev.total_commission}€
-                            </Badge>
-                            <Badge variant={ev.payment_status === 'TO_PAY' ? 'default' : 'secondary'}>
-                              {ev.payment_status}
-                            </Badge>
-                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                          </div>
+                    <CardHeader className="space-y-3">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <CardTitle className="text-lg">{ev.event_title}</CardTitle>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                            <Calendar className="h-4 w-4" />
+                            {formatDate(ev.event_date)}
+                          </p>
                         </div>
-                      </CardHeader>
-                    </CollapsibleTrigger>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary">
+                            {ev.sales_count} {isEn ? 'sales' : 'ventas'}
+                          </Badge>
+                          <Badge variant="outline" className="text-green-600 dark:text-green-400">
+                            {ev.total_commission}€
+                          </Badge>
+                          <Badge variant={ev.payment_status === 'TO_PAY' ? 'default' : 'secondary'}>
+                            {ev.payment_status}
+                          </Badge>
+                        </div>
+                      </div>
+                      {/* Enlace de este evento para compartir */}
+                      {promoter && (
+                        <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+                          <Link2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <Input
+                            readOnly
+                            value={getEventLink(ev)}
+                            className="font-mono text-xs bg-muted/50 flex-1 min-w-0 max-w-md"
+                          />
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={(e) => { e.stopPropagation(); copyEventLink(ev); }}
+                            className="gap-1.5 shrink-0"
+                          >
+                            {copiedEventId === ev.event_id ? (
+                              <>
+                                <Check className="h-3.5 w-3.5" />
+                                {isEn ? 'Copied!' : '¡Copiado!'}
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3.5 w-3.5" />
+                                {isEn ? 'Copy link' : 'Copiar enlace'}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="w-full justify-center gap-1">
+                          {isEn ? 'View sales' : 'Ver ventas'}
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </CardHeader>
                     <CollapsibleContent>
                       <CardContent className="pt-0 border-t">
                         {loadingSales[ev.event_id] ? (
