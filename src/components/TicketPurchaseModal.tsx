@@ -646,8 +646,8 @@ export const TicketPurchaseModal = ({
                   <div className="flex justify-between items-center gap-4 w-full">
                     <span className="text-xs text-muted-foreground">
                       {i18n.language === 'en'
-                        ? `Payment gateway fee (Stripe)${isCommissionEstimated ? ' (approx.)' : ''}`
-                        : `Comisión pasarela (Stripe)${isCommissionEstimated ? ' (aprox.)' : ''}`}:
+                        ? `Gastos de gestión${isCommissionEstimated ? ' (approx.)' : ''}`
+                        : `Gastos de gestión${isCommissionEstimated ? ' (aprox.)' : ''}`}:
                     </span>
                     <span className="text-xs text-muted-foreground">{commissionStr}€</span>
                   </div>
