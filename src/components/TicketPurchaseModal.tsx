@@ -425,30 +425,16 @@ export const TicketPurchaseModal = ({
         checkoutRequest.promoter_code = codeToSend.trim();
       }
 
-      // Log del request completo
-      console.log('📤 REQUEST al endpoint /api/tickets/online/checkout/:');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(JSON.stringify(checkoutRequest, null, 2));
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('📋 Detalles del request:');
-      console.log('  - ticket_type_id:', checkoutRequest.ticket_type_id);
-      console.log('  - quantity:', checkoutRequest.quantity);
-      console.log('  - attendee_data (cantidad):', checkoutRequest.attendee_data.length);
-      console.log('  - promoter_code:', checkoutRequest.promoter_code || '(no incluido)');
-      console.log('  - attendee_data detallado:');
-      checkoutRequest.attendee_data.forEach((attendee, index) => {
-        console.log(`    Asistente ${index + 1}:`, {
-          full_name: attendee.full_name,
-          email: attendee.email,
-          phone: attendee.phone || '(no incluido)',
-          gender: attendee.gender || '(no incluido)',
-          role: attendee.role || '(no incluido)',
-          id_document: attendee.id_document || '(no incluido)',
-          country: attendee.country || '(no incluido)',
-          city: attendee.city || '(no incluido)',
-          additional_notes: attendee.additional_notes || '(no incluido)',
-        });
-      });
+      // ——— JSON que se envía al backend (fácil de ver en consola) ———
+      const jsonEnviado = JSON.stringify(checkoutRequest, null, 2);
+      console.log(
+        '%c[DAME CHECKOUT] JSON enviado a POST /api/tickets/online/checkout/',
+        'font-weight: bold; font-size: 13px; color: #0ea5e9; padding: 4px 0;'
+      );
+      console.log(checkoutRequest);
+      console.log('%cCopia del JSON (texto):', 'font-weight: bold;');
+      console.log(jsonEnviado);
+      // ———————————————————————————————————————————————————————————————
 
       const response = await dameTicketsAPI.initiateStripeCheckout(checkoutRequest);
 
