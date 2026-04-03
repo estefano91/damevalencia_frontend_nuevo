@@ -896,6 +896,14 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
             });
           });
         }
+
+        // Orden global por fecha de ocurrencia (no por categoría): mezcla todos los eventos
+        allEvents.sort((a, b) => {
+          const tA = new Date(a.event.start).getTime();
+          const tB = new Date(b.event.start).getTime();
+          if (tA !== tB) return tA - tB;
+          return a.event.event_slug.localeCompare(b.event.event_slug);
+        });
         
         if (allEvents.length === 0) {
           if (selectedCategoryId !== null) {
@@ -915,9 +923,9 @@ const EventsSection = ({ maxEventsPerCategory = 3 }: EventsSectionProps) => {
         
         return (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {allEvents.map(({ event, categoryColor, categoryName, isRecommended }, index) => (
+            {allEvents.map(({ event, categoryColor, categoryName, isRecommended }) => (
               <EventCard 
-                key={`${event.event_slug}-${index}`} 
+                key={event.event_slug} 
                 event={event} 
                 categoryColor={categoryColor}
                 categoryName={categoryName}
