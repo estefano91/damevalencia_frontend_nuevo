@@ -17,7 +17,6 @@ import {
   Globe,
   Crown,
   Coins,
-  Flame,
   Megaphone
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -109,19 +108,6 @@ const Navigation = ({ isMobile }: NavigationProps) => {
             >
               <Users className="h-4 w-4" />
               <span className="hidden lg:inline">{i18n.language === 'en' ? 'Community' : 'Comunidad'}</span>
-            </Button>
-
-            {/* Fallas */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/fallas")}
-              className="flex items-center gap-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
-              title={i18n.language === 'en' ? 'Fallas' : 'Fallas'}
-              aria-label={i18n.language === 'en' ? 'Fallas' : 'Fallas'}
-            >
-              <Flame className="h-4 w-4" />
-              <span className="hidden lg:inline">Fallas</span>
             </Button>
 
             {/* Club DAME */}
