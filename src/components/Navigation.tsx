@@ -221,21 +221,23 @@ const Navigation = ({ isMobile }: NavigationProps) => {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            {/* DameCoins - solo si tiene member con wallet */}
-            {user?.member?.wallet && (
-              <button
-                onClick={() => navigate("/wallet")}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/15 to-yellow-500/15 dark:from-amber-500/25 dark:to-yellow-500/25 border border-amber-400/40 dark:border-amber-500/50 hover:from-amber-500/25 hover:to-yellow-500/25 dark:hover:from-amber-500/35 dark:hover:to-yellow-500/35 transition-all duration-200 group"
-                title={i18n.language === 'en' ? 'DameCoins' : 'DameCoins'}
-                aria-label={i18n.language === 'en' ? 'DameCoins' : 'DameCoins'}
+            {/* QR miembro (modal) — DameCoins solo en el menú del avatar */}
+            {user?.member && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMemberQrOpen(true)}
+                className="flex items-center gap-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                title={i18n.language === "en" ? "Member QR code" : "QR de miembro"}
+                aria-label={i18n.language === "en" ? "Member QR code" : "QR de miembro"}
               >
-                <Coins className="h-4 w-4 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold text-amber-700 dark:text-amber-300 tabular-nums">
-                  {parseFloat(user.member.wallet.balance || "0").toFixed(0)}
+                <QrCode className="h-4 w-4" />
+                <span className="hidden sm:inline">
+                  {i18n.language === "en" ? "Member QR" : "QR miembro"}
                 </span>
-              </button>
+              </Button>
             )}
-            
+
             {/* Mi Perfil / Invitado */}
             {user ? (
               <DropdownMenu>
