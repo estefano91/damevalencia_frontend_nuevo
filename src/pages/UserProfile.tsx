@@ -29,6 +29,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import QRCode from "qrcode";
 import { useToast } from "@/hooks/use-toast";
+import { getMemberQrPayload } from "@/lib/memberCode";
 import { interestsApi } from "@/api/interests";
 import { walletApi } from "@/api/wallet";
 import type { UserInterest } from "@/types/interests";
@@ -137,26 +138,7 @@ const UserProfile = () => {
   }
 
   const member = user.member;
-
-  // Función para generar el código de miembro
-  const generateMemberCode = (): string | null => {
-    if (!member || !user) return null;
-    
-    // Mapear tipo de documento a letra
-    const documentTypeMap: Record<string, string> = {
-      'NIE': 'N',
-      'DNI': 'D',
-      'PASAPORTE': 'P'
-    };
-    
-    const docLetter = documentTypeMap[member.document_type] || 'D';
-    const userId = user.id;
-    const docNumber = member.document_number;
-    
-    return `${userId}-${docLetter}-${docNumber}`;
-  };
-
-  const memberCode = generateMemberCode();
+  const memberCode = getMemberQrPayload(user);
 
   // Generar QR code cuando el código esté disponible
   useEffect(() => {

@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { 
   Home, 
@@ -17,12 +19,16 @@ import {
   Globe,
   Crown,
   Coins,
-  Megaphone
+  Megaphone,
+  QrCode,
+  Copy,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePromoter } from "@/hooks/usePromoter";
+import { useToast } from "@/hooks/use-toast";
+import { getMemberQrPayload } from "@/lib/memberCode";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -31,6 +37,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 // Logos DAME para light y dark mode
 import logoDameLight from "@/assets/1.png";
 import logoDameDark from "@/assets/2.png";
@@ -45,6 +58,33 @@ const Navigation = ({ isMobile }: NavigationProps) => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { isPromoter, loading: promoterLoading } = usePromoter();
+  const { toast } = useToast();
+  const [memberQrOpen, setMemberQrOpen] = useState(false);
+  const [memberQrDataUrl, setMemberQrDataUrl] = useState<string | null>(null);
+
+  const memberCode = user ? getMemberQrPayload(user) : null;
+
+  useEffect(() => {
+    if (!memberQrOpen || !memberCode) {
+      setMemberQrDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(memberCode, {
+      width: 240,
+      margin: 2,
+      color: { dark: "#000000", light: "#FFFFFF" },
+    })
+      .then((url) => {
+        if (!cancelled) setMemberQrDataUrl(url);
+      })
+      .catch((err) => {
+        console.error("Error generating member QR:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [memberQrOpen, memberCode]);
 
   const isEnglish = i18n.language === 'en' || i18n.language?.startsWith('en');
   const currentLang = isEnglish ? { code: 'en', name: 'English', flag: '🇬🇧' } : { code: 'es', name: 'Español', flag: '🇪🇸' };
@@ -59,7 +99,27 @@ const Navigation = ({ isMobile }: NavigationProps) => {
     navigate("/register");
   };
 
+  const copyMemberCode = async () => {
+    if (!memberCode) return;
+    try {
+      await navigator.clipboard.writeText(memberCode);
+      toast({
+        title: i18n.language === "en" ? "Copied" : "Copiado",
+        description:
+          i18n.language === "en"
+            ? "Member code copied to clipboard"
+            : "Código de miembro copiado al portapapeles",
+      });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: i18n.language === "en" ? "Could not copy" : "No se pudo copiar",
+      });
+    }
+  };
+
   return (
+    <>
     <nav className="border-b bg-card fixed top-0 left-0 right-0 z-50 shadow-sm">
       <div className="container mx-auto px-2 sm:px-4">
         <div className="flex items-center justify-between h-20 sm:h-24 md:h-28">
@@ -215,6 +275,15 @@ const Navigation = ({ isMobile }: NavigationProps) => {
                     <User className="mr-2 h-4 w-4" />
                     {i18n.language === 'en' ? 'Profile' : 'Mi Perfil'}
                   </DropdownMenuItem>
+                  {user.member && (
+                    <DropdownMenuItem
+                      onClick={() => setMemberQrOpen(true)}
+                      className="text-purple-600 dark:text-purple-400 focus:text-purple-700 dark:focus:text-purple-300"
+                    >
+                      <QrCode className="mr-2 h-4 w-4" />
+                      {i18n.language === 'en' ? 'Member QR code' : 'QR de miembro'}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => navigate("/mis-entradas")}>
                     <Ticket className="mr-2 h-4 w-4" />
                     {i18n.language === 'en' ? 'My Tickets' : 'Mis Entradas'}
@@ -310,6 +379,76 @@ const Navigation = ({ isMobile }: NavigationProps) => {
         </div>
       </div>
     </nav>
+
+    <Dialog open={memberQrOpen} onOpenChange={setMemberQrOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {i18n.language === "en" ? "Member QR code" : "QR de miembro"}
+          </DialogTitle>
+          <DialogDescription>
+            {memberCode
+              ? i18n.language === "en"
+                ? "Show this at the venue to identify yourself as a DAME member."
+                : "Muéstralo en el local para identificarte como miembro DAME."
+              : i18n.language === "en"
+                ? "Your member QR is created from the ID document on file. Upload or complete your document to see it here."
+                : "El QR de miembro se genera a partir del documento de identidad que tengas registrado. Sube o completa tu documento para verlo aquí."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col items-center gap-4 py-2">
+          {!memberCode ? (
+            <div className="flex w-full flex-col gap-3">
+              <p className="text-sm text-center text-foreground">
+                {i18n.language === "en"
+                  ? "Go to member details to upload your ID (DNI, NIE or passport) and document number. After saving, open this again to see your QR."
+                  : "Entra en «Editar información de miembro» para subir tu documento (DNI, NIE o pasaporte) y tu número. Al guardar, vuelve aquí para ver el QR."}
+              </p>
+              <Button
+                type="button"
+                className="w-full"
+                onClick={() => {
+                  setMemberQrOpen(false);
+                  navigate("/editar-miembro");
+                }}
+              >
+                <IdCard className="mr-2 h-4 w-4" />
+                {i18n.language === "en" ? "Upload / complete document" : "Subir o completar documento"}
+              </Button>
+            </div>
+          ) : (
+            <>
+              {memberQrDataUrl ? (
+                <img
+                  src={memberQrDataUrl}
+                  alt=""
+                  className="rounded-lg border bg-white p-2 w-[240px] h-[240px] object-contain"
+                />
+              ) : (
+                <div className="flex h-[240px] w-[240px] items-center justify-center rounded-lg border bg-muted text-sm text-muted-foreground">
+                  {i18n.language === "en" ? "Loading…" : "Cargando…"}
+                </div>
+              )}
+              <div className="flex w-full flex-col gap-2">
+                <p className="text-center font-mono text-xs break-all text-muted-foreground">
+                  {memberCode}
+                </p>
+                <Button type="button" variant="outline" size="sm" className="w-full" onClick={copyMemberCode}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  {i18n.language === "en" ? "Copy code" : "Copiar código"}
+                </Button>
+              </div>
+              <p className="text-xs text-center text-muted-foreground px-1">
+                {i18n.language === "en"
+                  ? "This QR is based on your registered ID. Update it under «Edit member info» if your details change."
+                  : "Este QR se basa en tu documento registrado. Actualízalo en «Editar información de miembro» si cambian tus datos."}
+              </p>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 
