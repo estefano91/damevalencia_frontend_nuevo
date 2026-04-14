@@ -13,6 +13,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, IdCard, AlertCircle, CheckCircle } from "lucide-react";
 import type { CreateMemberPayload } from "@types/auth";
+import {
+  validateMemberDocumentNumber,
+  validateMemberBirthDate,
+} from "@/lib/memberFormValidation";
 
 const Membership = () => {
   const navigate = useNavigate();
@@ -27,63 +31,6 @@ const Membership = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [acceptedPrivacyPolicy, setAcceptedPrivacyPolicy] = useState(false);
-
-  // Validaciones de formato de documento
-  const validateDocument = (type: string, number: string): string | null => {
-    const trimmed = number.trim().toUpperCase();
-    
-    if (type === "DNI") {
-      // DNI: 8 dígitos + letra
-      const dniRegex = /^\d{8}[A-Z]$/;
-      if (!dniRegex.test(trimmed)) {
-        return i18n.language === 'en' 
-          ? "Invalid DNI format (8 digits + letter)"
-          : "Formato de DNI inválido (8 dígitos + letra)";
-      }
-    } else if (type === "NIE") {
-      // NIE: X/Y/Z + 7 dígitos + letra
-      const nieRegex = /^[XYZ]\d{7}[A-Z]$/;
-      if (!nieRegex.test(trimmed)) {
-        return i18n.language === 'en'
-          ? "Invalid NIE format (X/Y/Z + 7 digits + letter)"
-          : "Formato de NIE inválido (X/Y/Z + 7 dígitos + letra)";
-      }
-    } else if (type === "PASAPORTE") {
-      // PASAPORTE: Mínimo 6 caracteres
-      if (trimmed.length < 6) {
-        return i18n.language === 'en'
-          ? "Passport must have at least 6 characters"
-          : "El pasaporte debe tener al menos 6 caracteres";
-      }
-    }
-    
-    return null;
-  };
-
-  const validateBirthDate = (date: string): string | null => {
-    if (!date) {
-      return i18n.language === 'en' ? "Birth date is required" : "La fecha de nacimiento es requerida";
-    }
-    
-    const birthDate = new Date(date);
-    const today = new Date();
-    
-    if (birthDate > today) {
-      return i18n.language === 'en'
-        ? "Birth date cannot be in the future"
-        : "La fecha de nacimiento no puede ser futura";
-    }
-    
-    // Validar que la edad sea razonable (máximo 150 años)
-    const age = today.getFullYear() - birthDate.getFullYear();
-    if (age > 150) {
-      return i18n.language === 'en'
-        ? "Please enter a valid birth date"
-        : "Por favor ingresa una fecha de nacimiento válida";
-    }
-    
-    return null;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,9 +53,13 @@ const Membership = () => {
       return;
     }
 
-    // Validaciones
-    const docError = validateDocument(formData.document_type, formData.document_number);
-    const dateError = validateBirthDate(formData.birth_date);
+    const isEn = i18n.language === "en";
+    const docError = validateMemberDocumentNumber(
+      formData.document_type,
+      formData.document_number,
+      isEn
+    );
+    const dateError = validateMemberBirthDate(formData.birth_date, isEn);
 
     if (docError || dateError) {
       setErrors({

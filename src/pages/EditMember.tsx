@@ -16,6 +16,10 @@ import {
   Calendar
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  validateMemberDocumentNumber,
+  validateMemberBirthDate,
+} from "@/lib/memberFormValidation";
 
 const EditMember = () => {
   const navigate = useNavigate();
@@ -24,6 +28,7 @@ const EditMember = () => {
   const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     document_type: "DNI" as "DNI" | "PASAPORTE" | "NIE",
@@ -62,6 +67,27 @@ const EditMember = () => {
     e.preventDefault();
     if (!user?.member) return;
 
+    setErrors({});
+    const isEn = i18n.language === "en";
+    const docError = validateMemberDocumentNumber(
+      formData.document_type,
+      formData.document_number,
+      isEn
+    );
+    const dateError = validateMemberBirthDate(formData.birth_date, isEn);
+    if (docError || dateError) {
+      setErrors({
+        ...(docError && { document_number: docError }),
+        ...(dateError && { birth_date: dateError }),
+      });
+      toast({
+        title: isEn ? "Check the form" : "Revisa el formulario",
+        description: docError || dateError,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const accessToken = localStorage.getItem('dame_access_token');
@@ -82,7 +108,8 @@ const EditMember = () => {
       if (formData.document_number.trim() !== user.member.document_number) {
         payload.document_number = formData.document_number.trim().toUpperCase();
       }
-      if (formData.birth_date && formData.birth_date !== user.member.birth_date.split('T')[0]) {
+      const existingBirth = user.member.birth_date?.split("T")[0] ?? "";
+      if (formData.birth_date && formData.birth_date !== existingBirth) {
         payload.birth_date = formData.birth_date;
       }
 
@@ -220,8 +247,13 @@ const EditMember = () => {
                   value={formData.document_number}
                   onChange={(e) => setFormData({ ...formData, document_number: e.target.value })}
                   placeholder={i18n.language === 'en' ? 'Enter document number' : 'Ingresa el número de documento'}
-                  className="uppercase"
+                  className={`uppercase ${errors.document_number ? "border-red-500" : ""}`}
+                  required
+                  aria-invalid={Boolean(errors.document_number)}
                 />
+                {errors.document_number && (
+                  <p className="text-xs text-red-500">{errors.document_number}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -234,7 +266,13 @@ const EditMember = () => {
                   value={formData.birth_date}
                   onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
                   max={new Date().toISOString().split('T')[0]}
+                  required
+                  className={errors.birth_date ? "border-red-500" : ""}
+                  aria-invalid={Boolean(errors.birth_date)}
                 />
+                {errors.birth_date && (
+                  <p className="text-xs text-red-500">{errors.birth_date}</p>
+                )}
               </div>
 
               <div className="flex gap-4 pt-4">
