@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { authApi } from "@api/auth";
 import type { ApiUser } from "@types/auth";
 import type { DameProfile } from "@/integrations/dame-api/types";
+import { clearMemberDocumentReminderDismissed } from "@/lib/memberDocumentReminderStorage";
 
 interface AuthResult {
   success: boolean;
@@ -175,6 +176,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Guardar tokens
         localStorage.setItem('dame_refresh_token', response.data.tokens.refresh);
         localStorage.setItem('dame_access_token', response.data.tokens.access);
+        clearMemberDocumentReminderDismissed();
 
         // Actualizar el usuario
         const profile = convertApiUserToProfile(response.data.user);
@@ -219,6 +221,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (response.data.tokens?.access && response.data.tokens?.refresh && response.data.user) {
         localStorage.setItem('dame_refresh_token', response.data.tokens.refresh);
         localStorage.setItem('dame_access_token', response.data.tokens.access);
+        clearMemberDocumentReminderDismissed();
 
         const profile = convertApiUserToProfile(response.data.user);
         if (profile) {
@@ -289,6 +292,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Guardar tokens
         localStorage.setItem('dame_refresh_token', response.data.tokens.refresh);
         localStorage.setItem('dame_access_token', response.data.tokens.access);
+        clearMemberDocumentReminderDismissed();
 
         // Actualizar el usuario
         if (response.data.user) {
@@ -323,7 +327,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Limpiar tokens
     localStorage.removeItem('dame_access_token');
     localStorage.removeItem('dame_refresh_token');
-    
+    clearMemberDocumentReminderDismissed();
+
     // Limpiar usuario
     setUser(null);
   };

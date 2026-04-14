@@ -48,6 +48,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import PaymentReturn from "./pages/PaymentReturn";
 import PromoterDashboard from "./pages/PromoterDashboard";
 import { PromoterLinkHandler } from "./components/PromoterLinkHandler";
+import { MemberDocumentReminderModal } from "./components/MemberDocumentReminderModal";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
         <AuthProvider>
           <InterestsModalWrapper />
           <MembershipModalWrapper />
+          <MemberDocumentReminderModal />
           <RegisterPopup />
           <Routes>
                   {/* Redirigir directamente al dashboard para desarrollo */}
