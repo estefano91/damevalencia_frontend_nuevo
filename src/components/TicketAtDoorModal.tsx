@@ -29,6 +29,13 @@ import { Loader2, Users, User, Mail, Phone, CreditCard, MapPin, FileText, Euro, 
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TicketReserveTerms } from '@/components/TicketReserveTerms';
+import {
+  JackJillAttendeeFields,
+  defaultJackJillSlice,
+  validateJackJillSlice,
+  buildJackJillPayload,
+  type JackJillAttendeeSlice,
+} from '@/components/JackJillAttendeeFields';
 
 interface TicketAtDoorModalProps {
   ticketType: TicketTypeDetail;
@@ -37,7 +44,7 @@ interface TicketAtDoorModalProps {
   onSuccess?: () => void;
 }
 
-interface AttendeeData {
+interface AttendeeData extends JackJillAttendeeSlice {
   full_name: string;
   email: string;
   phone?: string;
@@ -62,17 +69,18 @@ export const TicketAtDoorModal = ({
   const [loading, setLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [jjPhotoUploadsPending, setJjPhotoUploadsPending] = useState(0);
   // Número de invitados = número de tickets generados
   const [numberOfAttendees, setNumberOfAttendees] = useState(1);
   
   // Array de invitados: cada invitado genera un ticket
-  const [attendees, setAttendees] = useState<AttendeeData[]>(() => {
-    // Inicializar con 1 invitado
-    return [{
+  const [attendees, setAttendees] = useState<AttendeeData[]>(() => [
+    {
       full_name: '',
       email: '',
-    }];
-  });
+      ...defaultJackJillSlice(ticketType),
+    },
+  ]);
 
   // Resetear estado cuando el modal se abre (solo una vez cuando cambia de false a true)
   const prevOpenRef = useRef(open);
@@ -82,10 +90,13 @@ export const TicketAtDoorModal = ({
     if (open && !prevOpenRef.current) {
       console.log('🔄 TicketAtDoorModal: Reseteando estado al abrir el modal');
       setNumberOfAttendees(1);
-      setAttendees([{
-        full_name: '',
-        email: '',
-      }]);
+      setAttendees([
+        {
+          full_name: '',
+          email: '',
+          ...defaultJackJillSlice(ticketType),
+        },
+      ]);
       setTermsAccepted(false);
       setLoading(false);
     }
@@ -123,6 +134,7 @@ export const TicketAtDoorModal = ({
         newAttendees.push({
           full_name: '',
           email: '',
+          ...defaultJackJillSlice(ticketType),
         });
       }
     }
@@ -138,6 +150,18 @@ export const TicketAtDoorModal = ({
   };
 
   // Actualizar datos de un invitado específico
+  const bumpJjPhotoUploadDelta = (delta: 1 | -1) => {
+    setJjPhotoUploadsPending((c) => Math.max(0, c + delta));
+  };
+
+  const patchJackJillAttendee = (attendeeIndex: number, patch: Partial<JackJillAttendeeSlice>) => {
+    setAttendees((prev) => {
+      const next = [...prev];
+      next[attendeeIndex] = { ...next[attendeeIndex], ...patch };
+      return next;
+    });
+  };
+
   const updateAttendee = (
     attendeeIndex: number,
     field: keyof AttendeeData,
@@ -240,6 +264,29 @@ export const TicketAtDoorModal = ({
       return false;
     }
 
+    const jjSlice: JackJillAttendeeSlice = {
+      jack_jill_participates: attendee.jack_jill_participates,
+      instagram: attendee.instagram,
+      photo_url: attendee.photo_url,
+      buyer_photo_image_id: attendee.buyer_photo_image_id,
+    };
+    const jjErr = validateJackJillSlice(
+      ticketType,
+      jjSlice,
+      i18n.language === 'en'
+        ? `attendee ${attendeeIndex + 1}`
+        : `invitado ${attendeeIndex + 1}`,
+      i18n.language === 'en'
+    );
+    if (jjErr) {
+      toast({
+        title: i18n.language === 'en' ? 'Validation error' : 'Error de validación',
+        description: jjErr,
+        variant: 'destructive',
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -311,6 +358,16 @@ export const TicketAtDoorModal = ({
         if (ticketType.require_city && attendee.city) {
           attendeeData.city = attendee.city.trim();
         }
+
+        Object.assign(
+          attendeeData,
+          buildJackJillPayload(ticketType, {
+            jack_jill_participates: attendee.jack_jill_participates,
+            instagram: attendee.instagram,
+            photo_url: attendee.photo_url,
+            buyer_photo_image_id: attendee.buyer_photo_image_id,
+          })
+        );
         
         return attendeeData;
       });
@@ -692,6 +749,21 @@ export const TicketAtDoorModal = ({
                   </div>
                 )}
               </div>
+
+              <JackJillAttendeeFields
+                ticketType={ticketType}
+                isEn={i18n.language === 'en'}
+                attendeeIndex={attendeeIndex}
+                fieldIdPrefix="at-door"
+                value={{
+                  jack_jill_participates: attendee.jack_jill_participates,
+                  instagram: attendee.instagram,
+                  photo_url: attendee.photo_url,
+                  buyer_photo_image_id: attendee.buyer_photo_image_id,
+                }}
+                onChange={(patch) => patchJackJillAttendee(attendeeIndex, patch)}
+                onPhotoUploadDelta={bumpJjPhotoUploadDelta}
+              />
             </Card>
           ))}
 
@@ -741,7 +813,7 @@ export const TicketAtDoorModal = ({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={loading}
+            disabled={loading || jjPhotoUploadsPending > 0}
             className="min-w-[100px]"
           >
             {i18n.language === 'en' ? 'Cancel' : 'Cancelar'}

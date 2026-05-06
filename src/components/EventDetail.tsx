@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { dameEventsAPI, formatPerennialSchedule, getPerennialScheduleGroups } from "@/integrations/dame-api/events";
 import type { DameEventDetail, EventOrganizer } from "@/integrations/dame-api/events";
-import type { Ticket as TicketType, TicketTypeDetail } from "@/types/tickets";
+import type { Ticket as TicketType, TicketTypeDetail, PromoterPricingTicketRow } from "@/types/tickets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +48,11 @@ import { TicketAtDoorModal } from "@/components/TicketAtDoorModal";
 import { TicketPurchaseModal } from "@/components/TicketPurchaseModal";
 import { TicketReserveModal } from "@/components/TicketReserveModal";
 import { dameTicketsAPI } from "@/integrations/dame-api/tickets";
+import {
+  capturePromoterCodeFromUrl,
+  getStoredPromoterCode,
+  mapPromoterPricingByTicketTypeId,
+} from "@/lib/promoterLink";
 import googleMapsIcon from "@/assets/mapsgoogle.png";
 import wazeIcon from "@/assets/wazeicon.png";
 import WhatsAppIcon from "@/assets/WhatsApp.svg.webp";
@@ -81,6 +86,13 @@ const EventDetail = () => {
   const [reserveModalOpen, setReserveModalOpen] = useState(false);
   const [selectedTicketType, setSelectedTicketType] = useState<TicketTypeDetail | null>(null);
   const [ticketsSelectionModalOpen, setTicketsSelectionModalOpen] = useState(false);
+  const [promoterPricingByTypeId, setPromoterPricingByTypeId] = useState<
+    Map<number, PromoterPricingTicketRow>
+  >(() => new Map());
+  const [promoterPricingMeta, setPromoterPricingMeta] = useState<{
+    apiValid: boolean;
+    message?: string;
+  } | null>(null);
   const pendingAttendKey = 'dame_pending_attend';
   const locale = i18n.language === 'en' ? 'en-US' : 'es-ES';
   
@@ -212,7 +224,30 @@ const EventDetail = () => {
           setMinTicketPrice(null);
           setMaxTicketPrice(null);
         }
+
+        capturePromoterCodeFromUrl(false);
+        const promoCode = getStoredPromoterCode();
+        setPromoterPricingMeta(null);
+        setPromoterPricingByTypeId(new Map());
+        if (promoCode?.trim() && event.id) {
+          try {
+            const prRes = await dameTicketsAPI.getPromoterPricing(event.id, promoCode);
+            if (prRes.success && prRes.data) {
+              setPromoterPricingMeta({
+                apiValid: prRes.data.valid === true,
+                message: typeof prRes.data.message === 'string' ? prRes.data.message : undefined,
+              });
+              if (prRes.data.valid === true) {
+                setPromoterPricingByTypeId(mapPromoterPricingByTicketTypeId(prRes.data));
+              }
+            }
+          } catch (pe) {
+            console.warn('EventDetail: promoter-pricing', pe);
+          }
+        }
       } else {
+        setPromoterPricingMeta(null);
+        setPromoterPricingByTypeId(new Map());
         setAtDoorTicketType(null);
         setHasTickets(false);
         setAllTicketsSoldOut(false);
@@ -221,6 +256,8 @@ const EventDetail = () => {
       }
     } catch (err) {
       console.error('Error fetching ticket info:', err);
+      setPromoterPricingMeta(null);
+      setPromoterPricingByTypeId(new Map());
       setAtDoorTicketType(null);
       setHasTickets(false);
       setAllTicketsSoldOut(false);
@@ -378,6 +415,35 @@ const EventDetail = () => {
     }
     
     return `${fromPrice.toFixed(2)}€`;
+  };
+
+  const promoterRowForTicketType = (t: TicketTypeDetail) =>
+    promoterPricingMeta?.apiValid ? promoterPricingByTypeId.get(t.id) : undefined;
+
+  const formatTicketPriceWithPromoterCard = (ticketType: TicketTypeDetail) => {
+    const row = promoterRowForTicketType(ticketType);
+    const listAmount = ticketType.current_price || ticketType.base_price || '0';
+    const final = row?.final_unit_price?.trim();
+    const after = row?.price_after_promoter_discount?.trim();
+    const unitStr =
+      final !== undefined && final !== ''
+        ? final
+        : after !== undefined && after !== ''
+          ? after
+          : null;
+    if (unitStr === null || Number.isNaN(parseFloat(unitStr))) {
+      return {
+        primary: formatPrice(listAmount, ticketType.currency),
+        strike: undefined as string | undefined,
+      };
+    }
+    const u = parseFloat(unitStr);
+    const listNum = parseFloat(listAmount);
+    const strike =
+      row && listNum > 0 && Math.abs(listNum - u) > 0.005
+        ? formatPrice(listAmount, ticketType.currency)
+        : undefined;
+    return { primary: formatPrice(unitStr, ticketType.currency), strike };
   };
 
   const formatDuration = (minutes?: number): string => {
@@ -2324,6 +2390,21 @@ const EventDetail = () => {
           </DialogDescription>
         </DialogHeader>
 
+        {promoterPricingMeta && promoterPricingMeta.apiValid ? (
+          <Alert className="mx-6 border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
+            <AlertDescription>
+              {i18n.language === 'en'
+                ? 'Promoter link applied: listed prices reflect promoter discounts where configured.'
+                : 'Enlace de promotor aplicado: los precios muestran los descuentos configurados para este código.'}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        {promoterPricingMeta && !promoterPricingMeta.apiValid && promoterPricingMeta.message ? (
+          <Alert className="mx-6 bg-amber-50 border-amber-200 text-amber-950 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-100">
+            <AlertDescription>{promoterPricingMeta.message}</AlertDescription>
+          </Alert>
+        ) : null}
+
         <div className="space-y-4 py-4">
           {allTicketTypes
             .filter(t => t.is_on_sale)
@@ -2352,12 +2433,24 @@ const EventDetail = () => {
                           </p>
                         )}
                         <div className="flex items-center gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Euro className="h-4 w-4 text-purple-600" />
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Euro className="h-4 w-4 text-purple-600 shrink-0" />
                             <span className="font-bold text-lg">
                               {isFree 
                                 ? (i18n.language === 'en' ? 'Free' : 'Gratis')
-                                : formatPrice(ticketType.current_price || ticketType.base_price || '0')}
+                                : (() => {
+                                    const line = formatTicketPriceWithPromoterCard(ticketType);
+                                    return (
+                                      <>
+                                        {line.strike ? (
+                                          <span className="text-muted-foreground line-through font-normal text-sm mr-2">
+                                            {line.strike}
+                                          </span>
+                                        ) : null}
+                                        {line.primary}
+                                      </>
+                                    );
+                                  })()}
                             </span>
                           </div>
                           {ticketType.available_stock !== null && ticketType.available_stock <= 5 && (
@@ -2434,6 +2527,11 @@ const EventDetail = () => {
           setPurchaseModalOpen(false);
           setTicketsSelectionModalOpen(true);
         }}
+        promoterPricingRow={
+          promoterPricingMeta?.apiValid
+            ? promoterPricingByTypeId.get(selectedTicketType.id) ?? null
+            : null
+        }
       />
     )}
 

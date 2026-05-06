@@ -3,7 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { dameTicketsAPI } from '@/integrations/dame-api/tickets';
-import type { TicketTypeDetail, PurchaseTicketRequest, Ticket } from '@/types/tickets';
+import type {
+  TicketTypeDetail,
+  PurchaseTicketRequest,
+  Ticket,
+  PromoterPricingTicketRow,
+} from '@/types/tickets';
 import { StripeCheckout } from '@/components/StripeCheckout';
 import { PurchaseSuccessModal } from '@/components/PurchaseSuccessModal';
 import {
@@ -27,6 +32,13 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { getStoredPromoterCode, capturePromoterCodeFromUrl } from '@/lib/promoterLink';
+import {
+  JackJillAttendeeFields,
+  defaultJackJillSlice,
+  validateJackJillSlice,
+  buildJackJillPayload,
+  type JackJillAttendeeSlice,
+} from '@/components/JackJillAttendeeFields';
 import { Loader2, ShoppingCart, ArrowLeft } from 'lucide-react';
 
 interface TicketPurchaseModalProps {
@@ -35,6 +47,8 @@ interface TicketPurchaseModalProps {
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
   onBack?: () => void; // Callback para volver a la selección de entradas
+  /** Precios efectivos del endpoint promoter-pricing (si hay código válido). */
+  promoterPricingRow?: PromoterPricingTicketRow | null;
 }
 
 export const TicketPurchaseModal = ({
@@ -43,6 +57,7 @@ export const TicketPurchaseModal = ({
   onOpenChange,
   onSuccess,
   onBack,
+  promoterPricingRow = null,
 }: TicketPurchaseModalProps) => {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
@@ -58,12 +73,13 @@ export const TicketPurchaseModal = ({
   const [showStripeForm, setShowStripeForm] = useState(false);
   const [purchasedTickets, setPurchasedTickets] = useState<Ticket[] | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [jjPhotoUploadsPending, setJjPhotoUploadsPending] = useState(0);
 
   // Form fields
   const [quantity, setQuantity] = useState(1);
   
   // Array de asistentes: cada asistente tiene sus propios datos
-  interface AttendeeFormData {
+  interface AttendeeFormData extends JackJillAttendeeSlice {
     full_name: string;
     email: string;
     phone: string;
@@ -75,17 +91,20 @@ export const TicketPurchaseModal = ({
     additional_notes: string;
   }
   
-  const [attendees, setAttendees] = useState<AttendeeFormData[]>([{
-    full_name: '',
-    email: '',
-    phone: '',
-    gender: '',
-    role: '',
-    id_document: '',
-    country: '',
-    city: '',
-    additional_notes: '',
-  }]);
+  const [attendees, setAttendees] = useState<AttendeeFormData[]>(() => [
+    {
+      full_name: '',
+      email: '',
+      phone: '',
+      gender: '',
+      role: '',
+      id_document: '',
+      country: '',
+      city: '',
+      additional_notes: '',
+      ...defaultJackJillSlice(ticketType),
+    },
+  ]);
   
   const [referralCode, setReferralCode] = useState('');
   
@@ -102,6 +121,7 @@ export const TicketPurchaseModal = ({
   // Actualizar array de asistentes cuando cambia la cantidad
   useEffect(() => {
     setAttendees((prevAttendees) => {
+      const jjDefaults = defaultJackJillSlice(ticketType);
       const newAttendees: AttendeeFormData[] = [];
       for (let i = 0; i < quantity; i++) {
         if (prevAttendees[i]) {
@@ -117,12 +137,13 @@ export const TicketPurchaseModal = ({
             country: '',
             city: '',
             additional_notes: '',
+            ...jjDefaults,
           });
         }
       }
       return newAttendees;
     });
-  }, [quantity]);
+  }, [quantity, ticketType.id, ticketType.is_jack_and_jill, ticketType.require_jack_jill_confirmation]);
   
   // Actualizar datos de un asistente específico
   const updateAttendee = (
@@ -138,28 +159,92 @@ export const TicketPurchaseModal = ({
     setAttendees(newAttendees);
   };
 
-  // Precio y comisión: subtotal (entradas) + comisión pasarela = total a pagar
-  const pricePerTicket = parseFloat(ticketType.current_price || ticketType.base_price || '0');
-  const subtotal = pricePerTicket * quantity;
-  // Leer comisión: puede venir en ticketType.sale_commission o anidada en stripe_config_details
-  const commissionRaw =
-    ticketType.sale_commission ??
-    ticketType.stripe_config_details?.sale_commission ??
-    '0';
-  const includeCommission =
-    ticketType.include_sale_commission ?? ticketType.stripe_config_details?.include_sale_commission ?? false;
-  let commission = parseFloat(String(commissionRaw).trim() || '0');
-  // Si la API pide incluir comisión pero no envía valor (o es 0) y es Stripe, estimar (1.5% + 0.25€)
+  const patchJackJillAttendee = (index: number, patch: Partial<JackJillAttendeeSlice>) => {
+    setAttendees((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], ...patch };
+      return next;
+    });
+  };
+
+  const bumpJjPhotoUploadDelta = (delta: 1 | -1) => {
+    setJjPhotoUploadsPending((c) => Math.max(0, c + delta));
+  };
+
+  // Precio y comisión: subtotal (entradas) + comisión pasarela = total a pagar (con overrides promotor si vienen)
+  const listUnitPrice = parseFloat(ticketType.current_price || ticketType.base_price || '0');
+  const finalUnitStr = promoterPricingRow?.final_unit_price?.trim();
+  const afterDiscountStr = promoterPricingRow?.price_after_promoter_discount?.trim();
+
+  let unitForSubtotal = listUnitPrice;
+  let usesFinalAllInPrice = false;
+  if (finalUnitStr !== undefined && finalUnitStr !== '' && !Number.isNaN(parseFloat(finalUnitStr))) {
+    unitForSubtotal = parseFloat(finalUnitStr);
+    usesFinalAllInPrice = true;
+  } else if (
+    afterDiscountStr !== undefined &&
+    afterDiscountStr !== '' &&
+    !Number.isNaN(parseFloat(afterDiscountStr))
+  ) {
+    unitForSubtotal = parseFloat(afterDiscountStr);
+  }
+
+  const subtotal = unitForSubtotal * quantity;
+
   const isStripe = ticketType.payment_gateway === 'STRIPE';
-  if ((isStripe && commission <= 0) || (includeCommission && commission <= 0 && isStripe)) {
+
+  const commissionRaw =
+    usesFinalAllInPrice
+      ? '0'
+      : promoterPricingRow?.sale_commission_amount ??
+        ticketType.sale_commission ??
+        ticketType.stripe_config_details?.sale_commission ??
+        '0';
+
+  const includeCommission =
+    usesFinalAllInPrice
+      ? Boolean(
+          promoterPricingRow?.includes_sale_commission ??
+            ticketType.include_sale_commission ??
+            ticketType.stripe_config_details?.include_sale_commission
+        )
+      : promoterPricingRow?.includes_sale_commission ??
+        ticketType.include_sale_commission ??
+        ticketType.stripe_config_details?.include_sale_commission ??
+        false;
+
+  let commission = parseFloat(String(commissionRaw).trim() || '0');
+
+  if (
+    !usesFinalAllInPrice &&
+    ((isStripe && commission <= 0) || (includeCommission && commission <= 0 && isStripe))
+  ) {
     commission = Math.round((subtotal * 0.015 + 0.25) * 100) / 100;
   }
-  const totalToPay = subtotal + commission;
+
+  const totalToPay = usesFinalAllInPrice ? subtotal : subtotal + commission;
   const totalPrice = totalToPay.toFixed(2);
   const subtotalStr = subtotal.toFixed(2);
   const commissionStr = commission.toFixed(2);
-  const hasCommission = commission > 0 || includeCommission;
-  const isCommissionEstimated = isStripe && !ticketType.sale_commission && !ticketType.stripe_config_details?.sale_commission;
+  const showCommissionLine = !usesFinalAllInPrice && (commission > 0 || includeCommission);
+  const showFeesIncludedNote =
+    usesFinalAllInPrice &&
+    Boolean(
+      promoterPricingRow?.includes_sale_commission ??
+        ticketType.include_sale_commission ??
+        ticketType.stripe_config_details?.include_sale_commission
+    );
+  const isCommissionEstimated =
+    !usesFinalAllInPrice &&
+    isStripe &&
+    !promoterPricingRow?.sale_commission_amount &&
+    !ticketType.sale_commission &&
+    !ticketType.stripe_config_details?.sale_commission;
+
+  const showPromoterStrike =
+    Boolean(promoterPricingRow) &&
+    listUnitPrice > 0 &&
+    Math.abs(listUnitPrice - unitForSubtotal) > 0.005;
 
   const validateForm = (): boolean => {
     // Validar cada asistente
@@ -249,6 +334,27 @@ export const TicketPurchaseModal = ({
           description: i18n.language === 'en' 
             ? `City is required for attendee ${i + 1}`
             : `La ciudad es requerida para el asistente ${i + 1}`,
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      const jjSlice: JackJillAttendeeSlice = {
+        jack_jill_participates: attendee.jack_jill_participates,
+        instagram: attendee.instagram,
+        photo_url: attendee.photo_url,
+        buyer_photo_image_id: attendee.buyer_photo_image_id,
+      };
+      const jjErr = validateJackJillSlice(
+        ticketType,
+        jjSlice,
+        i18n.language === 'en' ? `attendee ${i + 1}` : `asistente ${i + 1}`,
+        i18n.language === 'en'
+      );
+      if (jjErr) {
+        toast({
+          title: i18n.language === 'en' ? 'Validation error' : 'Error de validación',
+          description: jjErr,
           variant: 'destructive',
         });
         return false;
@@ -404,6 +510,14 @@ export const TicketPurchaseModal = ({
         if (attendee.additional_notes && attendee.additional_notes.trim()) {
           attendeeDataItem.additional_notes = attendee.additional_notes.trim();
         }
+
+        const jjPayload = buildJackJillPayload(ticketType, {
+          jack_jill_participates: attendee.jack_jill_participates,
+          instagram: attendee.instagram,
+          photo_url: attendee.photo_url,
+          buyer_photo_image_id: attendee.buyer_photo_image_id,
+        });
+        Object.assign(attendeeDataItem, jjPayload);
 
         return attendeeDataItem;
       });
@@ -581,10 +695,30 @@ export const TicketPurchaseModal = ({
           <div className="space-y-4 py-4">
           {/* Ticket Info */}
           <div className="p-4 bg-muted rounded-lg">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">{i18n.language === 'en' ? 'Price per ticket' : 'Precio por entrada'}</span>
-              <span className="text-lg font-bold">{formatPrice(ticketType.current_price || ticketType.base_price)}</span>
+            <div className="flex justify-between items-center flex-wrap gap-2">
+              <span className="font-medium">
+                {i18n.language === 'en' ? 'Price per ticket' : 'Precio por entrada'}
+              </span>
+              <div className="text-right">
+                {showPromoterStrike ? (
+                  <span className="mr-2 text-sm text-muted-foreground line-through">
+                    {formatPrice(ticketType.current_price || ticketType.base_price)}
+                  </span>
+                ) : null}
+                <span className="text-lg font-bold">{formatPrice(unitForSubtotal.toFixed(2))}</span>
+                {promoterPricingRow && showPromoterStrike ? (
+                  <span className="ml-2 text-xs font-normal text-orange-600 dark:text-orange-400">
+                    {i18n.language === 'en' ? 'Promoter' : 'Promotor'}
+                  </span>
+                ) : null}
+              </div>
             </div>
+            {promoterPricingRow?.discount_amount?.trim() ? (
+              <p className="text-xs text-muted-foreground mt-1">
+                {i18n.language === 'en' ? 'Promoter discount: ' : 'Descuento promotor: '}
+                {promoterPricingRow.discount_amount}
+              </p>
+            ) : null}
             {ticketType.available_stock !== null && ticketType.available_stock <= 10 && (
               <div className="flex justify-between items-center mt-2 text-sm text-muted-foreground">
                 <span>{i18n.language === 'en' ? 'Available' : 'Disponibles'}</span>
@@ -642,16 +776,26 @@ export const TicketPurchaseModal = ({
                   </span>
                   <span className="font-medium">{subtotalStr}€</span>
                 </div>
-                {hasCommission && (
+                {showCommissionLine ? (
                   <div className="flex justify-between items-center gap-4 w-full">
                     <span className="text-xs text-muted-foreground">
                       {i18n.language === 'en'
                         ? `Gastos de gestión${isCommissionEstimated ? ' (approx.)' : ''}`
-                        : `Gastos de gestión${isCommissionEstimated ? ' (aprox.)' : ''}`}:
+                        : `Gastos de gestión${isCommissionEstimated ? ' (aprox.)' : ''}`}
+                      :
                     </span>
                     <span className="text-xs text-muted-foreground">{commissionStr}€</span>
                   </div>
-                )}
+                ) : null}
+                {showFeesIncludedNote ? (
+                  <div className="flex justify-between items-center gap-4 w-full">
+                    <span className="text-xs text-muted-foreground">
+                      {i18n.language === 'en'
+                        ? 'Processing fees included in price'
+                        : 'Gastos de gestión incluidos en el precio'}
+                    </span>
+                  </div>
+                ) : null}
                 <div className="flex justify-between items-center gap-4 w-full border-t pt-1 mt-0.5">
                   <span className="text-xs text-muted-foreground">
                     {i18n.language === 'en' ? 'Total to pay' : 'Total a pagar'}:
@@ -812,6 +956,21 @@ export const TicketPurchaseModal = ({
                 </div>
               )}
 
+              <JackJillAttendeeFields
+                ticketType={ticketType}
+                isEn={i18n.language === 'en'}
+                attendeeIndex={index}
+                fieldIdPrefix="purchase"
+                value={{
+                  jack_jill_participates: attendee.jack_jill_participates,
+                  instagram: attendee.instagram,
+                  photo_url: attendee.photo_url,
+                  buyer_photo_image_id: attendee.buyer_photo_image_id,
+                }}
+                onChange={(patch) => patchJackJillAttendee(index, patch)}
+                onPhotoUploadDelta={bumpJjPhotoUploadDelta}
+              />
+
               {/* Additional Notes (optional) */}
               <div className="space-y-2">
                 <Label htmlFor={`notes-${index}`}>
@@ -869,7 +1028,7 @@ export const TicketPurchaseModal = ({
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || jjPhotoUploadsPending > 0}
                 className="min-w-[120px]"
               >
                 {loading ? (

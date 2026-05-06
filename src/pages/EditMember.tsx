@@ -15,7 +15,7 @@ import {
   IdCard,
   Calendar
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MemberDocumentTypeSelect } from "@/components/MemberDocumentTypeSelect";
 import {
   validateMemberDocumentNumber,
   validateMemberBirthDate,
@@ -218,23 +218,14 @@ const EditMember = () => {
                 <Label htmlFor="document_type">
                   {i18n.language === 'en' ? 'Document Type' : 'Tipo de Documento'}
                 </Label>
-                <Select
+                <MemberDocumentTypeSelect
+                  id="document_type"
                   value={formData.document_type}
-                  onValueChange={(value: "DNI" | "PASAPORTE" | "NIE") =>
+                  onValueChange={(value) =>
                     setFormData({ ...formData, document_type: value })
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="DNI">DNI</SelectItem>
-                    <SelectItem value="NIE">NIE</SelectItem>
-                    <SelectItem value="PASAPORTE">
-                      {i18n.language === 'en' ? 'Passport' : 'Pasaporte'}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                  isEn={i18n.language === "en"}
+                />
               </div>
 
               <div className="space-y-2">

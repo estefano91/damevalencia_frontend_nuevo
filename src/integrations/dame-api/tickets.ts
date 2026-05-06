@@ -17,6 +17,8 @@ import type {
   StripeCheckoutRequest,
   StripeCheckoutResponse,
   PaymentStatusResponse,
+  BuyerPhotoUploadResponse,
+  PromoterPricingResponse,
 } from '@/types/tickets';
 
 const API_BASE_URL = import.meta.env.VITE_DAME_API_URL || 'https://organizaciondame.org/api';
@@ -154,6 +156,23 @@ export class DameTicketsAPI {
   }
 
   /**
+   * Precios por tipo de entrada con código de promotor (público).
+   * GET /api/tickets/events/{event_id}/promoter-pricing/?code={codigo}
+   */
+  async getPromoterPricing(
+    eventId: number,
+    code: string
+  ): Promise<ApiResponse<PromoterPricingResponse>> {
+    const trimmed = code.trim();
+    if (!trimmed) {
+      return { success: false, error: 'Missing promoter code' };
+    }
+    const qs = new URLSearchParams({ code: trimmed });
+    const path = `/tickets/events/${eventId}/promoter-pricing/?${qs.toString()}`;
+    return this.makePublicRequest<PromoterPricingResponse>(path);
+  }
+
+  /**
    * Realizar petición pública (sin autenticación)
    * Para endpoints que no requieren autenticación
    */
@@ -276,6 +295,90 @@ export class DameTicketsAPI {
    * Endpoint: POST /api/tickets/online/checkout/
    * Requiere autenticación.
    */
+  /**
+   * Subir foto del comprador (multipart). Requiere autenticación.
+   * POST /api/tickets/buyer-photo/ campo image_file
+   */
+  async uploadBuyerPhoto(imageFile: File): Promise<ApiResponse<BuyerPhotoUploadResponse>> {
+    const url = `${API_BASE_URL}/tickets/buyer-photo/`;
+    const token = getAuthToken();
+    const formData = new FormData();
+    formData.append('image_file', imageFile);
+
+    const headers: HeadersInit = {
+      Accept: 'application/json',
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      const data = (await response.json().catch(() => ({}))) as BuyerPhotoUploadResponse;
+
+      if (!response.ok) {
+        const msg =
+          data.detail ||
+          data.error ||
+          `HTTP ${response.status}`;
+        return { success: false, error: msg };
+      }
+
+      return {
+        success: true,
+        data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  }
+
+  /**
+   * Borrar foto subida del comprador. Requiere autenticación.
+   * DELETE /api/tickets/buyer-photo/<image_id>/
+   */
+  async deleteBuyerPhoto(imageId: string): Promise<ApiResponse<void>> {
+    const url = `${API_BASE_URL}/tickets/buyer-photo/${imageId}/`;
+    const token = getAuthToken();
+    const headers: HeadersInit = {
+      Accept: 'application/json',
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const msg =
+          (errorData as { detail?: string }).detail ||
+          (errorData as { error?: string }).error ||
+          `HTTP ${response.status}`;
+        return { success: false, error: msg };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      };
+    }
+  }
+
   async initiateStripeCheckout(request: StripeCheckoutRequest): Promise<ApiResponse<StripeCheckoutResponse>> {
     const body = JSON.stringify(request);
     

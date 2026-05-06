@@ -41,6 +41,7 @@ import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import Fallas from "./pages/Fallas";
 import FifaStreet from "./pages/FifaStreet";
+import ValenciaVolley from "./pages/ValenciaVolley";
 import { InterestsModalWrapper } from "./components/InterestsModalWrapper";
 import { MembershipModalWrapper } from "./components/MembershipModalWrapper";
 import RegisterPopup from "./components/RegisterPopup";
@@ -92,6 +93,14 @@ const App = () => (
                     element={
                       <ProtectedRoute hideSidebar>
                         <CommunityLinks />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/valenciavolley"
+                    element={
+                      <ProtectedRoute hideSidebar>
+                        <ValenciaVolley />
                       </ProtectedRoute>
                     }
                   />

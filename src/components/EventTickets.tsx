@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { dameTicketsAPI } from '@/integrations/dame-api/tickets';
-import type { TicketTypeDetail } from '@/types/tickets';
+import type { TicketTypeDetail, PromoterPricingTicketRow } from '@/types/tickets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,11 @@ import { Ticket, ShoppingCart, CreditCard, Calendar, AlertCircle, Users } from '
 import { TicketPurchaseModal } from '@/components/TicketPurchaseModal';
 import { TicketReserveModal } from '@/components/TicketReserveModal';
 import { TicketAtDoorModal } from '@/components/TicketAtDoorModal';
+import {
+  capturePromoterCodeFromUrl,
+  getStoredPromoterCode,
+  mapPromoterPricingByTicketTypeId,
+} from '@/lib/promoterLink';
 
 interface EventTicketsProps {
   eventId: number;
@@ -37,6 +42,35 @@ export const EventTickets = ({
   const [reserveModalOpen, setReserveModalOpen] = useState(false);
   const [atDoorModalOpen, setAtDoorModalOpen] = useState(false);
   const [selectedTicketType, setSelectedTicketType] = useState<TicketTypeDetail | null>(null);
+  const [promoterPricingMeta, setPromoterPricingMeta] = useState<{
+    apiValid: boolean;
+    message?: string;
+  } | null>(null);
+  const [promoterPricingByTypeId, setPromoterPricingByTypeId] = useState<
+    Map<number, PromoterPricingTicketRow>
+  >(() => new Map());
+
+  const refreshPromoterPricing = useCallback(async (eid: number) => {
+    capturePromoterCodeFromUrl(false);
+    const code = getStoredPromoterCode();
+    setPromoterPricingMeta(null);
+    setPromoterPricingByTypeId(new Map());
+    if (!code?.trim()) return;
+    try {
+      const prRes = await dameTicketsAPI.getPromoterPricing(eid, code);
+      if (prRes.success && prRes.data) {
+        setPromoterPricingMeta({
+          apiValid: prRes.data.valid === true,
+          message: typeof prRes.data.message === 'string' ? prRes.data.message : undefined,
+        });
+        if (prRes.data.valid === true) {
+          setPromoterPricingByTypeId(mapPromoterPricingByTicketTypeId(prRes.data));
+        }
+      }
+    } catch (e) {
+      console.warn('EventTickets: promoter-pricing failed', e);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchTicketTypes = async () => {
@@ -50,6 +84,7 @@ export const EventTickets = ({
         if (response.success && response.data) {
           const tickets = response.data.results || [];
           setTicketTypes(tickets);
+          await refreshPromoterPricing(eventId);
           
           // Notificar al componente padre si hay tickets visibles y calcular precio mínimo
           if (onTicketsLoaded) {
@@ -167,11 +202,39 @@ export const EventTickets = ({
     if (eventId) {
       fetchTicketTypes();
     }
-  }, [eventId, onTicketsLoaded, onOpenAtDoorModal]);
+  }, [eventId, onTicketsLoaded, onOpenAtDoorModal, refreshPromoterPricing]);
 
   const getLocalizedText = (textEs?: string, textEn?: string): string => {
     if (i18n.language === 'en' && textEn) return textEn;
     return textEs || textEn || '';
+  };
+
+  const promoterRowForTicket = (ticketType: TicketTypeDetail) =>
+    promoterPricingMeta?.apiValid ? promoterPricingByTypeId.get(ticketType.id) : undefined;
+
+  const formatTicketPriceLine = (
+    ticketType: TicketTypeDetail
+  ): { primary: string; strike?: string } => {
+    const row = promoterRowForTicket(ticketType);
+    const listAmount = ticketType.current_price || ticketType.base_price || '0';
+    const final = row?.final_unit_price?.trim();
+    const after = row?.price_after_promoter_discount?.trim();
+    const unitStr =
+      final !== undefined && final !== ''
+        ? final
+        : after !== undefined && after !== ''
+          ? after
+          : null;
+    if (unitStr === null || Number.isNaN(parseFloat(unitStr))) {
+      return { primary: formatPrice(listAmount, ticketType.currency) };
+    }
+    const u = parseFloat(unitStr);
+    const listNum = parseFloat(listAmount);
+    const strike =
+      row && listNum > 0 && Math.abs(listNum - u) > 0.005
+        ? formatPrice(listAmount, ticketType.currency)
+        : undefined;
+    return { primary: formatPrice(unitStr, ticketType.currency), strike };
   };
 
   const formatPrice = (amount: string, currency: string = 'EUR'): string => {
@@ -304,7 +367,7 @@ export const EventTickets = ({
         const allTickets = response.data.results || [];
         const visibleTickets = allTickets.filter(t => t.is_visible === true);
         setTicketTypes(visibleTickets);
-        
+        await refreshPromoterPricing(eventId);
         if (onTicketsLoaded) {
           onTicketsLoaded(visibleTickets.length > 0);
         }
@@ -327,7 +390,7 @@ export const EventTickets = ({
         const allTickets = response.data.results || [];
         const visibleTickets = allTickets.filter(t => t.is_visible === true);
         setTicketTypes(visibleTickets);
-        
+        await refreshPromoterPricing(eventId);
         if (onTicketsLoaded) {
           onTicketsLoaded(visibleTickets.length > 0);
         }
@@ -350,7 +413,7 @@ export const EventTickets = ({
         const allTickets = response.data.results || [];
         const visibleTickets = allTickets.filter(t => t.is_visible === true);
         setTicketTypes(visibleTickets);
-        
+        await refreshPromoterPricing(eventId);
         if (onTicketsLoaded) {
           onTicketsLoaded(visibleTickets.length > 0);
         }
@@ -418,6 +481,21 @@ export const EventTickets = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          {promoterPricingMeta && promoterPricingMeta.apiValid ? (
+            <Alert className="border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
+              <AlertDescription>
+                {i18n.language === 'en'
+                  ? 'Promoter link applied: prices shown include your promoter discount where configured.'
+                  : 'Enlace de promotor aplicado: los precios incluyen el descuento configurado para este código.'}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {promoterPricingMeta && !promoterPricingMeta.apiValid && promoterPricingMeta.message ? (
+            <Alert className="bg-amber-50 border-amber-200 text-amber-950 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-100">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{promoterPricingMeta.message}</AlertDescription>
+            </Alert>
+          ) : null}
           {ticketTypes.map((ticketType) => {
             const isAvailable = ticketType.is_on_sale && ticketType.available_stock > 0;
             const isSoldOut = ticketType.available_stock === 0;
@@ -449,10 +527,22 @@ export const EventTickets = ({
                     )}
 
                     <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <CreditCard className="h-4 w-4" />
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <CreditCard className="h-4 w-4 shrink-0" />
                         <span className="font-semibold text-foreground">
-                          {formatPrice(ticketType.current_price, ticketType.currency)}
+                          {(() => {
+                            const line = formatTicketPriceLine(ticketType);
+                            return (
+                              <>
+                                {line.strike ? (
+                                  <span className="text-muted-foreground line-through font-normal mr-2 text-xs">
+                                    {line.strike}
+                                  </span>
+                                ) : null}
+                                {line.primary}
+                              </>
+                            );
+                          })()}
                         </span>
                       </div>
                       
@@ -595,6 +685,11 @@ export const EventTickets = ({
               open={purchaseModalOpen}
               onOpenChange={setPurchaseModalOpen}
               onSuccess={handlePurchaseSuccess}
+              promoterPricingRow={
+                promoterPricingMeta?.apiValid
+                  ? promoterPricingByTypeId.get(selectedTicketType.id) ?? null
+                  : null
+              }
             />
           )}
 

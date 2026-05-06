@@ -1,3 +1,5 @@
+import type { PromoterPricingResponse, PromoterPricingTicketRow } from '@/types/tickets';
+
 /**
  * Enlace de promotor: detectar ?promoter=CODE o ?ref=CODE en la URL,
  * guardar en sessionStorage para usarlo en el checkout y asignar comisión al promotor.
@@ -57,4 +59,19 @@ export function buildPromoterLink(promoterCode: string, eventSlug?: string): str
   const base = typeof window !== 'undefined' ? window.location.origin : '';
   const path = eventSlug ? `/eventos/${eventSlug}` : '';
   return `${base}${path}?promoter=${encodeURIComponent(promoterCode.trim())}`;
+}
+
+/** Índice por ID de tipo de entrada para GET …/promoter-pricing/ */
+export function mapPromoterPricingByTicketTypeId(
+  data: PromoterPricingResponse | undefined | null
+): Map<number, PromoterPricingTicketRow> {
+  const map = new Map<number, PromoterPricingTicketRow>();
+  if (!data?.ticket_types?.length) return map;
+  for (const row of data.ticket_types) {
+    const tid = row.ticket_type_id ?? row.id;
+    if (typeof tid === 'number' && Number.isFinite(tid)) {
+      map.set(tid, row);
+    }
+  }
+  return map;
 }

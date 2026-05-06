@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MemberDocumentTypeSelect } from "@/components/MemberDocumentTypeSelect";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -216,23 +216,14 @@ const Membership = () => {
             <Label htmlFor="document_type">
               {i18n.language === 'en' ? 'Document Type' : 'Tipo de Documento'} *
             </Label>
-            <Select
+            <MemberDocumentTypeSelect
+              id="document_type"
               value={formData.document_type}
-              onValueChange={(value: "DNI" | "PASAPORTE" | "NIE") =>
+              onValueChange={(value) =>
                 setFormData({ ...formData, document_type: value, document_number: "" })
               }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="DNI">DNI</SelectItem>
-                <SelectItem value="NIE">NIE</SelectItem>
-                <SelectItem value="PASAPORTE">
-                  {i18n.language === 'en' ? 'Passport' : 'Pasaporte'}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              isEn={i18n.language === "en"}
+            />
             {formData.document_type === "DNI" && (
               <p className="text-xs text-muted-foreground">
                 {i18n.language === 'en'

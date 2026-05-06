@@ -56,6 +56,14 @@ export interface TicketTypeDetail {
   include_sale_commission?: boolean;
   /** Comisión de venta por la pasarela de pago (Stripe). Decimal como string. Total del pedido. */
   sale_commission?: string;
+  /** Jack & Jill: tipo relacionado con JJ (información extra opcional). */
+  is_jack_and_jill?: boolean;
+  /** Si es true, la API exige `jack_jill_participates` (true/false) por asistente. */
+  require_jack_jill_confirmation?: boolean;
+  /** Obligar foto (tras subida previa a `buyer-photo`). */
+  require_photo_url?: boolean;
+  /** Obligar usuario / URL de Instagram. */
+  require_instagram?: boolean;
   /** Algunas APIs devuelven la comisión anidada aquí. */
   stripe_config_details?: { include_sale_commission?: boolean; sale_commission?: string };
   sale_start_date?: string; // ISO date string
@@ -99,6 +107,9 @@ export interface PurchaseTicketAtDoorRequest {
     country?: string;
     city?: string;
     additional_notes?: string;
+    jack_jill_participates?: boolean;
+    photo_url?: string;
+    instagram?: string;
   }>;
 }
 
@@ -218,8 +229,52 @@ export interface StripeCheckoutRequest {
     country?: string;
     city?: string;
     additional_notes?: string;
+    jack_jill_participates?: boolean;
+    photo_url?: string;
+    instagram?: string;
   }>;
   promoter_code?: string;
+}
+
+/**
+ * GET /api/tickets/events/{event_id}/promoter-pricing/?code=...
+ * Público. Por tipo de entrada visible: descuento y comisión efectivos del promotor.
+ */
+export interface PromoterPricingTicketRow {
+  id?: number;
+  ticket_type_id?: number;
+  base_price?: string;
+  currency?: string;
+  ticket_kind?: string;
+  effective_discount_type?: string;
+  effective_discount?: string;
+  discount_amount?: string;
+  price_after_promoter_discount?: string;
+  effective_commission?: string;
+  includes_sale_commission?: boolean;
+  sale_commission_amount?: string;
+  /** Precio final por entrada (p. ej. con gastos de pasarela si aplica). */
+  final_unit_price?: string;
+}
+
+export interface PromoterPricingResponse {
+  success?: boolean;
+  /** Si false, el código no aplica al evento (HTTP 200, mensaje explicativo). */
+  valid?: boolean;
+  message?: string;
+  ticket_types?: PromoterPricingTicketRow[];
+  default_discount_type?: string;
+  default_discount?: string;
+  default_commission?: string;
+}
+
+/** Respuesta típica de POST /api/tickets/buyer-photo/ */
+export interface BuyerPhotoUploadResponse {
+  success?: boolean;
+  url?: string;
+  image_id?: string;
+  error?: string;
+  detail?: string;
 }
 
 export interface StripeCheckoutResponse {
